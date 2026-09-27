@@ -21,6 +21,7 @@ import type {
   SiteContent,
 } from '@/shared/types'
 import { createSeedData } from '@/shared/data/seed'
+import { CONTENIDO_SITIO } from '@/shared/content/sitio'
 import { clearStoredData, loadStoredData, saveStoredData } from '@/shared/lib/storage'
 import { createId } from '@/shared/lib/id'
 import { getNextAvailableSlots, type NextSlot } from '@/shared/lib/availability'
@@ -89,8 +90,8 @@ interface AppStateValue {
   deleteProfessional: (id: string) => void
 
   // Contenido editable del sitio
+  /** Contenido editorial del sitio. Versionado en `shared/content/sitio.ts`. */
   siteContent: SiteContent
-  updateSiteContent: (patch: Partial<SiteContent>) => void
 
   // Reservas
   bookings: Booking[]
@@ -129,7 +130,6 @@ const EMPTY_DATA: AppData = {
   services: [],
   professionals: [],
   bookings: [],
-  siteContent: { heroCaption: '', aiTeaserCaption: '', aiFocusOptions: [] },
 }
 
 function readRealDataFlag(): boolean {
@@ -210,15 +210,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         ...p,
         serviceIds: p.serviceIds.filter((serviceId) => serviceId !== id),
       })),
-      siteContent: {
-        ...prev.siteContent,
-        aiFocusOptions: prev.siteContent.aiFocusOptions.map((option) => ({
-          ...option,
-          recommendedServiceIds: option.recommendedServiceIds.filter(
-            (serviceId) => serviceId !== id,
-          ),
-        })),
-      },
     }))
   }, [])
 
@@ -244,11 +235,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       ...prev,
       professionals: prev.professionals.filter((p) => p.id !== id),
     }))
-  }, [])
-
-  // --- Contenido del sitio ---
-  const updateSiteContent = useCallback((patch: Partial<SiteContent>) => {
-    setData((prev) => ({ ...prev, siteContent: { ...prev.siteContent, ...patch } }))
   }, [])
 
   // --- Reservas ---
@@ -328,8 +314,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateProfessional,
       deleteProfessional,
 
-      siteContent: visible.siteContent,
-      updateSiteContent,
+      // Constante versionada, no estado: no depende de `visible`, asi que el
+      // modo "solo Supabase" ya no se lleva por delante los textos del sitio.
+      siteContent: CONTENIDO_SITIO,
 
       bookings: visible.bookings,
       addBooking,
@@ -364,7 +351,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     addProfessional,
     updateProfessional,
     deleteProfessional,
-    updateSiteContent,
     addBooking,
     updateBookingStatus,
     rescheduleBooking,
