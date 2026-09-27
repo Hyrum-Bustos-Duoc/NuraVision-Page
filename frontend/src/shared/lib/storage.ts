@@ -26,9 +26,6 @@ export function loadStoredData(fallback: AppData): AppData {
         ? parsed.professionals
         : fallback.professionals,
       bookings: Array.isArray(parsed.bookings) ? parsed.bookings : fallback.bookings,
-      siteContent: parsed.siteContent
-        ? { ...fallback.siteContent, ...parsed.siteContent }
-        : fallback.siteContent,
     }
   } catch {
     return fallback

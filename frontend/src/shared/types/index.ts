@@ -161,5 +161,4 @@ export interface AppData {
   services: Service[]
   professionals: Professional[]
   bookings: Booking[]
-  siteContent: SiteContent
 }

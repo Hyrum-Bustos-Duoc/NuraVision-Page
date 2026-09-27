@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
+import { useEquipoConAgenda } from '@/modules/profesionales/ui/useEquipoConAgenda'
 import { imagenDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { AppImage, Kicker, LinkButton } from '@/shared/ui/ui'
 import { Reveal } from '@/shared/ui/Reveal'
 import { formatPrice } from '@/shared/lib/format'
+import { getNextAvailableSlots } from '@/shared/lib/availability'
 
 const STEPS = [
   {
@@ -31,7 +33,7 @@ const STEPS = [
 ]
 
 export default function Landing() {
-  const { activeServices: services, professionals, siteContent, nextSlotsFor } = useAppState()
+  const { activeServices: services, siteContent, bookings } = useAppState()
 
   /**
    * Los destacados salen de la base, no de los datos de ejemplo.
@@ -47,8 +49,25 @@ export default function Landing() {
    */
   const catalogo = useServicios()
   const featured = catalogo.servicios.slice(0, 4)
-  const firstProfessional = professionals[0]
-  const nextSlot = firstProfessional ? nextSlotsFor(firstProfessional, { count: 1 })[0] : undefined
+
+  /**
+   * El equipo tambien sale de la base, por el mismo motivo que el catalogo.
+   *
+   * Hasta aqui esta seccion leia `professionals` de `useAppState`, que solo
+   * conoce los datos de ejemplo: con el modo "solo Supabase" activo la portada
+   * se quedaba sin equipo, el contador del hero marcaba 0 y la tarjeta de
+   * "Proxima hora libre" no llegaba a aparecer nunca. Sin ese modo era peor,
+   * porque mostraba personas que no trabajan en el estudio y cuyos enlaces
+   * llevaban a una ficha inexistente.
+   */
+  const { equipo, cargando: cargandoEquipo, error: errorEquipo } = useEquipoConAgenda()
+
+  // Las reservas siguen siendo locales: es lo que hay para marcar las horas ya
+  // tomadas al calcular la proxima disponible, igual que en `Professionals`.
+  const primeroDelEquipo = equipo[0]
+  const nextSlot = primeroDelEquipo
+    ? getNextAvailableSlots(primeroDelEquipo, bookings, 1)[0]
+    : undefined
 
   return (
     <div>
@@ -73,7 +92,7 @@ export default function Landing() {
           </div>
           <div className="mt-12 flex gap-10 border-t border-line-soft pt-8">
             <Stat value={String(catalogo.servicios.length || services.length)} label="servicios" />
-            <Stat value={String(professionals.length)} label="profesionales" />
+            <Stat value={String(equipo.length)} label="profesionales" />
             <Stat value="24/7" label="agenda en línea" />
           </div>
         </div>
@@ -85,10 +104,10 @@ export default function Landing() {
             alt="Estudio Nura"
             className="aspect-[4/5] w-full rounded-2xl"
           />
-          {firstProfessional && nextSlot && (
+          {primeroDelEquipo && nextSlot && (
             <div className="animate-fade-up absolute bottom-6 left-6 w-56 rounded-xl border border-line-soft bg-paper p-4 shadow-sm [animation-delay:320ms]">
               <Kicker>Próxima hora libre</Kicker>
-              <p className="mt-2 text-sm font-medium text-ink">{firstProfessional.name}</p>
+              <p className="mt-2 text-sm font-medium text-ink">{primeroDelEquipo.name}</p>
               <p className="text-sm text-muted">{nextSlot.label.replace(' ', ' · ')}</p>
             </div>
           )}
@@ -234,20 +253,34 @@ export default function Landing() {
             <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
-        <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {professionals.map((p) => (
-            <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
-              <AppImage
-                src={p.imageUrl}
-                label="Retrato"
-                alt={p.name}
-                className="aspect-[3/4] w-full rounded-2xl"
-              />
-              <p className="mt-3 font-serif-display text-lg text-ink">{p.name}</p>
-              <p className="text-sm text-muted">{p.role}</p>
-            </Link>
-          ))}
-        </div>
+        {cargandoEquipo && (
+          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            Cargando el equipo…
+          </p>
+        )}
+
+        {!cargandoEquipo && errorEquipo && (
+          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            No pudimos cargar el equipo: {errorEquipo}
+          </p>
+        )}
+
+        {!cargandoEquipo && !errorEquipo && (
+          <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {equipo.map((p) => (
+              <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
+                <AppImage
+                  src={p.imageUrl}
+                  label="Retrato"
+                  alt={p.name}
+                  className="aspect-[3/4] w-full rounded-2xl"
+                />
+                <p className="mt-3 font-serif-display text-lg text-ink">{p.name}</p>
+                <p className="text-sm text-muted">{p.role}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
       </Reveal>
 
