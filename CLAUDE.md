@@ -30,6 +30,41 @@ npm run lint                            # oxlint
 referencias (`"files": []`), así que `npx tsc --noEmit` a secas no compila ningún
 archivo y termina en 0 aunque el código esté roto: es un falso positivo.
 
+# Tests
+
+El frontend tiene dos motores de prueba:
+
+- **Vitest + Testing Library** para logica pura y componentes. Los tests viven
+  junto al codigo que prueban, como `src/**/*.test.ts`.
+- **Playwright** para end-to-end sobre un navegador real. Los specs viven en
+  `frontend/e2e/`.
+
+```bash
+npm test              # unitarios, una pasada
+npm run test:watch    # los reejecuta al guardar (el del dia a dia)
+npm run test:coverage # con reporte de cobertura
+npm run test:e2e      # Playwright (levanta Vite por su cuenta)
+npm run test:e2e:ui   # Playwright en modo visual
+```
+
+## Ejecucion automatica en las sesiones de Claude
+
+`.claude/settings.json` define un hook `PostToolUse` que, cada vez que Claude
+escribe o edita un archivo de `frontend/src/`, ejecuta `vitest related --run`
+sobre ese archivo. Es decir: solo los tests relacionados con lo que acaba de
+cambiar, no la suite entera.
+
+Si esos tests fallan, el hook termina con codigo 2 y el fallo se le devuelve a
+Claude para que lo corrija en el momento. Si el archivo no tiene tests
+relacionados, no hace nada y no cuesta tiempo.
+
+El hook esta versionado, asi que aplica a todo el equipo sin configurar nada:
+llega con el `git pull`. Para revisarlo o desactivarlo puntualmente, usa el
+comando `/hooks`.
+
+No se ejecuta Playwright en el hook a proposito: tarda minutos y volveria
+insoportable cada edicion. El end-to-end va en CI.
+
 # OpenSpec
 
 El repositorio usa [OpenSpec](https://github.com/Fission-AI/OpenSpec) para el
