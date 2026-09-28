@@ -1,8 +1,9 @@
+import type { WeeklyAvailability } from '@/shared/types'
 import { supabase } from '@/shared/infrastructure/supabase/client'
 import type { Disponibilidad } from '../domain/disponibilidad.types'
 import type { ProfesionalRepository } from '../domain/profesional.repository'
 import type { Profesional } from '../domain/profesional.types'
-import { toDisponibilidad } from './disponibilidad.mapper'
+import { fromWeeklyAvailability, toDisponibilidad } from './disponibilidad.mapper'
 import { toProfesional } from './profesional.mapper'
 
 const TABLA = 'profesionales'
@@ -102,6 +103,53 @@ export class SupabaseProfesionalRepository implements ProfesionalRepository {
     }
 
     return (data ?? []).map(toDisponibilidad)
+  }
+
+  async guardarDisponibilidad(
+    profesionalId: string,
+    semana: WeeklyAvailability,
+  ): Promise<Disponibilidad[]> {
+    const id = aIdNumerico(profesionalId)
+    if (id === null) {
+      throw new Error('La ficha de profesional no es valida.')
+    }
+
+    const filas = fromWeeklyAvailability(profesionalId, semana)
+
+    /**
+     * `upsert` con `onConflict` sobre (profesional_id, dia_semana), que es la
+     * clave unica que agrega 0009. Sin ella PostgREST no sabria contra que
+     * resolver el conflicto e insertaria filas repetidas.
+     *
+     * `select()` no es decorativo: sin el, PostgREST responde 204 sin cuerpo y
+     * no habria forma de saber si la escritura llego a alguna fila.
+     */
+    const { data, error } = await supabase
+      .from(TABLA_DISPONIBILIDAD)
+      .upsert(filas, { onConflict: 'profesional_id,dia_semana' })
+      .select()
+
+    if (error) {
+      throw new Error(`No se pudo guardar tu horario: ${error.message}`)
+    }
+
+    /**
+     * UNA ESCRITURA QUE RLS RECHAZA NO ES UN ERROR: PostgREST devuelve 200 con
+     * una lista vacia. Si esto se tomara por exito, el panel diria "guardado"
+     * sin haber guardado nada, que es justo el fallo que esta migracion venia a
+     * corregir.
+     *
+     * El caso real: una sesion sin `profesional_id` en su `app_metadata` —una
+     * ficha elegida a mano en el selector— no cumple la politica de 0009.
+     */
+    if (!data || data.length === 0) {
+      throw new Error(
+        'La base de datos no aceptó el cambio. Tu cuenta necesita tener asignada ' +
+          'la ficha de profesional para editar este horario.',
+      )
+    }
+
+    return data.map(toDisponibilidad)
   }
 
   async listarDisponibilidadDeVarios(profesionalIds: string[]): Promise<Disponibilidad[]> {

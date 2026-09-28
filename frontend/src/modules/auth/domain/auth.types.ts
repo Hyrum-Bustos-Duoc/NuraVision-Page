@@ -30,6 +30,17 @@ export interface UsuarioAuth {
    * JWT. Esto solo sirve para no mostrar pantallas que van a fallar.
    */
   esStaff: boolean
+  /**
+   * Ficha de `profesionales` que le corresponde a esta cuenta, si tiene una.
+   *
+   * Sale de `app_metadata`, igual que `esStaff` y por el mismo motivo: es el
+   * unico metadato que la propia persona no puede escribir. La tabla
+   * `profesionales` NO tiene columna de correo, asi que no hay forma de cruzar
+   * la cuenta con la ficha por email; el vinculo tiene que declararse.
+   *
+   * `null` cuando la cuenta no esta vinculada a nadie del equipo.
+   */
+  profesionalId: string | null
 }
 
 /** Lo minimo para entrar. */

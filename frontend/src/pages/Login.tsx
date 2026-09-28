@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
+import { rutaInicial } from '@/modules/auth/ui/ruta-inicial'
 import { AppImage, Button, Kicker } from '@/shared/ui/ui'
 import type { Role } from '@/shared/types'
 
@@ -19,8 +20,10 @@ export default function Login() {
 
   function enterAs(role: Role) {
     login(role)
+    // Administracion entra directo al listado de reservas: es lo unico del
+    // panel que lee datos reales, y el resto sigue con los de ejemplo.
     if (role === 'profesional') navigate('/profesional')
-    else if (role === 'administrador') navigate('/admin')
+    else if (role === 'administrador') navigate('/admin/reservas')
     else navigate('/')
   }
 
@@ -28,10 +31,15 @@ export default function Login() {
     setEntrando(true)
     setError(null)
     try {
-      await signInWithPassword({ email, password })
-      // La sesión ya está en el contexto: lo que sigue es llevar a la persona
-      // a donde iba, no guardar nada más.
-      navigate('/mis-reservas')
+      const usuario = await signInWithPassword({ email, password })
+      // El destino se decide con el usuario que devuelve la propia llamada, no
+      // con el del contexto: ese se actualiza en el render siguiente y aquí
+      // todavía sería el anterior.
+      //
+      // Antes esto mandaba a todo el mundo a '/mis-reservas', así que una
+      // profesional entraba con sus credenciales correctas y aterrizaba en la
+      // vista de clienta.
+      navigate(rutaInicial(usuario), { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No pudimos iniciar tu sesión.')
     } finally {

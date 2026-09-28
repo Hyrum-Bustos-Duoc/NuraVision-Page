@@ -2,25 +2,41 @@ import { useState } from 'react'
 import { useAppState } from '@/shared/state/AppState'
 import { useToast } from '@/shared/state/Toast'
 import { AppImage, Button } from '@/shared/ui/ui'
+import { useMiFichaProfesional } from '@/modules/profesionales/ui/useMiFichaProfesional'
+import { FichaActiva, SelectorDeFicha } from '@/modules/profesionales/ui/SelectorDeFicha'
 
 export default function ProProfile() {
-  const { currentUser, getProfessional, updateProfessional } = useAppState()
+  const { updateProfessional } = useAppState()
   const { toast } = useToast()
-  const professional = getProfessional(currentUser?.professionalId ?? '')
+  // La ficha sale de la base: antes se buscaba en los datos de ejemplo con el
+  // `professionalId` del usuario de demostracion y, con el modo "solo
+  // Supabase" activo, no habia nada que encontrar.
+  const mia = useMiFichaProfesional()
+  const professional = mia.ficha
 
   const [bio, setBio] = useState(professional?.bio ?? '')
-  const [phone, setPhone] = useState(currentUser?.phone ?? '')
+  // La tabla `profesionales` no guarda telefono, asi que el campo arranca
+  // vacio en vez de con el del usuario de demostracion, que no es de esta
+  // persona.
+  const [phone, setPhone] = useState('')
 
   if (!professional) {
     return (
-      <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10">
-        <p className="text-sm text-muted">No encontramos tu ficha de profesional.</p>
-      </div>
+      <SelectorDeFicha
+        equipo={mia.equipo}
+        cargando={mia.cargando}
+        error={mia.error}
+        onElegir={mia.elegir}
+      />
     )
   }
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10">
+      {!mia.vinculoDeclarado && mia.profesional && (
+        <FichaActiva nombre={mia.profesional.nombre} onCambiar={() => mia.elegir(null)} />
+      )}
+
       <h1 className="font-serif-display text-4xl text-ink">Mi perfil</h1>
 
       <div className="mt-6 flex items-center gap-4">
@@ -28,7 +44,7 @@ export default function ProProfile() {
           <AppImage src={professional.imageUrl} alt={professional.name} className="h-14 w-14 rounded-full" />
         ) : (
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ink text-sm text-white">
-            {currentUser?.initials}
+            {professional.name.slice(0, 2).toUpperCase()}
           </div>
         )}
         <div>

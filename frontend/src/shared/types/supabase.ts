@@ -117,6 +117,13 @@ export interface Database {
           hora_inicio: string
           /** time, llega como "HH:MM:SS" */
           hora_fin: string
+          /** boolean. false = ese dia no se atiende (0009). */
+          activo: boolean
+          /**
+           * jsonb, siempre una lista (0009 lo exige con un check).
+           * Pausas dentro de la jornada, con la forma de AvailabilityBreak.
+           */
+          bloques_bloqueados: Json
         }
         Insert: {
           id?: number
@@ -124,6 +131,8 @@ export interface Database {
           dia_semana: number
           hora_inicio: string
           hora_fin: string
+          activo?: boolean
+          bloques_bloqueados?: Json
         }
         Update: {
           id?: number
@@ -131,6 +140,8 @@ export interface Database {
           dia_semana?: number
           hora_inicio?: string
           hora_fin?: string
+          activo?: boolean
+          bloques_bloqueados?: Json
         }
         Relationships: []
       }
@@ -208,3 +219,7 @@ export interface Database {
 /** Atajo: `Tables<'servicios'>` en vez del camino completo. */
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row']
+
+/** Atajo para lo que se manda al insertar o al hacer upsert. */
+export type TablesInsert<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']

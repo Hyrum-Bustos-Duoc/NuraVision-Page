@@ -4,11 +4,10 @@ import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useProfesionales } from '@/modules/profesionales/ui/useProfesionales'
 import { useServiciosPorIds } from '@/modules/servicios/ui/useServiciosPorIds'
 import { useProfesionalesPorIds } from '@/modules/profesionales/ui/useProfesionalesPorIds'
-import { Button } from '@/shared/ui/ui'
+import { Button, StatusBadge } from '@/shared/ui/ui'
 import { formatLongDate } from '@/shared/lib/format'
 import { ESTADOS_FILTRABLES, esConfirmable } from '../application'
 import type { EstadoReserva, FiltrosReservas } from '../domain/reserva-gestion.types'
-import { EstadoBadge } from './EstadoBadge'
 import { useReservasGestion } from './useReservasGestion'
 
 const TODOS = 'todos'
@@ -257,7 +256,7 @@ export default function AdminReservas() {
                     </p>
                   </td>
                   <td className="px-6 py-4">
-                    <EstadoBadge estado={r.estado} />
+                    <StatusBadge status={r.estado} />
                   </td>
                   <td className="px-6 py-4 text-right">
                     {esConfirmable(r) && (

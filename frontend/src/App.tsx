@@ -22,6 +22,7 @@ import { RequireRole } from '@/shared/components/RequireRole'
 import { ScrollToTop } from '@/shared/components/ScrollToTop'
 
 import Landing from '@/pages/Landing'
+import { SiYaTienePanel } from '@/shared/components/SiYaTienePanel'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
 import Services from '@/modules/servicios/ui/Services'
@@ -34,6 +35,7 @@ import BookingDetail from '@/pages/BookingDetail'
 import AIAnalysis from '@/pages/AIAnalysis'
 import Profile from '@/pages/Profile'
 
+import { ProShell } from '@/pages/professional/ProShell'
 import ProDashboard from '@/pages/professional/ProDashboard'
 import ProAgenda from '@/pages/professional/ProAgenda'
 import ProAvailability from '@/pages/professional/ProAvailability'
@@ -83,8 +85,25 @@ export default function App() {
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
-              <Route path="login" element={<Login />} />
-              <Route path="registro" element={<Register />} />
+              {/* Quien ya tiene panel interno no vuelve a ver estas pantallas:
+                  ya esta dentro, y pedirle credenciales de nuevo solo lo aleja
+                  de donde trabaja. */}
+              <Route
+                path="login"
+                element={
+                  <SiYaTienePanel>
+                    <Login />
+                  </SiYaTienePanel>
+                }
+              />
+              <Route
+                path="registro"
+                element={
+                  <SiYaTienePanel>
+                    <Register />
+                  </SiYaTienePanel>
+                }
+              />
 
               <Route element={<ClientLayout />}>
                 <Route index element={<Landing />} />
@@ -102,7 +121,7 @@ export default function App() {
               <Route element={<RequireRole role="profesional" />}>
                 <Route
                   element={
-                    <DashboardShell
+                    <ProShell
                       sectionLabel="Panel profesional"
                       userSubtitle="Nail artist"
                       navItems={PROFESSIONAL_NAV}

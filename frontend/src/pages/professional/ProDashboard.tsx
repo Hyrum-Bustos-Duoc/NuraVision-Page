@@ -6,11 +6,17 @@ import { TODAY_ISO } from '@/shared/data/seed'
 import { getDayAvailability, getScheduleBlocks, timeToMinutes } from '@/shared/lib/availability'
 import { formatWeekdayLong } from '@/shared/lib/format'
 import { Button, Card, StatCard, StatusBadge } from '@/shared/ui/ui'
+import { useMiFichaProfesional } from '@/modules/profesionales/ui/useMiFichaProfesional'
+import { FichaActiva, SelectorDeFicha } from '@/modules/profesionales/ui/SelectorDeFicha'
 
 export default function ProDashboard() {
-  const { currentUser, bookings, getProfessional, getService } = useAppState()
+  const { bookings, getService } = useAppState()
   const navigate = useNavigate()
-  const professional = getProfessional(currentUser?.professionalId ?? '')
+  // La ficha sale de la base: antes se buscaba en los datos de ejemplo con el
+  // `professionalId` del usuario de demostracion y, con el modo "solo
+  // Supabase" activo, no habia nada que encontrar.
+  const mia = useMiFichaProfesional()
+  const professional = mia.ficha
 
   const today = useMemo(
     () =>
@@ -47,9 +53,12 @@ export default function ProDashboard() {
 
   if (!professional) {
     return (
-      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-        <p className="text-sm text-muted">No encontramos tu ficha de profesional.</p>
-      </div>
+      <SelectorDeFicha
+        equipo={mia.equipo}
+        cargando={mia.cargando}
+        error={mia.error}
+        onElegir={mia.elegir}
+      />
     )
   }
 
@@ -71,10 +80,14 @@ export default function ProDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      {!mia.vinculoDeclarado && mia.profesional && (
+        <FichaActiva nombre={mia.profesional.nombre} onCambiar={() => mia.elegir(null)} />
+      )}
+
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-4xl text-ink">
-            Buenos días, {currentUser?.firstName}
+            Buenos días, {professional.name}
           </h1>
           <p className="mt-2 text-sm text-muted first-letter:uppercase">
             {formatWeekdayLong(TODAY_ISO)} · {today.length}{' '}

@@ -1,3 +1,4 @@
+import type { WeeklyAvailability } from '@/shared/types'
 import type { Disponibilidad } from './disponibilidad.types'
 import type { Profesional } from './profesional.types'
 
@@ -30,4 +31,20 @@ export interface ProfesionalRepository {
    * hooks de React no se pueden llamar dentro de un bucle de todas formas.
    */
   listarDisponibilidadDeVarios(profesionalIds: string[]): Promise<Disponibilidad[]>
+
+  /**
+   * Reemplaza el horario semanal de un profesional.
+   *
+   * Recibe las siete filas de la semana, cerradas incluidas, y las guarda de
+   * una vez. Es una sola operacion a proposito: guardar dia por dia podria
+   * dejar media semana escrita si algo falla a mitad.
+   *
+   * Devuelve el horario tal como quedo en la base, no lo que se envio: si Row
+   * Level Security rechaza la escritura, PostgREST no da error, responde con una
+   * lista vacia. Quien llama necesita poder distinguir esos dos casos.
+   */
+  guardarDisponibilidad(
+    profesionalId: string,
+    semana: WeeklyAvailability,
+  ): Promise<Disponibilidad[]>
 }

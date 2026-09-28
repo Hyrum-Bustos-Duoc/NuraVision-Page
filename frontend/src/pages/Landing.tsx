@@ -33,6 +33,8 @@ const STEPS = [
 ]
 
 export default function Landing() {
+  // `bookings` sigue siendo local: es lo unico que hay para marcar las horas
+  // ya tomadas al calcular la proxima libre.
   const { activeServices: services, siteContent, bookings } = useAppState()
 
   /**
@@ -49,24 +51,20 @@ export default function Landing() {
    */
   const catalogo = useServicios()
   const featured = catalogo.servicios.slice(0, 4)
-
   /**
-   * El equipo tambien sale de la base, por el mismo motivo que el catalogo.
+   * El equipo sale de la base, igual que los destacados.
    *
-   * Hasta aqui esta seccion leia `professionals` de `useAppState`, que solo
-   * conoce los datos de ejemplo: con el modo "solo Supabase" activo la portada
-   * se quedaba sin equipo, el contador del hero marcaba 0 y la tarjeta de
-   * "Proxima hora libre" no llegaba a aparecer nunca. Sin ese modo era peor,
-   * porque mostraba personas que no trabajan en el estudio y cuyos enlaces
-   * llevaban a una ficha inexistente.
+   * Se usa `useEquipoConAgenda` y no `useProfesionales` a proposito: trae
+   * ademas el horario semanal, que es lo que permite seguir mostrando la
+   * tarjeta de "proxima hora libre". Con la entidad de dominio a secas habria
+   * que quitarla, porque sin agenda no hay proxima hora que calcular.
    */
-  const { equipo, cargando: cargandoEquipo, error: errorEquipo } = useEquipoConAgenda()
+  const equipo = useEquipoConAgenda()
+  const professionals = equipo.equipo
 
-  // Las reservas siguen siendo locales: es lo que hay para marcar las horas ya
-  // tomadas al calcular la proxima disponible, igual que en `Professionals`.
-  const primeroDelEquipo = equipo[0]
-  const nextSlot = primeroDelEquipo
-    ? getNextAvailableSlots(primeroDelEquipo, bookings, 1)[0]
+  const firstProfessional = professionals[0]
+  const nextSlot = firstProfessional
+    ? getNextAvailableSlots(firstProfessional, bookings, 1)[0]
     : undefined
 
   return (
@@ -92,7 +90,12 @@ export default function Landing() {
           </div>
           <div className="mt-12 flex gap-10 border-t border-line-soft pt-8">
             <Stat value={String(catalogo.servicios.length || services.length)} label="servicios" />
-            <Stat value={String(equipo.length)} label="profesionales" />
+            {/* Mientras carga se muestra un guion en vez de un 0, que se leeria
+                como "el estudio no tiene profesionales". */}
+            <Stat
+              value={equipo.cargando || equipo.error ? '—' : String(professionals.length)}
+              label="profesionales"
+            />
             <Stat value="24/7" label="agenda en línea" />
           </div>
         </div>
@@ -104,10 +107,10 @@ export default function Landing() {
             alt="Estudio Nura"
             className="aspect-[4/5] w-full rounded-2xl"
           />
-          {primeroDelEquipo && nextSlot && (
+          {firstProfessional && nextSlot && (
             <div className="animate-fade-up absolute bottom-6 left-6 w-56 rounded-xl border border-line-soft bg-paper p-4 shadow-sm [animation-delay:320ms]">
               <Kicker>Próxima hora libre</Kicker>
-              <p className="mt-2 text-sm font-medium text-ink">{primeroDelEquipo.name}</p>
+              <p className="mt-2 text-sm font-medium text-ink">{firstProfessional.name}</p>
               <p className="text-sm text-muted">{nextSlot.label.replace(' ', ' · ')}</p>
             </div>
           )}
@@ -253,33 +256,51 @@ export default function Landing() {
             <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
-        {cargandoEquipo && (
-          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
-            Cargando el equipo…
-          </p>
-        )}
-
-        {!cargandoEquipo && errorEquipo && (
-          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
-            No pudimos cargar el equipo: {errorEquipo}
-          </p>
-        )}
-
-        {!cargandoEquipo && !errorEquipo && (
-          <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {equipo.map((p) => (
-              <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
-                <AppImage
-                  src={p.imageUrl}
-                  label="Retrato"
-                  alt={p.name}
-                  className="aspect-[3/4] w-full rounded-2xl"
-                />
-                <p className="mt-3 font-serif-display text-lg text-ink">{p.name}</p>
-                <p className="text-sm text-muted">{p.role}</p>
-              </Link>
+        {equipo.cargando && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i}>
+                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-line-soft" />
+                <div className="mt-3 h-5 w-28 animate-pulse rounded bg-line-soft" />
+              </div>
             ))}
           </div>
+        )}
+
+        {/* El fallo se dice, no se esconde. Antes se ocultaba con el argumento
+            de que la visitante no puede hacer nada al respecto, pero eso deja
+            un hueco mudo justo bajo el titulo "Nuestro equipo": no se
+            distingue de un estudio sin profesionales, y quien reporte el
+            problema no tendra nada que contar. */}
+        {!equipo.cargando && equipo.error && (
+          <p role="alert" className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            No pudimos cargar el equipo: {equipo.error}
+          </p>
+        )}
+
+        {!equipo.cargando && !equipo.error && professionals.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            Todavía no hay profesionales publicados.
+          </p>
+        )}
+
+        {/* La rejilla solo aparece cuando hay algo que poner: con error o
+            cargando, pintar un grid vacio debajo del aviso sobra. */}
+        {!equipo.cargando && !equipo.error && professionals.length > 0 && (
+        <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {professionals.map((p) => (
+            <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
+              <AppImage
+                src={p.imageUrl}
+                label="Retrato"
+                alt={p.name}
+                className="aspect-[3/4] w-full rounded-2xl"
+              />
+              <p className="mt-3 font-serif-display text-lg text-ink">{p.name}</p>
+              <p className="text-sm text-muted">{p.role}</p>
+            </Link>
+          ))}
+        </div>
         )}
       </section>
       </Reveal>

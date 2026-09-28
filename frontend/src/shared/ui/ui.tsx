@@ -125,6 +125,18 @@ export function AppImage({
  * es el unico estado con el que se pueden crear reservas desde el navegador
  * (ver 0003_reservas.sql). Sin el, una reserva recien hecha y leida de vuelta
  * no tendria como mostrarse.
+ *
+ * ESTA ES LA UNICA INSIGNIA DE ESTADO. Hubo una segunda en el modulo admin
+ * (`EstadoBadge`) que existia porque en su momento este tipo era solo
+ * `BookingStatus` y le faltaba 'pendiente'. Al agregarlo, `EstadoReserva` de la
+ * base —'pendiente' | 'confirmada' | 'completada' | 'cancelada'— paso a ser un
+ * subconjunto estricto de este tipo, de modo que una fila de la base entra aqui
+ * sin traduccion ninguna. Las dos insignias ya pintaban exactamente el mismo
+ * HTML, asi que la del modulo se elimino.
+ *
+ * 'en_curso' es el unico estado que sobra respecto de la base: lo usa el
+ * prototipo para la hora que se esta atendiendo ahora. Mientras siga ahi, este
+ * tipo es el mas amplio de los dos vocabularios y sirve para ambos.
  */
 export type BadgeStatus = BookingStatus | 'pendiente'
 
@@ -145,10 +157,18 @@ const statusLabels: Record<BadgeStatus, string> = {
 }
 
 export function StatusBadge({ status }: { status: BadgeStatus }) {
+  /**
+   * El respaldo no es decorativo: esta insignia se alimenta directamente del
+   * enum `estado_reserva` de la base. Si alguien agrega ahi un estado nuevo, los
+   * tipos de este archivo no se enteran hasta que se regeneren, y sin esto la
+   * insignia saldria con la clase "undefined" y sin texto: un hueco en blanco
+   * que no dice nada. Asi al menos se ve el estado crudo.
+   */
+  const estilo = statusStyles[status] ?? 'bg-line-soft text-muted'
+  const etiqueta = statusLabels[status] ?? String(status)
+
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[status]}`}>
-      {statusLabels[status]}
-    </span>
+    <span className={`rounded-full px-3 py-1 text-xs font-medium ${estilo}`}>{etiqueta}</span>
   )
 }
 

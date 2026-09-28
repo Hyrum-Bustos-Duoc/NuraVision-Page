@@ -6,13 +6,19 @@ import { getMonthDays, getSlotsForDate } from '@/shared/lib/availability'
 import { getWeekDates, parseISODate, WEEKDAYS_SHORT } from '@/shared/lib/format'
 import { Button, StatusBadge } from '@/shared/ui/ui'
 import type { Booking, Professional } from '@/shared/types'
+import { useMiFichaProfesional } from '@/modules/profesionales/ui/useMiFichaProfesional'
+import { FichaActiva, SelectorDeFicha } from '@/modules/profesionales/ui/SelectorDeFicha'
 
 type View = 'dia' | 'semana' | 'mes'
 
 export default function ProAgenda() {
-  const { currentUser, bookings, getProfessional, getService } = useAppState()
+  const { bookings, getService } = useAppState()
   const navigate = useNavigate()
-  const professional = getProfessional(currentUser?.professionalId ?? '')
+  // La ficha sale de la base: antes se buscaba en los datos de ejemplo con el
+  // `professionalId` del usuario de demostracion y, con el modo "solo
+  // Supabase" activo, no habia nada que encontrar.
+  const mia = useMiFichaProfesional()
+  const professional = mia.ficha
   const [view, setView] = useState<View>('dia')
 
   const myBookings = useMemo(
@@ -25,14 +31,21 @@ export default function ProAgenda() {
 
   if (!professional) {
     return (
-      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-        <p className="text-sm text-muted">No encontramos tu ficha de profesional.</p>
-      </div>
+      <SelectorDeFicha
+        equipo={mia.equipo}
+        cargando={mia.cargando}
+        error={mia.error}
+        onElegir={mia.elegir}
+      />
     )
   }
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      {!mia.vinculoDeclarado && mia.profesional && (
+        <FichaActiva nombre={mia.profesional.nombre} onCambiar={() => mia.elegir(null)} />
+      )}
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-4xl text-ink">Mi agenda</h1>

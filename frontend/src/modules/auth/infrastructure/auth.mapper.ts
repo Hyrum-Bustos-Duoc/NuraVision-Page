@@ -21,6 +21,14 @@ export const META_TELEFONO = 'telefono'
 export const APP_META_ES_STAFF = 'es_staff'
 
 /**
+ * Clave que vincula la cuenta con su ficha de `profesionales`.
+ *
+ * Se guarda como texto o como numero segun quien la escriba (panel de
+ * Supabase, API de administracion o SQL), asi que el mapper acepta ambos.
+ */
+export const APP_META_PROFESIONAL_ID = 'profesional_id'
+
+/**
  * `user_metadata` es Json libre: lo escribe el cliente y nadie valida su forma.
  * Cualquier cosa que no sea un texto con contenido se trata como ausente, en
  * vez de dejar que un numero o un objeto llegue a la interfaz tipado como
@@ -42,6 +50,28 @@ function esMarcaVerdadera(valor: unknown): boolean {
   return valor === true || valor === 'true'
 }
 
+/**
+ * El id de la ficha puede llegar como numero o como texto. Se normaliza a
+ * texto, que es como viaja el id en todo el dominio y en las rutas.
+ *
+ * Solo se acepta un entero, y esa exigencia no es cosmetica: TIENE QUE
+ * COINCIDIR CON LO QUE HACE `public.mi_profesional_id()` en 0007, que descarta
+ * con `~ '^[0-9]+$'` cualquier marca que no sea un entero. Si aqui se aceptara
+ * un `"abc"`, la interfaz llevaria a esa cuenta al panel de profesional
+ * mientras la base no le concede ni una fila: un panel vacio sin explicacion.
+ * Ante una marca mal escrita, las dos capas dicen lo mismo: sin vincular.
+ */
+const SOLO_DIGITOS = /^\d+$/
+
+function idOpcional(valor: unknown): string | null {
+  if (typeof valor === 'number') return Number.isInteger(valor) ? String(valor) : null
+  if (typeof valor === 'string') {
+    const limpio = valor.trim()
+    return SOLO_DIGITOS.test(limpio) ? limpio : null
+  }
+  return null
+}
+
 /** Usuario de Supabase -> entidad de dominio. */
 export function toUsuarioAuth(user: User): UsuarioAuth {
   const meta = user.user_metadata as Record<string, unknown> | null
@@ -57,5 +87,6 @@ export function toUsuarioAuth(user: User): UsuarioAuth {
     nombre: textoOpcional(meta?.[META_NOMBRE]),
     telefono: textoOpcional(meta?.[META_TELEFONO]),
     esStaff: esMarcaVerdadera(metaApp?.[APP_META_ES_STAFF]),
+    profesionalId: idOpcional(metaApp?.[APP_META_PROFESIONAL_ID]),
   }
 }
