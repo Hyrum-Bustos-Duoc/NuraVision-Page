@@ -85,6 +85,78 @@ versionados, de modo que todo el equipo dispone de ellos al hacer pull.
 `.claude/settings.local.json` queda fuera del control de versiones a proposito:
 son los permisos de cada maquina, no configuracion compartida.
 
+# Cuándo documentar en OpenSpec
+
+No todo cambio merece una propuesta. Abre un cambio OpenSpec (`/opsx:propose`)
+cuando se cumpla **al menos una** de estas condiciones:
+
+- **Toca varias capas**: front + base + políticas RLS, o cualquier combinación
+  que cruce `frontend/`, `supabase/` y `services/`.
+- **Hay ambigüedad real** sobre qué debería pasar en los casos límite, de modo
+  que dos personas razonables implementarían cosas distintas.
+- **Otra persona necesitará entender la decisión meses después**, y el código
+  por sí solo no la explica.
+- **Vas a descomponer algo grande** en trozos que se entregan por separado.
+
+Si no se cumple ninguna, implementa directamente. Una propuesta para "cambia el
+color del botón" es puro peso muerto, y el modo más rápido de que el equipo
+abandone la herramienta.
+
+## Cómo escribirla
+
+- **Criterios de aceptación falsables.** Un criterio sirve si se puede escribir
+  un test que lo rompa. "La reserva funciona bien" no es un criterio;
+  "reservar un bloque ya tomado devuelve error y no crea fila" sí lo es.
+- **Registra lo que se descartó y por qué.** El valor de una spec archivada
+  está tanto en lo que se decidió como en lo que se rechazó. Sin el motivo,
+  alguien volverá a proponerlo dentro de seis meses.
+- **Fechas absolutas, nunca relativas.** "La semana que viene" no significa
+  nada al leerlo en marzo. Escribe la fecha.
+- **Describe comportamiento observable, no archivos a crear.** La estructura de
+  archivos envejece mal y le quita al implementador la decisión que mejor sabe
+  tomar.
+- **Define el contrato de datos primero** si el cambio cruza capas: el shape
+  exacto que viaja entre SQL, TypeScript y Pydantic. Sin eso, las tres capas se
+  implementan en paralelo con tres ideas distintas del mismo objeto.
+- **Cierra el ciclo.** Una propuesta implementada pero sin archivar deja
+  `openspec/specs/` mintiendo. Al terminar, ejecuta `/opsx:archive`.
+
+El dueño de las specs es el agente `nv-pm`. Úsalo para escribirlas en lugar de
+redactarlas a mano: conoce el formato, la economía de la spec y los dueños de
+cada ruta.
+
+# Enrutado a agentes
+
+El repositorio tiene agentes especializados en `.claude/agents/`. No son
+opcionales ni decorativos: cada uno conoce la deuda técnica, los fallos típicos
+y el contrato de salida de su área.
+
+## Pruebas y QA
+
+**Toda verificación de una feature pasa por `nv-qa`.** No declares una feature
+terminada basándote en que el build compila: compilar no es funcionar.
+
+`nv-qa` diseña los casos desde los criterios de aceptación, ataca por clases de
+fallo (vacío, null, límites, tiempo, permisos, red, concurrencia, datos sucios)
+y reporta con pasos de reproducción. Es de solo lectura: encuentra el bug, no lo
+arregla. El arreglo lo hace el dueño de la ruta.
+
+Invócalo **antes de cerrar cualquier feature**, y también cuando un fallo sea
+intermitente o difícil de reproducir.
+
+## Otros enrutados obligatorios
+
+| Situación | Agente |
+|---|---|
+| Se toca `supabase/migrations/`, una política o una función `security definer` | `nv-rls-auditor` (auditoría, solo lectura) |
+| Cambia una columna, un endpoint o un modelo | `nv-contracts` |
+| Cualquier SQL | `nv-supabase` — es el único que escribe SQL |
+| Un cambio toca front, base y servicio Python a la vez | `nv-tech-lead` decide el enrutado |
+| Planificar una feature o escribir specs | `nv-pm` |
+
+Cuando una tarea no tenga dueño obvio, pregunta a `nv-tech-lead` antes de
+improvisar.
+
 # Reporte al finalizar una tarea
 
 Al terminar cualquier tarea, entrega un resumen breve y claro con esta estructura:
