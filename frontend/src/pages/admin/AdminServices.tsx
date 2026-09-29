@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useAppState } from '@/shared/state/AppState'
 import { useToast } from '@/shared/state/Toast'
 import { categoryLabel, serviceCategories } from '@/modules/servicios/domain/serviceCategories'
+import { useServiciosGestion } from '@/modules/servicios/ui/useServiciosGestion'
+import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import type { DatosServicio, Servicio } from '@/modules/servicios/application'
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { ImageUploader } from '@/shared/components/ImageUploader'
 import {
@@ -14,62 +16,86 @@ import {
 } from '@/shared/ui/form'
 import { AppImage, Button } from '@/shared/ui/ui'
 import { formatPrice } from '@/shared/lib/format'
-import type { Service, ServiceCategoryId } from '@/shared/types'
+import type { ServiceCategoryId } from '@/shared/types'
 
-type Draft = Omit<Service, 'id'>
+const BORRADOR_VACIO: DatosServicio = {
+  nombre: '',
+  categoria: 'unas',
+  descripcion: '',
+  descripcionLarga: '',
+  duracionMinutos: 60,
+  precioBase: 20000,
+  activo: true,
+  imagenUrl: null,
+  incluye: [],
+}
 
-const EMPTY_DRAFT: Draft = {
-  name: '',
-  category: 'unas',
-  shortDescription: '',
-  longDescription: '',
-  durationMin: 60,
-  price: 20000,
-  includes: [],
-  active: true,
+/** Entidad -> borrador del formulario. Solo quita el `id`. */
+function aBorrador(servicio: Servicio): DatosServicio {
+  return {
+    nombre: servicio.nombre,
+    categoria: servicio.categoria,
+    descripcion: servicio.descripcion,
+    descripcionLarga: servicio.descripcionLarga,
+    duracionMinutos: servicio.duracionMinutos,
+    precioBase: servicio.precioBase,
+    activo: servicio.activo,
+    imagenUrl: servicio.imagenUrl,
+    incluye: servicio.incluye,
+  }
 }
 
 export default function AdminServices() {
-  const { services, professionals, bookings, addService, updateService, deleteService } =
-    useAppState()
+  // El catalogo sale de Supabase. Antes venia de `useAppState`, que solo conoce
+  // los datos de ejemplo: crear o editar un servicio se quedaba en el navegador y
+  // desaparecia al recargar, mientras el catalogo publico —que si lee la base—
+  // seguia mostrando otra cosa.
+  const gestion = useServiciosGestion()
   const { toast } = useToast()
 
-  const [editing, setEditing] = useState<{ id?: string; draft: Draft } | null>(null)
-  const [deleting, setDeleting] = useState<Service | null>(null)
-
-  function openNew() {
-    setEditing({ draft: { ...EMPTY_DRAFT } })
-  }
-
-  function openEdit(service: Service) {
-    const { id: _id, ...draft } = service
-    setEditing({ id: service.id, draft })
-  }
+  const [editando, setEditando] = useState<{ id?: string; borrador: DatosServicio } | null>(null)
+  const [borrando, setBorrando] = useState<Servicio | null>(null)
 
   /**
-   * Dar de baja no borra: el servicio desaparece del catálogo del cliente pero
+   * Dar de baja no borra: el servicio desaparece del catalogo de la clienta pero
    * sigue existiendo para las reservas ya tomadas y para el historial.
    */
-  function toggleActive(service: Service) {
-    updateService(service.id, { active: !service.active })
+  async function alternarActivo(servicio: Servicio) {
+    const motivo = await gestion.actualizar(servicio.id, {
+      ...aBorrador(servicio),
+      activo: !servicio.activo,
+    })
+
+    if (motivo !== null) {
+      toast({ title: 'No se pudo cambiar el estado', description: motivo, tone: 'error' })
+      return
+    }
+
     toast({
-      title: service.active ? 'Servicio desactivado' : 'Servicio activado',
-      description: service.active
-        ? `${service.name} ya no admite nuevas reservas.`
-        : `${service.name} vuelve a estar disponible.`,
-      tone: service.active ? 'info' : 'success',
+      title: servicio.activo ? 'Servicio desactivado' : 'Servicio activado',
+      description: servicio.activo
+        ? `${servicio.nombre} ya no admite nuevas reservas.`
+        : `${servicio.nombre} vuelve a estar disponible.`,
+      tone: servicio.activo ? 'info' : 'success',
     })
   }
 
-  function handleSave(draft: Draft, id?: string) {
-    if (id) {
-      updateService(id, draft)
-      toast({ title: 'Servicio actualizado', description: draft.name })
-    } else {
-      addService(draft)
-      toast({ title: 'Servicio creado', description: draft.name })
+  async function guardar(borrador: DatosServicio, id?: string) {
+    const motivo = id ? await gestion.actualizar(id, borrador) : await gestion.crear(borrador)
+
+    if (motivo !== null) {
+      // El modal NO se cierra: se deja el formulario como estaba para que se
+      // pueda corregir sin volver a escribirlo todo.
+      toast({ title: 'No se guardó el servicio', description: motivo, tone: 'error' })
+      return
     }
-    setEditing(null)
+
+    toast({
+      title: id ? 'Servicio actualizado' : 'Servicio creado',
+      description: `${borrador.nombre} ya está en el catálogo público.`,
+      tone: 'success',
+    })
+    setEditando(null)
   }
 
   return (
@@ -81,126 +107,154 @@ export default function AdminServices() {
             Catálogo del estudio: lo que se publica aquí es lo que ven y reservan los clientes.
           </p>
         </div>
-        <Button onClick={openNew}>
+        <Button onClick={() => setEditando({ borrador: { ...BORRADOR_VACIO } })}>
           <Plus className="h-4 w-4" />
           Nuevo servicio
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-line-soft bg-paper">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
-              <th className="px-6 py-4 font-medium">Servicio</th>
-              <th className="px-6 py-4 font-medium">Categoría</th>
-              <th className="px-6 py-4 font-medium">Duración</th>
-              <th className="px-6 py-4 font-medium">Precio</th>
-              <th className="px-6 py-4 font-medium">Profesionales</th>
-              <th className="px-6 py-4 font-medium">Estado</th>
-              <th className="px-6 py-4" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line-soft">
-            {services.map((s) => {
-              const offeredBy = professionals.filter((p) => p.serviceIds.includes(s.id)).length
-              return (
-                <tr
-                  key={s.id}
-                  className={`transition-colors hover:bg-ivory/70 ${s.active ? '' : 'opacity-55'}`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <AppImage
-                        src={s.imageUrl}
-                        label={s.name.slice(0, 1)}
-                        alt={s.name}
-                        className="h-11 w-11 shrink-0 rounded-lg"
-                      />
-                      <div>
-                        <p className="font-medium text-ink">{s.name}</p>
-                        <p className="text-xs text-muted">{s.shortDescription}</p>
+      {gestion.cargando && <EsqueletoTabla />}
+
+      {!gestion.cargando && gestion.error && (
+        <p
+          role="alert"
+          className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted"
+        >
+          No pudimos cargar el catálogo: {gestion.error}
+        </p>
+      )}
+
+      {!gestion.cargando && !gestion.error && (
+        <div className="overflow-x-auto rounded-2xl border border-line-soft bg-paper">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
+                <th className="px-6 py-4 font-medium">Servicio</th>
+                <th className="px-6 py-4 font-medium">Categoría</th>
+                <th className="px-6 py-4 font-medium">Duración</th>
+                <th className="px-6 py-4 font-medium">Precio</th>
+                <th className="px-6 py-4 font-medium">Profesionales</th>
+                <th className="px-6 py-4 font-medium">Estado</th>
+                <th className="px-6 py-4" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line-soft">
+              {gestion.servicios.map((s) => {
+                const loRealizan = gestion.profesionalesPorServicio[s.id] ?? 0
+                return (
+                  <tr
+                    key={s.id}
+                    className={`transition-colors hover:bg-ivory/70 ${s.activo ? '' : 'opacity-55'}`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <AppImage
+                          src={fotoDeServicio(s)}
+                          label={s.nombre.slice(0, 1)}
+                          alt={s.nombre}
+                          className="h-11 w-11 shrink-0 rounded-lg"
+                        />
+                        <div>
+                          <p className="font-medium text-ink">{s.nombre}</p>
+                          <p className="text-xs text-muted">{s.descripcion}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-ink">{categoryLabel(s.category)}</td>
-                  <td className="px-6 py-4 text-ink">{s.durationMin} min</td>
-                  <td className="px-6 py-4 text-ink">{formatPrice(s.price)}</td>
-                  <td className="px-6 py-4 text-muted">
-                    {offeredBy > 0 ? offeredBy : <span className="text-danger">Sin asignar</span>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleActive(s)}
-                      aria-pressed={s.active}
-                      aria-label={`${s.active ? 'Desactivar' : 'Activar'} ${s.name}`}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        s.active
-                          ? 'border-olive-300 bg-olive-50 text-olive-700 hover:bg-olive-100'
-                          : 'border-line bg-ivory text-muted hover:bg-line-soft'
-                      }`}
-                    >
-                      {s.active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      {s.active ? 'Activo' : 'Inactivo'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
+                    </td>
+                    <td className="px-6 py-4 text-ink">{categoryLabel(s.categoria)}</td>
+                    <td className="px-6 py-4 text-ink">{s.duracionMinutos} min</td>
+                    <td className="px-6 py-4 text-ink">{formatPrice(s.precioBase)}</td>
+                    <td className="px-6 py-4 text-muted">
+                      {/* Un servicio que nadie realiza aparece en el catalogo y no
+                          se puede reservar, porque no hay con quien. */}
+                      {loRealizan > 0 ? loRealizan : <span className="text-danger">Sin asignar</span>}
+                    </td>
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => openEdit(s)}
-                        aria-label={`Editar ${s.name}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                        onClick={() => void alternarActivo(s)}
+                        disabled={gestion.guardando}
+                        aria-pressed={s.activo}
+                        aria-label={`${s.activo ? 'Desactivar' : 'Activar'} ${s.nombre}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                          s.activo
+                            ? 'border-olive-300 bg-olive-50 text-olive-700 hover:bg-olive-100'
+                            : 'border-line bg-ivory text-muted hover:bg-line-soft'
+                        }`}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar
+                        {s.activo ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        )}
+                        {s.activo ? 'Activo' : 'Inactivo'}
                       </button>
-                      <button
-                        onClick={() => setDeleting(s)}
-                        aria-label={`Eliminar ${s.name}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Eliminar
-                      </button>
-                    </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setEditando({ id: s.id, borrador: aBorrador(s) })}
+                          aria-label={`Editar ${s.nombre}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setBorrando(s)}
+                          aria-label={`Eliminar ${s.nombre}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+              {gestion.servicios.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-muted">
+                    Todavía no hay servicios. Crea el primero con “Nuevo servicio”.
                   </td>
                 </tr>
-              )
-            })}
-            {services.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-6 py-10 text-center text-sm text-muted">
-                  Todavía no hay servicios. Crea el primero con “Nuevo servicio”.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {editing && (
-        <ServiceFormModal
-          initial={editing.draft}
-          isNew={!editing.id}
-          onCancel={() => setEditing(null)}
-          onSave={(draft) => handleSave(draft, editing.id)}
+      {editando && (
+        <ModalServicio
+          inicial={editando.borrador}
+          esNuevo={!editando.id}
+          guardando={gestion.guardando}
+          onCancel={() => setEditando(null)}
+          onSave={(borrador) => void guardar(borrador, editando.id)}
         />
       )}
 
-      {deleting && (
-        <DeleteServiceDialog
-          service={deleting}
-          professionalCount={
-            professionals.filter((p) => p.serviceIds.includes(deleting.id)).length
-          }
-          activeBookings={
-            bookings.filter(
-              (b) => b.serviceId === deleting.id && b.status !== 'cancelada' && b.status !== 'completada',
-            ).length
-          }
-          onClose={() => setDeleting(null)}
+      {borrando && (
+        <DialogoBorrarServicio
+          servicio={borrando}
+          loRealizan={gestion.profesionalesPorServicio[borrando.id] ?? 0}
+          onClose={() => setBorrando(null)}
           onConfirm={() => {
-            deleteService(deleting.id)
-            toast({ title: 'Servicio eliminado', description: deleting.name, tone: 'info' })
+            const servicio = borrando
+            setBorrando(null)
+            void gestion.eliminar(servicio.id).then((motivo) => {
+              if (motivo !== null) {
+                // El caso habitual: hay reservas de este servicio y la clave
+                // foranea lo impide. El repositorio traduce ese error a la
+                // alternativa correcta, que es desactivarlo.
+                toast({ title: 'No se pudo eliminar', description: motivo, tone: 'error' })
+                return
+              }
+              toast({
+                title: 'Servicio eliminado',
+                description: servicio.nombre,
+                tone: 'info',
+              })
+            })
           }}
         />
       )}
@@ -208,57 +262,93 @@ export default function AdminServices() {
   )
 }
 
-function ServiceFormModal({
-  initial,
-  isNew,
+/** Hueco con la forma de la tabla, para que la pagina no salte de altura. */
+function EsqueletoTabla() {
+  return (
+    <div className="rounded-2xl border border-line-soft bg-paper p-6" aria-busy="true">
+      {[0, 1, 2, 3, 4].map((fila) => (
+        <div key={fila} className="flex items-center gap-4 border-b border-line-soft py-4 last:border-0">
+          <div className="h-11 w-11 shrink-0 animate-pulse rounded-lg bg-line-soft" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-48 animate-pulse rounded bg-line-soft" />
+            <div className="h-3 w-64 animate-pulse rounded bg-line-soft" />
+          </div>
+          <div className="h-7 w-20 animate-pulse rounded-full bg-line-soft" />
+        </div>
+      ))}
+      <p className="pt-4 text-sm text-muted">Cargando el catálogo…</p>
+    </div>
+  )
+}
+
+function ModalServicio({
+  inicial,
+  esNuevo,
+  guardando,
   onCancel,
   onSave,
 }: {
-  initial: Draft
-  isNew: boolean
+  inicial: DatosServicio
+  esNuevo: boolean
+  guardando: boolean
   onCancel: () => void
-  onSave: (draft: Draft) => void
+  onSave: (borrador: DatosServicio) => void
 }) {
-  const [draft, setDraft] = useState<Draft>(initial)
-  const [showErrors, setShowErrors] = useState(false)
+  const [borrador, setBorrador] = useState<DatosServicio>(inicial)
+  const [mostrarErrores, setMostrarErrores] = useState(false)
 
-  const errors = useMemo(() => {
-    const next: Partial<Record<keyof Draft, string>> = {}
-    if (!draft.name.trim()) next.name = 'El nombre es obligatorio.'
-    if (!draft.shortDescription.trim()) next.shortDescription = 'Escribe una descripción breve.'
-    if (draft.durationMin <= 0) next.durationMin = 'La duración debe ser mayor a 0.'
-    if (draft.price < 0) next.price = 'El precio no puede ser negativo.'
-    return next
-  }, [draft])
+  /**
+   * Estos avisos son los del formulario, campo por campo, para poder señalar
+   * cual esta mal. La regla de verdad vive en el dominio
+   * (`motivoParaNoGuardarServicio`) y la comprueba el caso de uso: si algo se
+   * colara por aqui, el guardado lo detiene igual.
+   */
+  const errores = useMemo(() => {
+    const siguiente: Partial<Record<keyof DatosServicio, string>> = {}
+    if (!borrador.nombre.trim()) siguiente.nombre = 'El nombre es obligatorio.'
+    if (!borrador.descripcion.trim()) {
+      siguiente.descripcion = 'Escribe una descripción breve.'
+    }
+    if (borrador.duracionMinutos <= 0) {
+      siguiente.duracionMinutos = 'La duración debe ser mayor a 0.'
+    } else if (borrador.duracionMinutos % 30 !== 0) {
+      // La agenda trabaja en tramos de 30 minutos; otra duracion deja huecos
+      // imposibles de reservar.
+      siguiente.duracionMinutos = 'Debe ser múltiplo de 30 minutos.'
+    }
+    if (borrador.precioBase < 0) siguiente.precioBase = 'El precio no puede ser negativo.'
+    return siguiente
+  }, [borrador])
 
-  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
-    setDraft((prev) => ({ ...prev, [key]: value }))
+  const set = <K extends keyof DatosServicio>(clave: K, valor: DatosServicio[K]) =>
+    setBorrador((previo) => ({ ...previo, [clave]: valor }))
 
   return (
     <Modal
       open
       onClose={onCancel}
-      title={isNew ? 'Nuevo servicio' : 'Editar servicio'}
-      description="Los cambios se reflejan de inmediato en el catálogo público."
+      title={esNuevo ? 'Nuevo servicio' : 'Editar servicio'}
+      description="Los cambios se guardan en la base y se reflejan de inmediato en el catálogo público."
       footer={
         <>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={guardando}>
             Cancelar
           </Button>
           <Button
+            disabled={guardando}
             onClick={() => {
-              if (Object.keys(errors).length > 0) {
-                setShowErrors(true)
+              if (Object.keys(errores).length > 0) {
+                setMostrarErrores(true)
                 return
               }
               onSave({
-                ...draft,
-                name: draft.name.trim(),
-                includes: draft.includes.map((i) => i.trim()).filter(Boolean),
+                ...borrador,
+                nombre: borrador.nombre.trim(),
+                incluye: borrador.incluye.map((i) => i.trim()).filter(Boolean),
               })
             }}
           >
-            {isNew ? 'Crear servicio' : 'Guardar cambios'}
+            {guardando ? 'Guardando…' : esNuevo ? 'Crear servicio' : 'Guardar cambios'}
           </Button>
         </>
       }
@@ -266,66 +356,66 @@ function ServiceFormModal({
       <div className="space-y-5">
         <ImageUploader
           label="Fotografía"
-          value={draft.imageUrl}
-          onChange={(imageUrl) => set('imageUrl', imageUrl)}
-          hint="Se muestra en el catálogo, el detalle del servicio y el resumen de la reserva."
+          value={borrador.imagenUrl ?? undefined}
+          onChange={(imagenUrl) => set('imagenUrl', imagenUrl ?? null)}
+          hint="Si la dejas vacía, se usa una imagen elegida automáticamente según el nombre del servicio."
         />
 
         <TextField
           label="Nombre"
-          value={draft.name}
-          onChange={(v) => set('name', v)}
+          value={borrador.nombre}
+          onChange={(v) => set('nombre', v)}
           placeholder="Manicure Ritual Nura"
-          error={showErrors ? errors.name : undefined}
+          error={mostrarErrores ? errores.nombre : undefined}
         />
 
         <div className="grid gap-5 sm:grid-cols-3">
           <SelectField
             label="Categoría"
-            value={draft.category}
-            onChange={(v) => set('category', v as ServiceCategoryId)}
+            value={borrador.categoria}
+            onChange={(v) => set('categoria', v as ServiceCategoryId)}
             options={serviceCategories.map((c) => ({ value: c.id, label: c.label }))}
           />
           <NumberField
             label="Duración"
-            value={draft.durationMin}
-            onChange={(v) => set('durationMin', v)}
-            min={15}
-            step={15}
+            value={borrador.duracionMinutos}
+            onChange={(v) => set('duracionMinutos', v)}
+            min={30}
+            step={30}
             suffix="min"
-            error={showErrors ? errors.durationMin : undefined}
+            error={mostrarErrores ? errores.duracionMinutos : undefined}
           />
           <NumberField
             label="Precio"
-            value={draft.price}
-            onChange={(v) => set('price', v)}
+            value={borrador.precioBase}
+            onChange={(v) => set('precioBase', v)}
             step={1000}
             suffix="CLP"
-            error={showErrors ? errors.price : undefined}
+            error={mostrarErrores ? errores.precioBase : undefined}
           />
         </div>
 
         <TextField
           label="Descripción breve"
-          value={draft.shortDescription}
-          onChange={(v) => set('shortDescription', v)}
+          value={borrador.descripcion}
+          onChange={(v) => set('descripcion', v)}
           placeholder="Limado, cutículas, hidratación profunda y esmaltado a elección."
           hint="Se muestra en las tarjetas del catálogo."
-          error={showErrors ? errors.shortDescription : undefined}
+          error={mostrarErrores ? errores.descripcion : undefined}
         />
 
         <TextAreaField
           label="Descripción completa"
-          value={draft.longDescription}
-          onChange={(v) => set('longDescription', v)}
+          value={borrador.descripcionLarga}
+          onChange={(v) => set('descripcionLarga', v)}
           rows={4}
           hint="Aparece en la página de detalle del servicio."
         />
 
         <StringListField
           label="Incluye"
-          values={draft.includes}
-          onChange={(v) => set('includes', v)}
+          values={borrador.incluye}
+          onChange={(v) => set('incluye', v)}
           placeholder="Agregar ítem"
           hint="Lista de lo que contempla el servicio."
         />
@@ -334,16 +424,14 @@ function ServiceFormModal({
   )
 }
 
-function DeleteServiceDialog({
-  service,
-  professionalCount,
-  activeBookings,
+function DialogoBorrarServicio({
+  servicio,
+  loRealizan,
   onClose,
   onConfirm,
 }: {
-  service: Service
-  professionalCount: number
-  activeBookings: number
+  servicio: Servicio
+  loRealizan: number
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -352,7 +440,7 @@ function DeleteServiceDialog({
       open
       onClose={onClose}
       onConfirm={onConfirm}
-      title={`Eliminar “${service.name}”`}
+      title={`Eliminar “${servicio.nombre}”`}
       confirmLabel="Eliminar servicio"
       description={
         <div className="space-y-3">
@@ -360,21 +448,23 @@ function DeleteServiceDialog({
             El servicio dejará de aparecer en el catálogo y se quitará de los profesionales que lo
             realizan.
           </p>
-          {professionalCount > 0 && (
+          {loRealizan > 0 && (
             <p>
               Lo realizan{' '}
               <strong className="text-ink">
-                {professionalCount} {professionalCount === 1 ? 'profesional' : 'profesionales'}
+                {loRealizan} {loRealizan === 1 ? 'profesional' : 'profesionales'}
               </strong>
               .
             </p>
           )}
-          {activeBookings > 0 && (
-            <p className="rounded-lg bg-danger-soft px-4 py-3 text-danger">
-              Hay {activeBookings} {activeBookings === 1 ? 'reserva activa' : 'reservas activas'} con
-              este servicio. Se conservan en el historial, pero conviene reprogramarlas.
-            </p>
-          )}
+          {/* No se cuentan las reservas de antemano: eso serian dos consultas mas
+              para adivinar algo que la base ya sabe. Si hay reservas, la clave
+              foranea impide el borrado y el mensaje de error propone
+              desactivarlo, que es la salida correcta. */}
+          <p className="rounded-lg bg-danger-soft px-4 py-3 text-danger">
+            Si el servicio tiene reservas asociadas no se podrá eliminar. En ese caso, desactívalo
+            para retirarlo del catálogo sin perder el historial.
+          </p>
         </div>
       }
     />

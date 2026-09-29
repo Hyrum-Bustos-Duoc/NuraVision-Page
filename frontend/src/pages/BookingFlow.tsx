@@ -5,7 +5,7 @@ import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import type { Servicio } from '@/modules/servicios/domain/servicio.types'
 import { useServicioDetalle } from '@/modules/servicios/ui/useServicioDetalle'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
-import { imagenDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfesionalesPorServicio'
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
@@ -42,7 +42,7 @@ interface ServicioReservaVista {
   precioBase: number
   /**
    * La tabla `servicios` aun no tiene columna de imagen: la resuelve
-   * `imagenDeServicio`, que siempre devuelve una. Por eso no es opcional y la
+   * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
@@ -55,7 +55,7 @@ function toVista(servicio: Servicio): ServicioReservaVista {
     categoria: servicio.categoria,
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
-    imagenUrl: imagenDeServicio(servicio.nombre, servicio.categoria),
+    imagenUrl: fotoDeServicio(servicio),
   }
 }
 
@@ -443,7 +443,7 @@ function ServiceStep({
                     mismo radio de la tarjeta, sin redondearla por su cuenta:
                     asi no quedan esquinas dobles. */}
                 <AppImage
-                  src={imagenDeServicio(s.nombre, s.categoria)}
+                  src={fotoDeServicio(s)}
                   label={s.nombre.split(' ')[0].toUpperCase()}
                   alt={s.nombre}
                   className="aspect-[4/3] w-full"
