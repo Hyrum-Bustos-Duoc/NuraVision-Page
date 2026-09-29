@@ -1,6 +1,6 @@
 import type { WeeklyAvailability } from '@/shared/types'
 import type { Disponibilidad } from './disponibilidad.types'
-import type { Profesional } from './profesional.types'
+import type { DatosProfesional, Profesional } from './profesional.types'
 
 /** Puerto de acceso a profesionales y sus horarios. */
 export interface ProfesionalRepository {
@@ -47,4 +47,41 @@ export interface ProfesionalRepository {
     profesionalId: string,
     semana: WeeklyAvailability,
   ): Promise<Disponibilidad[]>
+
+  /**
+   * TODO el equipo, activos e inactivos, ordenados por nombre.
+   *
+   * Es lo que necesita el panel y no `listarActivos`: quien gestiona el equipo
+   * tiene que poder ver a alguien dado de baja para reactivarlo.
+   */
+  listarTodos(): Promise<Profesional[]>
+
+  /** Ids de los servicios que realiza. Vacio si no tiene ninguno asignado. */
+  listarServiciosAsignados(profesionalId: string): Promise<string[]>
+
+  /**
+   * Da de alta una ficha con sus servicios y su horario.
+   *
+   * El horario llega como parametro y no se genera aqui: el formulario del panel
+   * lo muestra y se puede ajustar antes de guardar, asi que generarlo dentro
+   * significaria descartar en silencio lo que se haya elegido. Quien no quiera
+   * decidirlo pasa `semanaPorDefecto()`.
+   *
+   * Son tres tablas y PostgREST no tiene transacciones entre peticiones, asi que
+   * la implementacion deja dicho que se guardo si algo falla a mitad. Ver el
+   * comentario del repositorio.
+   */
+  crear(datos: DatosProfesional, horario: WeeklyAvailability): Promise<Profesional>
+
+  /** Guarda la ficha y reemplaza por completo su lista de servicios. */
+  actualizar(id: string, datos: DatosProfesional): Promise<Profesional>
+
+  /**
+   * Borra una ficha.
+   *
+   * `reservas.profesional_id` apunta aqui, asi que con reservas de por medio la
+   * clave foranea lo impide; la alternativa correcta es desactivarla, que
+   * conserva el historial.
+   */
+  eliminar(id: string): Promise<void>
 }

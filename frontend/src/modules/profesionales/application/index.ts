@@ -14,3 +14,12 @@ export { guardarDisponibilidad } from './guardar-disponibilidad.usecase'
 export type { Profesional } from '../domain/profesional.types'
 export type { Disponibilidad } from '../domain/disponibilidad.types'
 export type { ProfesionalRepository } from '../domain/profesional.repository'
+export {
+  listarTodoElEquipo,
+  obtenerServiciosAsignados,
+  crearProfesional,
+  actualizarProfesional,
+  eliminarProfesional,
+} from './gestionar-equipo.usecase'
+export type { DatosProfesional } from '../domain/profesional.types'
+export { MAX_EXPERIENCIA } from '../domain/profesional.reglas'

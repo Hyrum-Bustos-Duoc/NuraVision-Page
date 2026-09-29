@@ -194,3 +194,31 @@ export function fromWeeklyAvailability(
 
   return filas
 }
+
+/**
+ * La semana con la que se da de alta a alguien del equipo: lunes a sabado, de
+ * 10:00 a 19:00.
+ *
+ * Es el horario que ya tienen las ocho profesionales de la base, asi que una
+ * ficha nueva nace consistente con el resto en vez de con la semana cerrada que
+ * devuelve el horario vacio —que dejaria a esa persona invisible en el flujo de
+ * reserva sin que nada lo explicara—.
+ *
+ * Devuelve un `WeeklyAvailability` y no filas, para que el alta pase por
+ * `fromWeeklyAvailability` como cualquier otro guardado: un solo camino de
+ * escritura, ya comprobado, en vez de dos que pueden separarse.
+ */
+export function semanaPorDefecto(): WeeklyAvailability {
+  const cerrado: DayAvailability = { enabled: false, start: '10:00', end: '19:00', breaks: [] }
+  const abierto: DayAvailability = { enabled: true, start: '10:00', end: '19:00', breaks: [] }
+
+  return {
+    0: cerrado,
+    1: abierto,
+    2: abierto,
+    3: abierto,
+    4: abierto,
+    5: abierto,
+    6: abierto,
+  }
+}

@@ -11,3 +11,11 @@ export { obtenerServiciosPorIds } from './obtener-servicios-por-ids.usecase'
 export { obtenerServiciosDeProfesional } from './obtener-servicios-de-profesional.usecase'
 export type { Servicio } from '../domain/servicio.types'
 export type { ServicioRepository } from '../domain/servicio.repository'
+export {
+  listarTodosLosServicios,
+  contarProfesionalesPorServicio,
+  crearServicio,
+  actualizarServicio,
+  eliminarServicio,
+} from './gestionar-servicios.usecase'
+export type { DatosServicio } from '../domain/servicio.types'

@@ -17,6 +17,16 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 /** Enum `estado_reserva` de Postgres. */
 export type EstadoReserva = 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
 
+/**
+ * Enum `usuario_rol` de Postgres.
+ *
+ * Confirmado contra el proyecto preguntandole al servidor por un valor invalido,
+ * que devuelve la lista completa. OJO con 'admin': NO es 'administrador', que es
+ * como se llama el rol equivalente del prototipo en `shared/types`. Los dos
+ * vocabularios conviven y no se pueden intercambiar sin traducir.
+ */
+export type UsuarioRol = 'cliente' | 'profesional' | 'admin'
+
 export interface Database {
   public: {
     Tables: {
@@ -30,6 +40,12 @@ export interface Database {
           categoria: string | null
           /** text */
           descripcion: string | null
+          /** text, nullable (0010). Foto propia; si falta, se deduce del nombre. */
+          imagen_url: string | null
+          /** text, nullable (0010). Texto de la pagina de detalle. */
+          descripcion_larga: string | null
+          /** jsonb, siempre lista (0010 lo exige con un check). */
+          incluye: Json
           /** integer */
           duracion_minutos: number
           /** numeric */
@@ -42,6 +58,9 @@ export interface Database {
           nombre: string
           categoria?: string | null
           descripcion?: string | null
+          imagen_url?: string | null
+          descripcion_larga?: string | null
+          incluye?: Json
           duracion_minutos: number
           precio_base: number
           activo?: boolean
@@ -51,9 +70,57 @@ export interface Database {
           nombre?: string
           categoria?: string | null
           descripcion?: string | null
+          imagen_url?: string | null
+          descripcion_larga?: string | null
+          incluye?: Json
           duracion_minutos?: number
           precio_base?: number
           activo?: boolean
+        }
+        Relationships: []
+      }
+      /**
+       * Perfiles de las cuentas. Puesta bajo control de versiones en 0010, que
+       * ademas le agrego `email` y el trigger que la rellena al darse de alta
+       * una cuenta.
+       *
+       * `id` es el mismo uuid de `auth.users`, o sea lo que devuelve
+       * `auth.uid()`. El correo es una REPLICA: la fuente es `auth.users`, que
+       * el navegador no puede leer.
+       */
+      perfiles: {
+        Row: {
+          /** uuid. La misma clave que auth.users. */
+          id: string
+          /** text, nullable: sale de user_metadata y puede no venir. */
+          nombre: string | null
+          /** text, nullable */
+          telefono: string | null
+          /** text, nullable: replica de auth.users.email (0010). */
+          email: string | null
+          rol: UsuarioRol
+          /** bigint, nullable (0010). Replica de app_metadata.profesional_id. */
+          profesional_id: number | null
+          /** timestamptz */
+          creado_en: string
+        }
+        Insert: {
+          id: string
+          nombre?: string | null
+          telefono?: string | null
+          email?: string | null
+          rol?: UsuarioRol
+          profesional_id?: number | null
+          creado_en?: string
+        }
+        Update: {
+          id?: string
+          nombre?: string | null
+          telefono?: string | null
+          email?: string | null
+          rol?: UsuarioRol
+          profesional_id?: number | null
+          creado_en?: string
         }
         Relationships: []
       }
@@ -69,6 +136,12 @@ export interface Database {
           avatar_url: string | null
           /** boolean */
           activo: boolean
+          /** integer, 0..70 (0010). 0 = sin declarar. */
+          experiencia_anios: number
+          /** text, nullable (0010). Reseña de la ficha publica. */
+          biografia: string | null
+          /** text, nullable (0010). Vocabulario libre, como servicios.categoria. */
+          categoria: string | null
         }
         Insert: {
           id?: number
@@ -76,6 +149,9 @@ export interface Database {
           especialidad: string
           avatar_url?: string | null
           activo?: boolean
+          experiencia_anios?: number
+          biografia?: string | null
+          categoria?: string | null
         }
         Update: {
           id?: number
@@ -83,6 +159,9 @@ export interface Database {
           especialidad?: string
           avatar_url?: string | null
           activo?: boolean
+          experiencia_anios?: number
+          biografia?: string | null
+          categoria?: string | null
         }
         Relationships: []
       }
@@ -211,6 +290,7 @@ export interface Database {
     Functions: Record<never, never>
     Enums: {
       estado_reserva: EstadoReserva
+      usuario_rol: UsuarioRol
     }
     CompositeTypes: Record<never, never>
   }
