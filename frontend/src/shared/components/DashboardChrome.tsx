@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, Menu, X, type LucideIcon } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
+import { useAuth } from '@/modules/auth/ui/useAuth'
+import { initialsFromName } from '@/shared/lib/format'
 
 export interface NavItem {
   to: string
@@ -10,16 +12,35 @@ export interface NavItem {
   end?: boolean
 }
 
+/**
+ * Quien aparece en la tarjeta del pie del panel lateral.
+ *
+ * Existe porque el nombre no siempre sale del mismo sitio. Con los atajos del
+ * prototipo viene de `useAppState`, que devuelve una persona inventada; con una
+ * sesion real de Supabase vinculada a una ficha, tiene que venir de la base.
+ * Quien sabe cual de los dos aplica es cada panel, no este componente: el de
+ * profesional resuelve su ficha y la pasa por aqui.
+ */
+export interface PanelIdentity {
+  name: string
+  initials: string
+  subtitle: string
+}
+
 export function DashboardShell({
   sectionLabel,
   userSubtitle,
   navItems,
+  identity,
 }: {
   sectionLabel: string
   userSubtitle: string
   navItems: NavItem[]
+  /** Reemplaza al usuario del prototipo en la tarjeta del pie. */
+  identity?: PanelIdentity
 }) {
   const { currentUser, logout } = useAppState()
+  const { usuario, signOut: cerrarSesionSupabase } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -27,8 +48,40 @@ export function DashboardShell({
   // El panel lateral se cierra al navegar en pantallas pequeñas.
   useEffect(() => setSidebarOpen(false), [pathname])
 
-  function signOut() {
+  /**
+   * La tarjeta se pinta con lo que llegue por `identity` y, si no llega, con el
+   * usuario del prototipo.
+   *
+   * Antes solo existia la segunda mitad, y eso tenia un efecto que pasaba
+   * desapercibido: quien entraba unicamente con Supabase no tenia `currentUser`,
+   * asi que la tarjeta no se pintaba... y con ella desaparecia el unico boton de
+   * cerrar sesion del panel.
+   */
+  const tarjeta: PanelIdentity | null =
+    identity ??
+    (currentUser
+      ? { name: currentUser.name, initials: currentUser.initials, subtitle: userSubtitle }
+      : usuario
+        ? {
+            name: usuario.nombre ?? usuario.email,
+            initials: initialsFromName(usuario.nombre ?? usuario.email),
+            subtitle: userSubtitle,
+          }
+        : null)
+
+  async function signOut() {
+    // Se cierran las dos sesiones: quedarse con una abierta es lo que hacia que
+    // «Cerrar sesión» pareciera no funcionar, porque la guarda de ruta mira
+    // ambas y con cualquiera de las dos seguia dando acceso.
     logout()
+    if (usuario) {
+      try {
+        await cerrarSesionSupabase()
+      } catch {
+        // Si la llamada falla, la sesion local ya se limpio y la navegacion
+        // sigue: es mejor salir del panel que dejar a la persona atrapada.
+      }
+    }
     navigate('/')
   }
 
@@ -112,15 +165,15 @@ export function DashboardShell({
           })}
         </nav>
 
-        {currentUser && (
+        {tarjeta && (
           <div className="mt-8 border-t border-white/10 pt-5">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white">
-                {currentUser.initials}
+                {tarjeta.initials}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">{currentUser.name}</p>
-                <p className="truncate text-xs text-white/45">{userSubtitle}</p>
+                <p className="truncate text-sm font-medium text-white">{tarjeta.name}</p>
+                <p className="truncate text-xs text-white/45">{tarjeta.subtitle}</p>
               </div>
             </div>
             <button
@@ -146,9 +199,9 @@ export function DashboardShell({
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
             {sectionLabel}
           </p>
-          {currentUser && (
+          {tarjeta && (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[11px] font-medium text-white">
-              {currentUser.initials}
+              {tarjeta.initials}
             </div>
           )}
         </div>

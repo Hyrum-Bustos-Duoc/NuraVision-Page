@@ -80,4 +80,24 @@ export function monthLabel(year: number, month: number): string {
   return `${capitalized} ${year}`
 }
 
+/**
+ * Iniciales para un avatar, a partir de un nombre.
+ *
+ * Los datos de ejemplo traian las iniciales ya escritas ('CR' para «Camila
+ * Reyes»), pero la tabla `profesionales` solo guarda el nombre, y ademas lo
+ * guarda en una sola palabra: «Berenice», «Nicol». De ahi las dos ramas.
+ *
+ *   'Camila Reyes' -> 'CR'      (dos palabras: una letra de cada una)
+ *   'Berenice'     -> 'BE'      (una sola: sus dos primeras letras)
+ *
+ * Devuelve cadena vacia si no hay nada aprovechable, en vez de un placeholder:
+ * un circulo vacio se lee mejor que una interrogacion.
+ */
+export function initialsFromName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return ''
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[1][0]).toUpperCase()
+}
+
 export { WEEKDAYS_SHORT, MONTHS_SHORT }

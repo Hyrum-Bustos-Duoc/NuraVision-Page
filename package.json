@@ -1,0 +1,12 @@
+{
+  "name": "nuravision-page",
+  "private": true,
+  "description": "Herramientas del repositorio. La aplicación vive en frontend/ y tiene su propio package.json.",
+  "scripts": {
+    "openspec": "openspec"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "1.13.1",
+    "supabase": "^2.118.0"
+  }
+}

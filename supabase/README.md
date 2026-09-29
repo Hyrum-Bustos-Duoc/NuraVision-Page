@@ -8,9 +8,11 @@ frontend y con datos de ejemplo para recorrer el flujo de reserva completo.
 
 | Archivo | Qué hace |
 | --- | --- |
-| `migrations/0001_esquema_inicial.sql` | Crea las 4 tablas, con claves e índices. |
-| `migrations/0002_rls.sql` | Activa Row Level Security y abre la lectura pública. |
-| `seed.sql` | Carga datos de ejemplo. Opcional, pero recomendado. |
+| `migrations/0001_esquema_inicial.sql` | Crea las 4 tablas del catálogo, con claves e índices. |
+| `migrations/0002_rls.sql` | Activa Row Level Security y abre la lectura pública de esas 4. |
+| `migrations/0003_reservas.sql` | Crea `reservas` y permite reservar sin cuenta. **Empieza con un `DROP TABLE`.** |
+| `migrations/0004_auth_reservas_policy.sql` | Deja que cada persona lea sus propias reservas, con Supabase Auth. |
+| `seed.sql` | Carga el catálogo y el equipo reales. Opcional, pero recomendado. |
 
 El contrato de nombres y tipos de columna vive en
 [`frontend/src/shared/types/supabase.ts`](../frontend/src/shared/types/supabase.ts).
@@ -36,11 +38,27 @@ En el menú lateral, **SQL Editor** → **New query**. Luego, **en este orden**:
 1. Pega el contenido completo de `migrations/0001_esquema_inicial.sql` y dale
    **Run**.
 2. Nueva query: pega `migrations/0002_rls.sql` y **Run**.
-3. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
+3. Nueva query: pega `migrations/0003_reservas.sql` y **Run**.
+4. Nueva query: pega `migrations/0004_auth_reservas_policy.sql` y **Run**.
+5. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
    filas por tabla.
 
-El orden importa: 0002 referencia las tablas que crea 0001, y el seed las
-necesita a las dos.
+El orden importa: 0002 referencia las tablas que crea 0001, 0003 apunta con
+claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
+0003, y el seed necesita el catálogo ya creado.
+
+> **Ojo con 0003 en una base que ya está en uso.** Empieza con
+> `drop table if exists public.reservas cascade`, así que borra las reservas
+> que hubiera. Es lo que permite reaplicarla, pero respáldalas antes si te
+> importan.
+
+## Paso 2b · Activar Supabase Auth
+
+`0004` solo sirve de algo si hay sesiones. En **Authentication → Providers**,
+deja habilitado **Email**. Para probar en local conviene desactivar
+*Confirm email* (en **Authentication → Sign In / Providers → Email**): con la
+confirmación activa, al registrarte la cuenta se crea pero no se abre sesión,
+y la aplicación te lo dice en vez de dejarte entrar.
 
 ### Opción B · CLI de Supabase
 
@@ -99,8 +117,25 @@ La anon key es **pública por diseño**: viaja dentro del bundle de JavaScript y
 cualquiera puede extraerla del navegador. Eso no es una filtración, es cómo
 funciona. Quien protege los datos son las políticas de RLS, no la clave.
 
-Por eso `0002_rls.sql` abre **solo SELECT**, y solo sobre estas cuatro tablas.
-El rol anónimo no puede insertar, modificar ni borrar nada.
+Por eso `0002_rls.sql` abre **solo SELECT**, y solo sobre las cuatro tablas del
+catálogo: son datos públicos (servicios, equipo, horarios) y no hay nada que
+proteger ahí.
+
+`reservas` sí tiene datos de personas, y se trata distinto:
+
+- **INSERT abierto** (`0003`), porque reservar no exige cuenta. Se acota lo que
+  se puede: el estado se fuerza a `pendiente` —nadie se auto-confirma una
+  hora—, el nombre y el correo son obligatorios, y desde `0004` la reserva solo
+  puede quedar sin dueño o a nombre de quien la crea.
+- **SELECT solo de lo propio** (`0004`): `cliente_id = auth.uid()`. Sin sesión
+  no se lee nada. Es lo que impide que cualquiera con la anon key se lleve el
+  teléfono y el correo de toda la clientela.
+- **Ni UPDATE ni DELETE para nadie.** Cancelar y reprogramar todavía no están
+  implementados contra la base.
+
+Una reserva hecha sin cuenta queda con `cliente_id` NULL, así que **ninguna
+política la devuelve**: ni a su autora. Su único vínculo con ella es el código
+que se le muestra al confirmar.
 
 La **`service_role` key** salta todas las políticas de RLS. Nunca va en el
 repo, ni en `.env.local`, ni en ninguna variable `VITE_*` (todo lo que empieza

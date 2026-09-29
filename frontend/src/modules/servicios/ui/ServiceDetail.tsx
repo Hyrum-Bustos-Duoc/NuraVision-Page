@@ -7,6 +7,7 @@ import { formatPrice } from '@/shared/lib/format'
 import type { ServiceCategoryId } from '@/shared/types'
 import type { Servicio } from '../domain/servicio.types'
 import { useServicioDetalle } from './useServicioDetalle'
+import { fotoDeServicio } from './servicio.imagenes'
 
 /**
  * Lo que esta pantalla necesita pintar. La tabla `servicios` todavia no tiene
@@ -22,7 +23,12 @@ interface ServicioDetalleVista {
   incluye: string[]
   duracionMinutos: number
   precioBase: number
-  imagenUrl: string | undefined
+  /**
+   * La tabla `servicios` aun no tiene columna de imagen: la resuelve
+   * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
+   * tarjeta nunca cae en el marcador a rayas.
+   */
+  imagenUrl: string
   /** Un servicio dado de baja se sigue pudiendo ver, pero no reservar. */
   activo: boolean
 }
@@ -37,7 +43,7 @@ function toVista(servicio: Servicio): ServicioDetalleVista {
     incluye: [],
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
-    imagenUrl: undefined,
+    imagenUrl: fotoDeServicio(servicio),
     activo: servicio.activo,
   }
 }

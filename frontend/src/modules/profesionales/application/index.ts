@@ -9,6 +9,17 @@ export {
 export { obtenerProfesionalesPorServicio } from './obtener-profesionales-por-servicio.usecase'
 export { obtenerProfesionalesPorIds } from './obtener-profesionales-por-ids.usecase'
 export { obtenerDisponibilidad } from './obtener-disponibilidad.usecase'
+export { obtenerDisponibilidadDeVarios } from './obtener-disponibilidad-de-varios.usecase'
+export { guardarDisponibilidad } from './guardar-disponibilidad.usecase'
 export type { Profesional } from '../domain/profesional.types'
 export type { Disponibilidad } from '../domain/disponibilidad.types'
 export type { ProfesionalRepository } from '../domain/profesional.repository'
+export {
+  listarTodoElEquipo,
+  obtenerServiciosAsignados,
+  crearProfesional,
+  actualizarProfesional,
+  eliminarProfesional,
+} from './gestionar-equipo.usecase'
+export type { DatosProfesional } from '../domain/profesional.types'
+export { MAX_EXPERIENCIA } from '../domain/profesional.reglas'

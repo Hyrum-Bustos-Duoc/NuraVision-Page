@@ -1,9 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
+import { useServicios } from '@/modules/servicios/ui/useServicios'
+import { useEquipoConAgenda } from '@/modules/profesionales/ui/useEquipoConAgenda'
+import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { AppImage, Kicker, LinkButton } from '@/shared/ui/ui'
 import { Reveal } from '@/shared/ui/Reveal'
 import { formatPrice } from '@/shared/lib/format'
+import { getNextAvailableSlots } from '@/shared/lib/availability'
 
 const STEPS = [
   {
@@ -29,11 +33,39 @@ const STEPS = [
 ]
 
 export default function Landing() {
-  const { activeServices: services, professionals, siteContent, nextSlotsFor } = useAppState()
+  // `bookings` sigue siendo local: es lo unico que hay para marcar las horas
+  // ya tomadas al calcular la proxima libre.
+  const { activeServices: services, siteContent, bookings } = useAppState()
 
-  const featured = services.slice(0, 4)
+  /**
+   * Los destacados salen de la base, no de los datos de ejemplo.
+   *
+   * Es lo que hace que la imagen cruce: el mapa de `servicio.imagenes` esta
+   * escrito con los nombres reales del catalogo, y los del prototipo son
+   * otros ("Manicure Ritual Nura", "Pedicure Spa"). Con esos, los tres
+   * servicios de uñas caian todos en la imagen generica de la categoria y la
+   * portada mostraba la misma foto tres veces seguidas.
+   *
+   * De paso arregla los enlaces: apuntaban a ids del prototipo, que la ficha
+   * de servicio ya no sabe resolver contra la base.
+   */
+  const catalogo = useServicios()
+  const featured = catalogo.servicios.slice(0, 4)
+  /**
+   * El equipo sale de la base, igual que los destacados.
+   *
+   * Se usa `useEquipoConAgenda` y no `useProfesionales` a proposito: trae
+   * ademas el horario semanal, que es lo que permite seguir mostrando la
+   * tarjeta de "proxima hora libre". Con la entidad de dominio a secas habria
+   * que quitarla, porque sin agenda no hay proxima hora que calcular.
+   */
+  const equipo = useEquipoConAgenda()
+  const professionals = equipo.equipo
+
   const firstProfessional = professionals[0]
-  const nextSlot = firstProfessional ? nextSlotsFor(firstProfessional, { count: 1 })[0] : undefined
+  const nextSlot = firstProfessional
+    ? getNextAvailableSlots(firstProfessional, bookings, 1)[0]
+    : undefined
 
   return (
     <div>
@@ -57,8 +89,13 @@ export default function Landing() {
             </LinkButton>
           </div>
           <div className="mt-12 flex gap-10 border-t border-line-soft pt-8">
-            <Stat value={String(services.length)} label="servicios" />
-            <Stat value={String(professionals.length)} label="profesionales" />
+            <Stat value={String(catalogo.servicios.length || services.length)} label="servicios" />
+            {/* Mientras carga se muestra un guion en vez de un 0, que se leeria
+                como "el estudio no tiene profesionales". */}
+            <Stat
+              value={equipo.cargando || equipo.error ? '—' : String(professionals.length)}
+              label="profesionales"
+            />
             <Stat value="24/7" label="agenda en línea" />
           </div>
         </div>
@@ -95,6 +132,26 @@ export default function Landing() {
             <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
+        {/* En la portada un error de carga no se muestra: no hay nada que la
+            persona pueda hacer al respecto, y el resto de la pagina sigue
+            siendo util. La seccion simplemente no aparece. */}
+        {catalogo.cargando && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="overflow-hidden rounded-2xl border border-line-soft bg-paper"
+              >
+                <div className="aspect-square w-full animate-pulse bg-line-soft" />
+                <div className="p-5">
+                  <div className="h-3 w-16 animate-pulse rounded bg-line-soft" />
+                  <div className="mt-3 h-5 w-32 animate-pulse rounded bg-line-soft" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {featured.map((s) => (
             <Link
@@ -102,17 +159,21 @@ export default function Landing() {
               to={`/servicios/${s.id}`}
               className="card-hover overflow-hidden rounded-2xl border border-line-soft bg-paper"
             >
+              {/* Mismo helper y mismo encuadre que el catalogo, para que la
+                  portada y /servicios muestren la misma fotografia. El
+                  `overflow-hidden` de la tarjeta recorta la imagen con su
+                  radio, sin redondearla por su cuenta. */}
               <AppImage
-                src={s.imageUrl}
-                label={s.name.split(' ')[0].toUpperCase()}
-                alt={s.name}
+                src={fotoDeServicio(s)}
+                label={s.nombre.split(' ')[0].toUpperCase()}
+                alt={s.nombre}
                 className="aspect-square w-full"
               />
               <div className="p-5">
-                <Kicker>{categoryLabel(s.category)}</Kicker>
-                <h3 className="mt-1 font-serif-display text-xl text-ink">{s.name}</h3>
+                <Kicker>{categoryLabel(s.categoria)}</Kicker>
+                <h3 className="mt-1 font-serif-display text-xl text-ink">{s.nombre}</h3>
                 <p className="mt-2 text-sm text-muted">
-                  {s.durationMin} min · {formatPrice(s.price)}
+                  {s.duracionMinutos} min · {formatPrice(s.precioBase)}
                 </p>
               </div>
             </Link>
@@ -195,6 +256,37 @@ export default function Landing() {
             <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
+        {equipo.cargando && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i}>
+                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-line-soft" />
+                <div className="mt-3 h-5 w-28 animate-pulse rounded bg-line-soft" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* El fallo se dice, no se esconde. Antes se ocultaba con el argumento
+            de que la visitante no puede hacer nada al respecto, pero eso deja
+            un hueco mudo justo bajo el titulo "Nuestro equipo": no se
+            distingue de un estudio sin profesionales, y quien reporte el
+            problema no tendra nada que contar. */}
+        {!equipo.cargando && equipo.error && (
+          <p role="alert" className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            No pudimos cargar el equipo: {equipo.error}
+          </p>
+        )}
+
+        {!equipo.cargando && !equipo.error && professionals.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+            Todavía no hay profesionales publicados.
+          </p>
+        )}
+
+        {/* La rejilla solo aparece cuando hay algo que poner: con error o
+            cargando, pintar un grid vacio debajo del aviso sobra. */}
+        {!equipo.cargando && !equipo.error && professionals.length > 0 && (
         <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {professionals.map((p) => (
             <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
@@ -209,6 +301,7 @@ export default function Landing() {
             </Link>
           ))}
         </div>
+        )}
       </section>
       </Reveal>
 

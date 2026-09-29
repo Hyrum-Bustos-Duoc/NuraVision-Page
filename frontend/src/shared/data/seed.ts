@@ -6,7 +6,6 @@ import type {
   DayAvailability,
   Professional,
   Service,
-  SiteContent,
   WeeklyAvailability,
 } from '@/shared/types'
 
@@ -335,97 +334,6 @@ export const seedBookings: Booking[] = [
   },
 ]
 
-export const seedSiteContent: SiteContent = {
-  heroCaption: 'Fotografía · Salón / interior',
-  aiTeaserCaption: 'Detalle · Manos y uñas',
-  aiFocusOptions: [
-    {
-      id: 'manos',
-      label: 'Manos y uñas',
-      analysisLabel: 'manos y uñas',
-      recommendedServiceIds: ['manicure-ritual-nura', 'unas-esculpidas', 'pedicure-spa'],
-      tips: [
-        {
-          id: 'manos-luz',
-          title: 'Luz natural',
-          description: 'Cerca de una ventana, sin flash directo.',
-        },
-        {
-          id: 'manos-fondo',
-          title: 'Fondo neutro',
-          description: 'Una superficie lisa y clara funciona mejor.',
-        },
-        {
-          id: 'manos-encuadre',
-          title: 'Encuadre completo',
-          description: 'Que se vean las cuatro uñas y el borde libre.',
-        },
-        {
-          id: 'manos-esmalte',
-          title: 'Sin esmalte',
-          description: 'Si es posible, retíralo antes de fotografiar.',
-        },
-      ],
-    },
-    {
-      id: 'piel',
-      label: 'Tono de piel',
-      analysisLabel: 'tono de piel',
-      recommendedServiceIds: ['limpieza-facial-profunda'],
-      tips: [
-        {
-          id: 'piel-luz',
-          title: 'Luz natural',
-          description: 'De día y de frente, sin filtros ni flash.',
-        },
-        {
-          id: 'piel-maquillaje',
-          title: 'Sin maquillaje',
-          description: 'La piel limpia entrega una lectura más fiel.',
-        },
-        {
-          id: 'piel-encuadre',
-          title: 'Rostro completo',
-          description: 'Toma frontal, con el rostro dentro del cuadro.',
-        },
-        {
-          id: 'piel-fondo',
-          title: 'Fondo neutro',
-          description: 'Una pared clara evita reflejos de color.',
-        },
-      ],
-    },
-    {
-      id: 'cuero',
-      label: 'Cuero cabelludo',
-      analysisLabel: 'cuero cabelludo',
-      recommendedServiceIds: ['diagnostico-capilar', 'tratamiento-capilar-reconstructivo'],
-      tips: [
-        {
-          id: 'cuero-luz',
-          title: 'Luz natural',
-          description: 'Junto a una ventana, sin sombras sobre la cabeza.',
-        },
-        {
-          id: 'cuero-raiz',
-          title: 'Raíz visible',
-          description: 'Separa el cabello para que se vea el cuero cabelludo.',
-        },
-        {
-          id: 'cuero-seco',
-          title: 'Cabello seco',
-          description: 'Sin productos ni humedad al momento de la foto.',
-        },
-        {
-          id: 'cuero-tomas',
-          title: 'Varias tomas',
-          description: 'Una de la raíz y otra de los largos ayuda mucho.',
-        },
-      ],
-    },
-  ],
-}
-
 /**
  * Usuarios registrados. Los clientes corresponden a quienes aparecen en las
  * reservas semilla y los profesionales se enlazan con su ficha del equipo.
@@ -512,6 +420,5 @@ export function createSeedData(): AppData {
     services: seedServices,
     professionals: seedProfessionals,
     bookings: [...seedBookings, ...generateHistoricalBookings()],
-    siteContent: seedSiteContent,
   })
 }
