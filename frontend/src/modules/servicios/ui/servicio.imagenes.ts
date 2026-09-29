@@ -1,4 +1,5 @@
 import type { ServiceCategoryId } from '@/shared/types'
+import { normalizarTexto } from '@/shared/lib/texto'
 
 /**
  * Imagen de cada servicio del catalogo.
@@ -35,19 +36,6 @@ const PARAMS = 'auto=format&fit=crop&w=600&q=80'
 
 function foto(id: string): string {
   return `${BASE}/${id}?${PARAMS}`
-}
-
-/**
- * Normaliza para comparar: sin tildes, en minusculas y con los espacios
- * colapsados. Misma convencion que `servicio.mapper.ts`.
- */
-function normalizar(valor: string): string {
-  return valor
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
 }
 
 /**
@@ -125,7 +113,7 @@ export const IMAGEN_POR_DEFECTO = foto('photo-1560750588-73207b1ef5b8')
  *   3. la imagen por defecto.
  */
 export function imagenDeServicio(nombre: string, categoria?: ServiceCategoryId): string {
-  const limpio = normalizar(nombre)
+  const limpio = normalizarTexto(nombre)
 
   const regla = REGLAS.find(({ patron }) => patron.test(limpio))
   if (regla) return regla.foto
@@ -136,4 +124,24 @@ export function imagenDeServicio(nombre: string, categoria?: ServiceCategoryId):
   }
 
   return IMAGEN_POR_DEFECTO
+}
+
+/**
+ * La foto de un servicio, con la de la base por delante.
+ *
+ * Desde 0010 `servicios` tiene columna `imagen_url`, asi que el estudio puede
+ * cargar la suya desde el panel. Cuando existe, manda: las reglas de `REGLAS`
+ * adivinan a partir del nombre y por buenas que sean siguen siendo una
+ * suposicion sobre el contenido de una foto.
+ *
+ * Sin columna cargada se cae al camino de siempre, que nunca deja un hueco.
+ * Por eso esta funcion —y no `imagenDeServicio`— es la que deberian usar las
+ * vistas que tienen la entidad completa a mano.
+ */
+export function fotoDeServicio(servicio: {
+  nombre: string
+  categoria: ServiceCategoryId
+  imagenUrl: string | null
+}): string {
+  return servicio.imagenUrl ?? imagenDeServicio(servicio.nombre, servicio.categoria)
 }

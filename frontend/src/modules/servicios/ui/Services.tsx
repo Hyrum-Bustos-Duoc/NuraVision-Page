@@ -8,7 +8,7 @@ import { formatPrice } from '@/shared/lib/format'
 import type { ServiceCategoryId } from '@/shared/types'
 import type { Servicio } from '../domain/servicio.types'
 import { useServicios } from './useServicios'
-import { imagenDeServicio } from './servicio.imagenes'
+import { fotoDeServicio } from './servicio.imagenes'
 
 type Filter = 'todos' | ServiceCategoryId
 
@@ -26,7 +26,7 @@ interface ServicioVista {
   precioBase: number
   /**
    * La tabla `servicios` aun no tiene columna de imagen: la resuelve
-   * `imagenDeServicio`, que siempre devuelve una. Por eso no es opcional y la
+   * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
@@ -40,7 +40,7 @@ function toVista(servicio: Servicio): ServicioVista {
     descripcion: servicio.descripcion || 'Sin descripción disponible.',
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
-    imagenUrl: imagenDeServicio(servicio.nombre, servicio.categoria),
+    imagenUrl: fotoDeServicio(servicio),
   }
 }
 

@@ -1,4 +1,4 @@
-import type { Servicio } from './servicio.types'
+import type { DatosServicio, Servicio } from './servicio.types'
 
 /**
  * Puerto de acceso a servicios.
@@ -30,4 +30,43 @@ export interface ServicioRepository {
    * servicios, y cada modulo es duenio de sus propias entidades.
    */
   listarPorProfesional(profesionalId: string): Promise<Servicio[]>
+
+  /**
+   * TODOS los servicios, activos e inactivos, ordenados por nombre.
+   *
+   * Es lo que necesita el panel de administracion y no `listarActivos`: quien
+   * gestiona el catalogo tiene que poder ver un servicio dado de baja para
+   * volver a activarlo. Dejarlo fuera de la lista lo haria inalcanzable.
+   */
+  listarTodos(): Promise<Servicio[]>
+
+  /**
+   * Cuantos profesionales realiza cada servicio, por id de servicio.
+   *
+   * Existe para el panel, que avisa de los servicios que nadie ofrece: esos
+   * aparecen en el catalogo y no se pueden reservar, porque no hay con quien.
+   * Es UNA consulta a la tabla puente, no una por servicio.
+   */
+  contarProfesionalesPorServicio(): Promise<Record<string, number>>
+
+  /** Da de alta un servicio y devuelve la fila tal como quedo. */
+  crear(datos: DatosServicio): Promise<Servicio>
+
+  /**
+   * Guarda los cambios de un servicio existente.
+   *
+   * Devuelve lo que quedo en la base. Si RLS rechaza la escritura PostgREST no
+   * da error: responde 200 con una lista vacia, asi que la implementacion tiene
+   * que distinguir "guardado" de "denegado".
+   */
+  actualizar(id: string, datos: DatosServicio): Promise<Servicio>
+
+  /**
+   * Borra un servicio.
+   *
+   * OJO: `reservas.servicio_id` apunta aqui. Si hay reservas de ese servicio, la
+   * clave foranea impide el borrado y la base devuelve un error; la alternativa
+   * correcta es desactivarlo (`activo = false`), que conserva el historial.
+   */
+  eliminar(id: string): Promise<void>
 }

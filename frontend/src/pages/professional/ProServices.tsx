@@ -1,5 +1,5 @@
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
-import { imagenDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { useServiciosDeProfesional } from '@/modules/servicios/ui/useServiciosDeProfesional'
 import { AppImage, Card, Kicker } from '@/shared/ui/ui'
 import { formatPrice } from '@/shared/lib/format'
@@ -59,7 +59,7 @@ export default function ProServices() {
           {servicios.servicios.map((servicio) => (
             <Card key={servicio.id} className="flex items-center gap-4 p-5">
               <AppImage
-                src={imagenDeServicio(servicio.nombre, servicio.categoria)}
+                src={fotoDeServicio(servicio)}
                 label={servicio.nombre.split(' ')[0].toUpperCase()}
                 alt={servicio.nombre}
                 className="h-16 w-16 shrink-0 rounded-xl"

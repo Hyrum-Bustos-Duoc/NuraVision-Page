@@ -3,7 +3,7 @@ import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
 import { useEquipoConAgenda } from '@/modules/profesionales/ui/useEquipoConAgenda'
-import { imagenDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { AppImage, Kicker, LinkButton } from '@/shared/ui/ui'
 import { Reveal } from '@/shared/ui/Reveal'
 import { formatPrice } from '@/shared/lib/format'
@@ -164,7 +164,7 @@ export default function Landing() {
                   `overflow-hidden` de la tarjeta recorta la imagen con su
                   radio, sin redondearla por su cuenta. */}
               <AppImage
-                src={imagenDeServicio(s.nombre, s.categoria)}
+                src={fotoDeServicio(s)}
                 label={s.nombre.split(' ')[0].toUpperCase()}
                 alt={s.nombre}
                 className="aspect-square w-full"

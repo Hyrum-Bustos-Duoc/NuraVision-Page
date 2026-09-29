@@ -6,6 +6,7 @@
     "openspec": "openspec"
   },
   "devDependencies": {
-    "@fission-ai/openspec": "1.13.1"
+    "@fission-ai/openspec": "1.13.1",
+    "supabase": "^2.118.0"
   }
 }

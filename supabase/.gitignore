@@ -1,0 +1,17 @@
+# Artefactos de la CLI de Supabase. Son de cada maquina, no configuracion
+# compartida: el mismo criterio que .claude/settings.local.json.
+
+# Carpeta de trabajo de la CLI: guarda el proyecto enlazado y la version
+# descargada. Aparecio al ejecutar `supabase link`.
+.temp/
+
+# Ramas de base de datos creadas en local.
+.branches/
+
+# IMPORTANTE: aqui es donde la CLI busca los secretos de las Edge Functions
+# cuando se sirven en local (`supabase functions serve --env-file`), y eso
+# incluye la service_role key. Va ignorado para que no pueda acabar versionado
+# ni por descuido. Las claves reales del proyecto las inyecta Supabase en el
+# entorno de la funcion; no hacen falta en el repositorio.
+.env
+.env.local

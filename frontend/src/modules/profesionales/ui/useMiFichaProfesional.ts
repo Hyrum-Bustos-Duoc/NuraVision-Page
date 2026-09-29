@@ -167,10 +167,10 @@ export function useMiFichaProfesional(): EstadoMiFicha {
       id: profesional.id,
       name: profesional.nombre,
       role: profesional.especialidad,
-      // La tabla no guarda años de experiencia ni biografia: se dejan vacios
-      // en vez de inventarlos sobre una persona real.
-      experienceYears: 0,
-      bio: '',
+      // Desde 0010 estos dos SI son columnas. Antes se dejaban vacios porque la
+      // tabla no los tenia y era preferible a inventarlos sobre una persona real.
+      experienceYears: profesional.experienciaAnios,
+      bio: profesional.biografia ?? '',
       serviceIds: [],
       imageUrl: profesional.avatarUrl ?? undefined,
       // Hasta que llegue su horario se usa el vacio, que `toWeeklyAvailability`
