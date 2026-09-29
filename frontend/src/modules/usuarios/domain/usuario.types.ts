@@ -16,7 +16,11 @@ export type { UsuarioRol }
 export interface Usuario {
   /** uuid de la cuenta. El mismo que `auth.uid()`. */
   id: string
-  nombre: string | null
+  /**
+   * Nunca vacio: la columna es NOT NULL y la migracion garantiza un valor —el
+   * nombre del registro, o la parte local del correo—.
+   */
+  nombre: string
   email: string | null
   telefono: string | null
   rol: UsuarioRol
@@ -32,10 +36,19 @@ export interface Usuario {
   creadoEn: string
 }
 
-/** Lo que el panel puede corregir de un perfil ya existente. */
+/**
+ * Lo que el panel puede corregir de un perfil ya existente.
+ *
+ * Los textos son `string` y NO `string | null`, aunque al leerlos se normalice el
+ * vacio a `null`. El motivo es concreto: `perfiles.nombre` es NOT NULL, y no se
+ * puede comprobar desde el navegador si `telefono` tambien lo es. Mandar `null`
+ * arriesga un 23502 —el mismo error que tumbo la carga inicial de 0010—, mientras
+ * que la cadena vacia funciona con las dos formas de la columna y el mapper la
+ * trata como ausente al volver a leerla.
+ */
 export interface DatosPerfil {
-  nombre: string | null
-  telefono: string | null
+  nombre: string
+  telefono: string
   rol: UsuarioRol
 }
 

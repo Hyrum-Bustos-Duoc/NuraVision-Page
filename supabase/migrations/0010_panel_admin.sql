@@ -107,11 +107,26 @@ begin
   insert into public.perfiles as p (id, nombre, telefono, email, rol, profesional_id)
   values (
     new.id,
-    -- El nombre y el telefono los escribe el registro en `user_metadata`; ver
-    -- META_NOMBRE y META_TELEFONO en auth.mapper.ts. Pueden no venir.
-    nullif(btrim(coalesce(new.raw_user_meta_data ->> 'nombre', '')), ''),
-    nullif(btrim(coalesce(new.raw_user_meta_data ->> 'telefono', '')), ''),
-    new.email,
+    -- `perfiles.nombre` es NOT NULL, y el nombre PUEDE NO VENIR: el registro de la
+    -- web lo escribe en `user_metadata` (ver META_NOMBRE en auth.mapper.ts), pero
+    -- una cuenta creada por SQL o desde el panel de Supabase no lo trae. De ahi la
+    -- cadena de reserva.
+    --
+    -- Se cae a la parte local del correo y no a un "Sin nombre" porque es un dato
+    -- util: para las cuentas de 0008, `berenice@estudionura.cl` da justo
+    -- "berenice". El literal final cubre el caso extremo de una cuenta sin correo
+    -- —Supabase admite alta por telefono—, donde no hay nada de donde sacarlo.
+    coalesce(
+      nullif(btrim(coalesce(new.raw_user_meta_data ->> 'nombre', '')), ''),
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'Sin nombre'
+    ),
+    -- `telefono` y `email` se rellenan con cadena vacia en vez de NULL por si
+    -- tambien fueran NOT NULL: no se puede comprobar desde el navegador, y una
+    -- migracion que falla a mitad es peor que un dato vacio. El mapper del
+    -- frontend trata la cadena vacia como ausente, asi que no se nota.
+    coalesce(nullif(btrim(coalesce(new.raw_user_meta_data ->> 'telefono', '')), ''), ''),
+    coalesce(new.email, ''),
     v_rol,
     case
       when coalesce(new.raw_app_meta_data ->> 'profesional_id', '') ~ '^[0-9]+$'
@@ -128,8 +143,11 @@ begin
     -- El nombre y el telefono NO se pisan si ya hay algo: el panel de
     -- administracion puede haberlos corregido, y `user_metadata` —que la propia
     -- persona edita— no deberia deshacer esa correccion.
-    nombre   = coalesce(p.nombre, excluded.nombre),
-    telefono = coalesce(p.telefono, excluded.telefono);
+    --
+    -- Se compara con `nullif(...,'')` y no con `coalesce`: al ser NOT NULL, lo que
+    -- indica "aqui no hay nada escrito" es la cadena vacia, no NULL.
+    nombre   = coalesce(nullif(btrim(p.nombre), ''), excluded.nombre),
+    telefono = coalesce(nullif(btrim(p.telefono), ''), excluded.telefono);
 
   return new;
 end;
@@ -179,12 +197,21 @@ alter table public.perfiles enable row level security;
 -- Los triggers solo actuan de ahora en adelante. Sin esto, las cuentas creadas
 -- por 0008 y quien se hubiera registrado antes seguirian sin perfil, y el panel
 -- de usuarios abriria vacio pese a haber gente dada de alta.
-insert into public.perfiles (id, nombre, telefono, email, rol, profesional_id)
+-- El alias `p` es necesario para poder nombrar la fila existente en el
+-- `on conflict` de mas abajo, igual que hace el trigger.
+insert into public.perfiles as p (id, nombre, telefono, email, rol, profesional_id)
 select
   u.id,
-  nullif(btrim(coalesce(u.raw_user_meta_data ->> 'nombre', '')), ''),
-  nullif(btrim(coalesce(u.raw_user_meta_data ->> 'telefono', '')), ''),
-  u.email,
+  -- Misma cadena de reserva que el trigger, y por el mismo motivo: `nombre` es
+  -- NOT NULL y las ocho cuentas que creo 0008 no llevan nombre en
+  -- `user_metadata`. Esto es lo que hacia fallar la migracion con 23502.
+  coalesce(
+    nullif(btrim(coalesce(u.raw_user_meta_data ->> 'nombre', '')), ''),
+    nullif(split_part(coalesce(u.email, ''), '@', 1), ''),
+    'Sin nombre'
+  ),
+  coalesce(nullif(btrim(coalesce(u.raw_user_meta_data ->> 'telefono', '')), ''), ''),
+  coalesce(u.email, ''),
   case
     when lower(coalesce(u.raw_app_meta_data ->> 'es_staff', '')) in ('true', 't', '1')
       then 'admin'::public.usuario_rol
@@ -201,7 +228,10 @@ from auth.users u
 on conflict (id) do update
 set email          = excluded.email,
     rol            = excluded.rol,
-    profesional_id = excluded.profesional_id;
+    profesional_id = excluded.profesional_id,
+    -- Solo si la fila existente no tiene nombre: una correccion hecha desde el
+    -- panel no se deshace por volver a ejecutar esto.
+    nombre         = coalesce(nullif(btrim(p.nombre), ''), excluded.nombre);
 
 -- Cada quien ve y corrige lo suyo.
 drop policy if exists "Lectura del perfil propio" on public.perfiles;

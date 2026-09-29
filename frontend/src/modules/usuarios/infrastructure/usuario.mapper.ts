@@ -7,10 +7,13 @@ export type PerfilRow = Tables<'perfiles'>
 export function toUsuario(row: PerfilRow): Usuario {
   return {
     id: row.id,
-    // Se normaliza el vacio a null: una cadena de espacios y "sin nombre" son
-    // lo mismo para quien lee la tabla, y distinguirlos obligaria a cada
-    // pantalla a comprobar las dos cosas.
-    nombre: normalizar(row.nombre),
+    // `nombre` es NOT NULL en la base, asi que no se normaliza a null: se
+    // recorta y, si aun asi quedara vacio —una fila escrita a mano antes de
+    // 0010—, se dice en vez de pintar un hueco.
+    nombre: row.nombre.trim() === '' ? 'Sin nombre' : row.nombre.trim(),
+    // Los demas si: para quien lee la tabla, una cadena de espacios y "no hay
+    // dato" son lo mismo, y distinguirlos obligaria a comprobar las dos cosas en
+    // cada pantalla.
     email: normalizar(row.email),
     telefono: normalizar(row.telefono),
     rol: row.rol,

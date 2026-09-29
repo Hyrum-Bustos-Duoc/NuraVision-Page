@@ -32,8 +32,8 @@ export function motivoParaNoCrearCuenta(datos: NuevaCuenta): string | null {
 }
 
 export function motivoParaNoGuardarPerfil(datos: DatosPerfil): string | null {
-  if (datos.nombre !== null && datos.nombre.trim() === '') {
-    return 'El nombre no puede quedar vacío.'
-  }
+  // No es una preferencia: `perfiles.nombre` es NOT NULL, asi que un nombre
+  // vacio lo rechazaria la base con un 23502 cuyo mensaje no explica nada.
+  if (datos.nombre.trim() === '') return 'El nombre no puede quedar vacío.'
   return null
 }

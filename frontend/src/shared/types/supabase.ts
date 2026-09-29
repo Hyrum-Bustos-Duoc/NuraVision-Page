@@ -92,8 +92,12 @@ export interface Database {
         Row: {
           /** uuid. La misma clave que auth.users. */
           id: string
-          /** text, nullable: sale de user_metadata y puede no venir. */
-          nombre: string | null
+          /**
+           * text NOT NULL. Confirmado por las malas: la carga inicial de 0010
+           * fallo con 23502 al intentar meter NULL para las cuentas sin nombre en
+           * `user_metadata`. La migracion cae a la parte local del correo.
+           */
+          nombre: string
           /** text, nullable */
           telefono: string | null
           /** text, nullable: replica de auth.users.email (0010). */
@@ -106,7 +110,7 @@ export interface Database {
         }
         Insert: {
           id: string
-          nombre?: string | null
+          nombre?: string
           telefono?: string | null
           email?: string | null
           rol?: UsuarioRol
@@ -115,7 +119,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          nombre?: string | null
+          nombre?: string
           telefono?: string | null
           email?: string | null
           rol?: UsuarioRol

@@ -82,7 +82,7 @@ export default function AdminUsers() {
       toast({ title: 'No se guardó el usuario', description: motivo, tone: 'error' })
       return
     }
-    toast({ title: 'Usuario actualizado', description: borrador.nombre ?? '', tone: 'success' })
+    toast({ title: 'Usuario actualizado', description: borrador.nombre, tone: 'success' })
     setEditando(null)
   }
 
@@ -172,7 +172,7 @@ export default function AdminUsers() {
               {visibles.map((u) => (
                 <tr key={u.id} className="transition-colors hover:bg-ivory/70">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-ink">{u.nombre ?? 'Sin nombre'}</p>
+                    <p className="font-medium text-ink">{u.nombre}</p>
                     {u.profesionalId && (
                       <p className="text-xs text-muted">
                         Ficha: {nombrePorFicha[u.profesionalId] ?? `#${u.profesionalId}`}
@@ -200,10 +200,10 @@ export default function AdminUsers() {
                         onClick={() =>
                           setEditando({
                             usuario: u,
-                            borrador: { nombre: u.nombre, telefono: u.telefono, rol: u.rol },
+                            borrador: { nombre: u.nombre, telefono: u.telefono ?? '', rol: u.rol },
                           })
                         }
-                        aria-label={`Editar a ${u.nombre ?? u.email ?? 'usuario'}`}
+                        aria-label={`Editar a ${u.nombre}`}
                         className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -215,7 +215,7 @@ export default function AdminUsers() {
                         title={
                           u.id === usuario?.id ? 'No puedes eliminar tu propia cuenta.' : undefined
                         }
-                        aria-label={`Eliminar a ${u.nombre ?? u.email ?? 'usuario'}`}
+                        aria-label={`Eliminar a ${u.nombre}`}
                         className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -272,7 +272,7 @@ export default function AdminUsers() {
             }
             toast({
               title: 'Usuario eliminado',
-              description: objetivo.nombre ?? objetivo.email ?? '',
+              description: objetivo.nombre,
               tone: 'info',
             })
           })
@@ -283,7 +283,7 @@ export default function AdminUsers() {
           <div className="space-y-3">
             <p>
               Se eliminará la cuenta de{' '}
-              <strong className="text-ink">{borrando?.nombre ?? borrando?.email}</strong> y no podrá
+              <strong className="text-ink">{borrando?.nombre}</strong> y no podrá
               volver a iniciar sesión. Sus reservas anteriores se conservan.
             </p>
             {/* Se dice que es irreversible porque lo es: elimina la cuenta de
@@ -458,6 +458,7 @@ function ModalPerfil({
   onSave: (borrador: DatosPerfil) => void
 }) {
   const [borrador, setBorrador] = useState<DatosPerfil>(inicial)
+  const [mostrarError, setMostrarError] = useState(false)
 
   return (
     <Modal open title="Editar usuario" onClose={onClose}>
@@ -473,15 +474,20 @@ function ModalPerfil({
           </p>
         </div>
 
+        {/* Se escriben como cadenas, sin convertir el vacio a null: la columna
+            `nombre` es NOT NULL y de `telefono` no se puede saber desde aqui, asi
+            que mandar null arriesga un 23502. La cadena vacia vale para las dos
+            formas de la columna. */}
         <TextField
           label="Nombre"
-          value={borrador.nombre ?? ''}
-          onChange={(v) => setBorrador({ ...borrador, nombre: v === '' ? null : v })}
+          value={borrador.nombre}
+          onChange={(v) => setBorrador({ ...borrador, nombre: v })}
+          error={mostrarError && borrador.nombre.trim() === '' ? 'El nombre es obligatorio.' : undefined}
         />
         <TextField
           label="Teléfono"
-          value={borrador.telefono ?? ''}
-          onChange={(v) => setBorrador({ ...borrador, telefono: v === '' ? null : v })}
+          value={borrador.telefono}
+          onChange={(v) => setBorrador({ ...borrador, telefono: v })}
         />
         <SelectField
           label="Rol"
@@ -510,13 +516,19 @@ function ModalPerfil({
         </Button>
         <Button
           disabled={guardando}
-          onClick={() =>
+          onClick={() => {
+            // La base rechazaria un nombre vacio con un 23502, cuyo mensaje no
+            // explica nada. Se detiene aqui y se señala el campo.
+            if (borrador.nombre.trim() === '') {
+              setMostrarError(true)
+              return
+            }
             onSave({
               ...borrador,
-              nombre: borrador.nombre?.trim() || null,
-              telefono: borrador.telefono?.trim() || null,
+              nombre: borrador.nombre.trim(),
+              telefono: borrador.telefono.trim(),
             })
-          }
+          }}
         >
           {guardando ? 'Guardando…' : 'Guardar'}
         </Button>
