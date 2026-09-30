@@ -336,6 +336,10 @@ export default function BookingFlow() {
                 // Sin sesión va NULL, que es lo que la política de inserción
                 // exige del rol anónimo.
                 clienteId: usuario?.id ?? null,
+        // El paso de variantes llega despues. Hasta entonces toda reserva se
+        // crea sin eleccion, que es lo correcto para los 17 servicios actuales:
+        // ninguno pregunta nada.
+        varianteElegida: null,
               })
 
               // Si la base la rechazó no se avanza: el paso de confirmación

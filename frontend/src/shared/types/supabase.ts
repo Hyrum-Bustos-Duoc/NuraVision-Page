@@ -46,6 +46,15 @@ export interface Database {
           descripcion_larga: string | null
           /** jsonb, siempre lista (0010 lo exige con un check). */
           incluye: Json
+          /**
+           * jsonb nullable (0011). `{ pregunta, opciones: [{id, etiqueta, precio}] }`
+           * o null si el servicio no pregunta nada.
+           *
+           * El precio de cada opcion es el FINAL, no un recargo sobre
+           * `precio_base`. El check `servicios_variantes_bien_formadas` garantiza
+           * que, si no es null, hay pregunta y al menos una opcion.
+           */
+          variantes: Json | null
           /** integer */
           duracion_minutos: number
           /** numeric */
@@ -61,6 +70,7 @@ export interface Database {
           imagen_url?: string | null
           descripcion_larga?: string | null
           incluye?: Json
+          variantes?: Json | null
           duracion_minutos: number
           precio_base: number
           activo?: boolean
@@ -73,6 +83,7 @@ export interface Database {
           imagen_url?: string | null
           descripcion_larga?: string | null
           incluye?: Json
+          variantes?: Json | null
           duracion_minutos?: number
           precio_base?: number
           activo?: boolean
@@ -257,6 +268,15 @@ export interface Database {
           /** Codigo visible para quien reserva sin cuenta. Unico. */
           codigo: string
           estado: EstadoReserva
+          /**
+           * jsonb nullable (0011). Datos extra de la reserva.
+           *
+           * La clave `variante` guarda una COPIA de la opcion elegida
+           * —pregunta, etiqueta y precio—, no una referencia: el servicio puede
+           * cambiar sus opciones y la reserva debe conservar lo acordado. Pesa
+           * mas de lo habitual porque `reservas` no tiene columna de precio.
+           */
+          detalles_extra: Json | null
         }
         Insert: {
           id?: number
@@ -272,6 +292,11 @@ export interface Database {
           codigo: string
           /** La politica de RLS solo acepta 'pendiente' desde el navegador. */
           estado?: EstadoReserva
+          /**
+           * Se escribe UNA VEZ, aqui. 0005 no concede su UPDATE, asi que despues
+           * de crear la reserva es un registro inmutable de lo acordado.
+           */
+          detalles_extra?: Json | null
         }
         Update: {
           id?: number
@@ -286,6 +311,7 @@ export interface Database {
           cliente_telefono?: string | null
           codigo?: string
           estado?: EstadoReserva
+          detalles_extra?: Json | null
         }
         Relationships: []
       }

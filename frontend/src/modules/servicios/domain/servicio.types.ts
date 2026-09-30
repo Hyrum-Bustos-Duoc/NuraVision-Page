@@ -25,6 +25,8 @@ export interface Servicio {
   descripcionLarga: string
   /** Lo que contempla el servicio. Lista vacia si no se detallo. */
   incluye: string[]
+  /** Pregunta que altera el precio, o `null` si el servicio no pregunta nada. */
+  variantes: VarianteServicio | null
 }
 
 /**
@@ -44,4 +46,47 @@ export interface DatosServicio {
   imagenUrl: string | null
   descripcionLarga: string
   incluye: string[]
+  variantes: VarianteServicio | null
+}
+
+/**
+ * Una respuesta posible a la pregunta de un servicio.
+ *
+ * `precio` es el precio FINAL de la reserva si se elige esta opcion, no un
+ * recargo sobre `precioBase`. Es como lo planteo el estudio ("Corto: $15.000",
+ * "Largo: $20.000") y es lo que menos se presta a error al configurarlo: se
+ * escribe lo que la clienta paga.
+ */
+export interface OpcionVariante {
+  /** Estable: es lo que se guarda en la reserva para identificar la eleccion. */
+  id: string
+  etiqueta: string
+  precio: number
+}
+
+/**
+ * La pregunta que un servicio le hace a la clienta antes de reservar.
+ *
+ * `null` en el servicio significa que no pregunta nada, que es el caso de los 17
+ * que ya existen. Si no es null, la base garantiza —por el check de 0011— que
+ * hay pregunta y al menos una opcion: una pregunta sin respuestas posibles
+ * dejaria el flujo de reserva en un callejon sin salida.
+ */
+export interface VarianteServicio {
+  pregunta: string
+  opciones: OpcionVariante[]
+}
+
+/**
+ * El precio con el que anunciar un servicio en el catalogo.
+ *
+ * Con variantes no hay un precio unico, asi que se muestra el mas bajo como
+ * "desde". Se calcula aqui y no en cada vista para que el catalogo, el detalle y
+ * el flujo de reserva no puedan discrepar.
+ */
+export function precioDesde(servicio: Pick<Servicio, 'precioBase' | 'variantes'>): number {
+  if (!servicio.variantes || servicio.variantes.opciones.length === 0) {
+    return servicio.precioBase
+  }
+  return Math.min(...servicio.variantes.opciones.map((o) => o.precio))
 }

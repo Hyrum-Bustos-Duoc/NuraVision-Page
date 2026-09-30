@@ -28,6 +28,9 @@ const BORRADOR_VACIO: DatosServicio = {
   activo: true,
   imagenUrl: null,
   incluye: [],
+  // El editor de variantes llega en el siguiente paso. Hasta entonces un
+  // servicio nuevo nace sin pregunta, que es como se comportan los 17 actuales.
+  variantes: null,
 }
 
 /** Entidad -> borrador del formulario. Solo quita el `id`. */
@@ -42,6 +45,9 @@ function aBorrador(servicio: Servicio): DatosServicio {
     activo: servicio.activo,
     imagenUrl: servicio.imagenUrl,
     incluye: servicio.incluye,
+    // Se arrastran tal cual: el formulario todavia no las muestra, y perderlas
+    // al guardar otro campo seria borrar la configuracion sin avisar.
+    variantes: servicio.variantes,
   }
 }
 

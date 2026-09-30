@@ -2,6 +2,30 @@
 export type EstadoReserva = 'pendiente' | 'confirmada' | 'completada' | 'cancelada'
 
 /**
+ * La opcion que la clienta eligio, tal como se guarda en la reserva.
+ *
+ * ES UNA COPIA, NO UNA REFERENCIA, y el tipo vive aqui —en reservas— y no en el
+ * modulo de servicios justamente por eso: no es "la opcion del servicio", es lo
+ * que se acordo el dia de la reserva. Guardar solo `opcionId` seria lo natural,
+ * pero las opciones viven dentro del servicio y el estudio las va a editar:
+ * cambiar el precio de "Largo" reescribiria el de todas las reservas pasadas, y
+ * borrar una opcion dejaria reservas apuntando a algo que ya no existe.
+ *
+ * Pesa mas de lo habitual porque `reservas` NO tiene columna de precio: hoy el
+ * precio de una reserva se recalcula del servicio. Para los servicios con
+ * variantes, esta copia es la unica constancia de lo cobrado.
+ */
+export interface VarianteElegida {
+  /** La pregunta tal como se le mostro. Puede haber cambiado despues. */
+  pregunta: string
+  /** `id` de la opcion en el servicio, para poder cruzarla si sigue existiendo. */
+  opcionId: string
+  etiqueta: string
+  /** Precio final acordado. No es un recargo. */
+  precio: number
+}
+
+/**
  * Datos necesarios para crear una reserva.
  *
  * El contacto es obligatorio aunque haya cuenta: quien reserva sin sesion no
@@ -30,6 +54,12 @@ export interface NuevaReserva {
    * quien la hizo: solo le queda el `codigo`.
    */
   clienteId: string | null
+  /**
+   * Lo elegido en el paso de variantes, o `null` si el servicio no pregunta
+   * nada. Se escribe UNA VEZ, al crear la reserva: 0005 no concede el UPDATE de
+   * `detalles_extra`, asi que despues es un registro inmutable de lo acordado.
+   */
+  varianteElegida: VarianteElegida | null
 }
 
 /**
@@ -53,4 +83,6 @@ export interface Reserva {
   clienteTelefono: string | null
   codigo: string
   estado: EstadoReserva
+  /** Lo que se eligio al reservar, o `null` si el servicio no preguntaba nada. */
+  varianteElegida: VarianteElegida | null
 }
