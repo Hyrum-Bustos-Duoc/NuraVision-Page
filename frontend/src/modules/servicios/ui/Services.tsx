@@ -4,11 +4,11 @@ import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel, serviceCategories } from '@/modules/servicios/domain/serviceCategories'
 import { SearchX } from 'lucide-react'
 import { AppImage, Button, EmptyState, FilterPills, Kicker } from '@/shared/ui/ui'
-import { formatPrice } from '@/shared/lib/format'
 import type { ServiceCategoryId } from '@/shared/types'
 import type { Servicio } from '../domain/servicio.types'
 import { useServicios } from './useServicios'
 import { fotoDeServicio } from './servicio.imagenes'
+import { etiquetaDePrecio } from './precio'
 
 type Filter = 'todos' | ServiceCategoryId
 
@@ -24,6 +24,7 @@ interface ServicioVista {
   descripcion: string
   duracionMinutos: number
   precioBase: number
+  variantes: Servicio['variantes']
   /**
    * La tabla `servicios` aun no tiene columna de imagen: la resuelve
    * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
@@ -40,6 +41,7 @@ function toVista(servicio: Servicio): ServicioVista {
     descripcion: servicio.descripcion || 'Sin descripción disponible.',
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
+    variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
   }
 }
@@ -123,7 +125,7 @@ export default function Services() {
                   <p className="mt-2 flex-1 text-sm text-muted">{s.descripcion}</p>
                   <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-4 text-sm text-ink">
                     <span>{s.duracionMinutos} min</span>
-                    <span className="font-medium">{formatPrice(s.precioBase)}</span>
+                    <span className="font-medium">{etiquetaDePrecio(s)}</span>
                   </div>
                   <div className="mt-4 flex gap-3">
                     <Button onClick={() => handleReservar(s.id)} className="flex-1">

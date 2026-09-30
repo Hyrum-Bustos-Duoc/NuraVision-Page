@@ -137,6 +137,14 @@ export interface CurrentUser {
 
 export interface BookingDraft {
   serviceId?: string
+  /**
+   * Opcion elegida en el paso de variantes, si el servicio pregunta algo.
+   *
+   * Se guarda el id y no la opcion entera porque el borrador es estado de
+   * navegacion: la opcion completa se resuelve del servicio al confirmar, y es
+   * ahi —en la reserva— donde se congela una copia.
+   */
+  varianteOpcionId?: string
   professionalId?: string
   dateISO?: string
   time?: string

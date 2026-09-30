@@ -6,8 +6,8 @@ import { useEquipoConAgenda } from '@/modules/profesionales/ui/useEquipoConAgend
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { AppImage, Kicker, LinkButton } from '@/shared/ui/ui'
 import { Reveal } from '@/shared/ui/Reveal'
-import { formatPrice } from '@/shared/lib/format'
 import { getNextAvailableSlots } from '@/shared/lib/availability'
+import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 
 const STEPS = [
   {
@@ -173,7 +173,7 @@ export default function Landing() {
                 <Kicker>{categoryLabel(s.categoria)}</Kicker>
                 <h3 className="mt-1 font-serif-display text-xl text-ink">{s.nombre}</h3>
                 <p className="mt-2 text-sm text-muted">
-                  {s.duracionMinutos} min · {formatPrice(s.precioBase)}
+                  {s.duracionMinutos} min · {etiquetaDePrecio(s)}
                 </p>
               </div>
             </Link>

@@ -2,7 +2,12 @@ import type { ServiceCategoryId } from '@/shared/types'
 import type { Json, Tables, TablesInsert } from '@/shared/types/supabase'
 import { serviceCategories } from '../domain/serviceCategories'
 import { normalizarTexto } from '@/shared/lib/texto'
-import type { DatosServicio, Servicio } from '../domain/servicio.types'
+import type {
+  DatosServicio,
+  OpcionVariante,
+  Servicio,
+  VarianteServicio,
+} from '../domain/servicio.types'
 
 export type ServicioRow = Tables<'servicios'>
 export type ServicioInsert = TablesInsert<'servicios'>
@@ -70,7 +75,56 @@ export function toServicio(row: ServicioRow): Servicio {
     imagenUrl: row.imagen_url?.trim() ? row.imagen_url : null,
     descripcionLarga: row.descripcion_larga ?? '',
     incluye: aListaDeTextos(row.incluye),
+    variantes: aVariante(row.variantes),
   }
+}
+
+/**
+ * `variantes` -> la pregunta del servicio, o `null`.
+ *
+ * El check de 0011 garantiza la ESTRUCTURA —objeto, con pregunta y una lista de
+ * opciones no vacia— pero NO la forma de cada opcion: eso serian varias lineas
+ * de SQL por campo. Aqui se valida opcion por opcion y las incompletas se
+ * descartan, en vez de dejar que una sin precio llegue a la pantalla y se
+ * convierta en un `NaN` en el total.
+ *
+ * Si tras el filtrado no queda ninguna opcion valida, devuelve `null`: el
+ * servicio se comporta como uno normal, con su `precioBase`. Es preferible a
+ * mostrar una pregunta que no se puede responder.
+ *
+ * `?? null` cubre ademas la base donde 0011 no se aplico: la columna no existe y
+ * llega `undefined`.
+ */
+function aVariante(valor: Json | null | undefined): VarianteServicio | null {
+  if (valor === null || valor === undefined) return null
+  if (typeof valor !== 'object' || Array.isArray(valor)) return null
+
+  const { pregunta, opciones } = valor as Record<string, unknown>
+  if (typeof pregunta !== 'string' || pregunta.trim() === '') return null
+  if (!Array.isArray(opciones)) return null
+
+  const validas: OpcionVariante[] = []
+  for (const item of opciones) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
+    const { id, etiqueta, precio } = item as Record<string, unknown>
+
+    // El precio tiene que ser un numero de verdad: un "15000" en texto sumaria
+    // como cadena y el total saldria "015000".
+    if (typeof precio !== 'number' || !Number.isFinite(precio) || precio < 0) continue
+    if (typeof etiqueta !== 'string' || etiqueta.trim() === '') continue
+
+    validas.push({
+      // Sin id utilizable se usa la etiqueta: es lo que identifica la eleccion
+      // en la reserva, y quedarse sin id la volveria imposible de guardar.
+      id: typeof id === 'string' && id.trim() !== '' ? id.trim() : etiqueta.trim(),
+      etiqueta: etiqueta.trim(),
+      precio,
+    })
+  }
+
+  if (validas.length === 0) return null
+
+  return { pregunta: pregunta.trim(), opciones: validas }
 }
 
 /**
@@ -121,5 +175,32 @@ export function fromDatosServicio(datos: DatosServicio): ServicioInsert {
     descripcion_larga:
       datos.descripcionLarga.trim() === '' ? null : datos.descripcionLarga.trim(),
     incluye: datos.incluye.map((i) => i.trim()).filter((i) => i !== ''),
+    /**
+     * Se envia `null` y no un objeto vacio cuando no hay variantes: el check de
+     * 0011 rechazaria un objeto sin pregunta ni opciones, y null es lo que la
+     * columna entiende por "este servicio no pregunta nada".
+     *
+     * Las opciones se limpian igual que al leerlas —misma exigencia en los dos
+     * sentidos— para no guardar una que despues el mapper descartaria, que seria
+     * una variante que desaparece sola tras recargar.
+     */
+    variantes: aFilaVariante(datos.variantes),
   }
+}
+
+function aFilaVariante(variante: VarianteServicio | null): Json | null {
+  if (!variante) return null
+
+  const opciones = variante.opciones
+    .filter((o) => o.etiqueta.trim() !== '' && Number.isFinite(o.precio) && o.precio >= 0)
+    .map((o) => ({
+      id: o.id.trim() !== '' ? o.id.trim() : o.etiqueta.trim(),
+      etiqueta: o.etiqueta.trim(),
+      precio: o.precio,
+    }))
+
+  // Sin pregunta o sin opciones no es una variante a medias: es ninguna.
+  if (variante.pregunta.trim() === '' || opciones.length === 0) return null
+
+  return { pregunta: variante.pregunta.trim(), opciones }
 }

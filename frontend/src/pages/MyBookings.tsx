@@ -123,10 +123,19 @@ export default function MyBookings() {
   const filas = useMemo<FilaReserva[]>(() => {
     if (usuario) {
       return deLaBase.reservas.map((r) =>
-        // La base no guarda cuanto se cobro, asi que se muestra el precio
-        // vigente del servicio. Para una reserva antigua puede no ser el que
-        // se pago; es lo mas cercano disponible mientras no se guarde.
-        desdeReserva(r, servicios.porId.get(r.servicioId)?.precioBase ?? null),
+        /**
+         * Si la reserva guardo una variante, su precio es el ACORDADO y manda:
+         * es lo unico que quedo escrito de lo que se cobro. Solo cuando no hay
+         * variante se cae al precio vigente del servicio, que para una reserva
+         * antigua puede no ser el que se pago.
+         *
+         * `reservas` sigue sin columna de precio propia, asi que ese respaldo
+         * sigue siendo aproximado para los servicios sin variantes.
+         */
+        desdeReserva(
+          r,
+          r.varianteElegida?.precio ?? servicios.porId.get(r.servicioId)?.precioBase ?? null,
+        ),
       )
     }
     return locales.map(desdeBooking)

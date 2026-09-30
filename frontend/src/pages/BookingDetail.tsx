@@ -156,8 +156,14 @@ export default function BookingDetail() {
     getProfessional(vista.profesionalId)?.name ??
     (profesionales.cargando ? 'Cargando…' : 'Profesional no disponible')
 
-  // La base no guarda cuanto se cobro, asi que se muestra el precio vigente
-  // del servicio. Para una reserva antigua puede no ser el que se pago.
+  /**
+   * El precio acordado manda sobre el vigente.
+   *
+   * `vista.precio` ya lo trae resuelto cuando la reserva viene de la base (ver
+   * MyBookings). El respaldo es el precio actual del servicio, que para una
+   * reserva antigua puede no ser el que se pago: `reservas` no tiene columna de
+   * precio propia.
+   */
   const precio =
     vista.precio ?? (servicioState.estado === 'listo' ? servicioState.servicio.precioBase : null)
 
