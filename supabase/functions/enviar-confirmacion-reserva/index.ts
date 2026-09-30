@@ -6,8 +6,9 @@
 // ----------------------------------------------------------------------------
 // LA DECISION QUE MANDA SOBRE TODO LO DEMAS: NO SE CONFIA EN EL CUERPO
 // ----------------------------------------------------------------------------
-// La peticion trae SOLO el id de la reserva. El nombre, el correo de destino, el
-// servicio, la hora y el precio se leen de la base con la service_role key.
+// La peticion trae SOLO un identificador de la reserva —su id o su codigo—. El
+// nombre, el correo de destino, el servicio, la hora y el precio se leen de la
+// base con la service_role key.
 //
 // Lo natural seria que el frontend —que ya tiene esos datos en pantalla— los
 // mandara y ahorrar la consulta. Seria un agujero: esta funcion se invoca desde
@@ -77,13 +78,26 @@ function respuesta(cuerpo: unknown, status: number): Response {
   })
 }
 
+/**
+ * Como se identifica la reserva. Uno de los dos, no los dos.
+ *
+ * SON DOS PORQUE HAY DOS LLAMANTES POSIBLES, y ninguno tiene los dos datos:
+ *
+ *   · El navegador solo tiene el `codigo`. Y no es un descuido: la politica de
+ *     0003 no concede SELECT sobre `reservas` al rol anonimo, asi que el insert
+ *     no puede pedir de vuelta la fila creada y LA APP NUNCA CONOCE EL ID. El
+ *     propio 0003 lo deja dicho: "la app no conoce el id generado y usa su
+ *     codigo". Por eso `codigo` es `text not null unique`, con indice unico.
+ *
+ *   · Un webhook de la base si tendria el id, porque dispara sobre la fila.
+ *
+ * Con cualquiera de los dos se llega a la misma reserva; el resto de los datos
+ * se leen de la base igual.
+ */
 interface Peticion {
-  /** id de `reservas`. Es lo UNICO que se acepta como dato de la reserva. */
-  reservaId: number | string
-  /**
-   * Codigo visible, para las reservas sin cuenta. Es la unica prueba de que la
-   * reserva es de quien la pide cuando no hay sesion que cruzar.
-   */
+  /** id de `reservas`. Lo usa un webhook, que dispara sobre la fila. */
+  reservaId?: number | string
+  /** Codigo visible. Es lo unico que el navegador tiene para identificarla. */
   codigo?: string
 }
 
@@ -184,9 +198,14 @@ Deno.serve(async (req: Request) => {
     return respuesta({ error: 'El cuerpo de la peticion no es JSON valido.' }, 400)
   }
 
-  const reservaId = Number(cuerpo.reservaId)
-  if (!Number.isInteger(reservaId) || reservaId <= 0) {
-    return respuesta({ error: 'Falta el identificador de la reserva.' }, 400)
+  const porId = cuerpo.reservaId !== undefined ? Number(cuerpo.reservaId) : null
+  const porCodigo = typeof cuerpo.codigo === 'string' ? cuerpo.codigo.trim() : ''
+
+  if (porId !== null && (!Number.isInteger(porId) || porId <= 0)) {
+    return respuesta({ error: 'El identificador de la reserva no es valido.' }, 400)
+  }
+  if (porId === null && porCodigo === '') {
+    return respuesta({ error: 'Falta el identificador o el codigo de la reserva.' }, 400)
   }
 
   const admin = createClient(url, serviceKey, {
@@ -198,15 +217,18 @@ Deno.serve(async (req: Request) => {
    * consulta, por las claves foraneas. Tres consultas sueltas multiplicarian la
    * latencia de una funcion que corre mientras alguien espera.
    */
-  const { data: reserva, error: errorLectura } = await admin
+  const lectura = admin
     .from('reservas')
     .select(
       'id, codigo, cliente_id, cliente_nombre, cliente_email, fecha, hora_inicio, ' +
         'detalles_extra, confirmacion_enviada_en, ' +
         'servicios ( nombre, precio_base ), profesionales ( nombre )',
     )
-    .eq('id', reservaId)
-    .maybeSingle()
+  // Se busca por lo que haya llegado. `codigo` es unico, asi que las dos vias
+  // resuelven a una sola fila.
+  const consulta = porId !== null ? lectura.eq('id', porId) : lectura.eq('codigo', porCodigo)
+
+  const { data: reserva, error: errorLectura } = await consulta.maybeSingle()
 
   if (errorLectura) {
     return respuesta({ error: `No se pudo leer la reserva: ${errorLectura.message}` }, 500)
@@ -220,9 +242,7 @@ Deno.serve(async (req: Request) => {
   // El codigo se compara completo y sin distinguir mayusculas, que es como la
   // clienta lo va a copiar de la pantalla.
   const codigoCoincide =
-    typeof cuerpo.codigo === 'string' &&
-    cuerpo.codigo.trim() !== '' &&
-    cuerpo.codigo.trim().toUpperCase() === reserva.codigo.toUpperCase()
+    porCodigo !== '' && porCodigo.toUpperCase() === reserva.codigo.toUpperCase()
 
   if (!esDuenia && !esStaff && !codigoCoincide) {
     return respuesta({ error: 'No tienes permiso para enviar esta confirmacion.' }, 403)
@@ -238,7 +258,9 @@ Deno.serve(async (req: Request) => {
   const { data: reclamada, error: errorReclamo } = await admin
     .from('reservas')
     .update({ confirmacion_enviada_en: new Date().toISOString() })
-    .eq('id', reservaId)
+    // Siempre por el id de la fila que se acaba de leer, venga la peticion por
+    // id o por codigo: es la clave primaria y no depende de cual se uso.
+    .eq('id', reserva.id)
     .is('confirmacion_enviada_en', null)
     .select('id')
 
@@ -294,7 +316,7 @@ Deno.serve(async (req: Request) => {
     await admin
       .from('reservas')
       .update({ confirmacion_enviada_en: null })
-      .eq('id', reservaId)
+      .eq('id', reserva.id)
 
     return respuesta({ error: envio.motivo }, 502)
   }
