@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
-import type { Servicio } from '@/modules/servicios/domain/servicio.types'
+import type { Servicio, VarianteServicio } from '@/modules/servicios/domain/servicio.types'
 import { useServicioDetalle } from '@/modules/servicios/ui/useServicioDetalle'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import { ServiceVariantStep } from '@/modules/servicios/ui/ServiceVariantStep'
 import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfesionalesPorServicio'
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
@@ -21,8 +22,9 @@ import { TextField } from '@/shared/ui/form'
 import { pointsForPrice } from '@/shared/lib/loyalty'
 import type { Booking, Professional, ServiceCategoryId } from '@/shared/types'
 import type { Profesional } from '@/modules/profesionales/domain/profesional.types'
+import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 
-type Step = 'service' | 'professional' | 'date' | 'time' | 'confirm'
+type Step = 'service' | 'variant' | 'professional' | 'date' | 'time' | 'confirm'
 
 /** Datos de quien reserva: de la cuenta si hay sesión, del formulario si no. */
 type Contact = { name: string; email: string; phone: string }
@@ -40,6 +42,8 @@ interface ServicioReservaVista {
   categoria: ServiceCategoryId
   duracionMinutos: number
   precioBase: number
+  /** Pregunta que altera el precio, o `null` si el servicio no pregunta nada. */
+  variantes: VarianteServicio | null
   /**
    * La tabla `servicios` aun no tiene columna de imagen: la resuelve
    * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
@@ -55,6 +59,7 @@ function toVista(servicio: Servicio): ServicioReservaVista {
     categoria: servicio.categoria,
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
+    variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
   }
 }
@@ -146,15 +151,51 @@ export default function BookingFlow() {
   }, [profesionalesState.profesionales, bookingDraft.professionalId, disponibilidad.horario])
 
 
+  const service = servicioState.estado === 'listo' ? toVista(servicioState.servicio) : undefined
+
+  /**
+   * El paso de la pregunta solo existe para los servicios que tienen una.
+   *
+   * Mientras el servicio se carga, `service` es undefined y esto da `false`, asi
+   * que el asistente calcula un paso de mas —'professional'— durante un render.
+   * No se ve: `esperandoServicio` tapa todo lo que hay bajo el indicador hasta
+   * que el servicio llega. Lo unico que parpadea es el numero resaltado.
+   */
+  const preguntaAlgo = service?.variantes != null
+
   const step: Step = !bookingDraft.serviceId
     ? 'service'
-    : !bookingDraft.professionalId
-      ? 'professional'
-      : !bookingDraft.dateISO
-        ? 'date'
-        : !bookingDraft.time
-          ? 'time'
-          : 'confirm'
+    : preguntaAlgo && !bookingDraft.varianteOpcionId
+      ? 'variant'
+      : !bookingDraft.professionalId
+        ? 'professional'
+        : !bookingDraft.dateISO
+          ? 'date'
+          : !bookingDraft.time
+            ? 'time'
+            : 'confirm'
+
+  /**
+   * La opcion elegida, resuelta contra el servicio que hay AHORA.
+   *
+   * Puede no encontrarse: si el estudio edita las opciones mientras alguien
+   * tiene el asistente abierto, el id del borrador deja de existir. En ese caso
+   * vale `undefined` y el paso vuelve a preguntar, que es preferible a reservar
+   * con un precio que ya no esta en el catalogo.
+   */
+  const opcionElegida = service?.variantes?.opciones.find(
+    (o) => o.id === bookingDraft.varianteOpcionId,
+  )
+
+  /**
+   * Lo que se va a cobrar. Es el precio de la opcion elegida y, si el servicio
+   * no pregunta nada, su `precioBase`.
+   *
+   * Se calcula una sola vez y se usa en el resumen, en la confirmacion y en los
+   * puntos: tres sitios que antes leian `precioBase` por separado y que con
+   * variantes habrian mostrado tres cifras distintas de la real.
+   */
+  const precioTotal = opcionElegida ? opcionElegida.precio : (service?.precioBase ?? 0)
 
   // Cada paso del asistente vuelve al inicio de la pantalla.
   useScrollToTopOnChange(confirmado ? 'success' : step)
@@ -170,18 +211,31 @@ export default function BookingFlow() {
     )
   }
 
-  const service = servicioState.estado === 'listo' ? toVista(servicioState.servicio) : undefined
+  // Las etiquetas del indicador se arman segun haya o no pregunta, de modo que
+  // el numero resaltado corresponda con lo que se esta viendo.
+  const etiquetasPasos = preguntaAlgo
+    ? ['Servicio', 'Opción', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
+    : ['Servicio', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
 
-  const stepIndex = { service: 0, professional: 1, date: 2, time: 3, confirm: 4 }[step]
+  const stepIndex = preguntaAlgo
+    ? { service: 0, variant: 1, professional: 2, date: 3, time: 4, confirm: 5 }[step]
+    : { service: 0, variant: 1, professional: 1, date: 2, time: 3, confirm: 4 }[step]
 
-  function clearFrom(field: 'service' | 'professional' | 'date' | 'time') {
+  function clearFrom(field: 'service' | 'variant' | 'professional' | 'date' | 'time') {
     setBookingDraft((d) => {
       const next = { ...d }
       if (field === 'service') {
         delete next.serviceId
+        // La eleccion pertenece al servicio: conservarla al cambiar de servicio
+        // aplicaria la opcion de uno a otro.
+        delete next.varianteOpcionId
         delete next.professionalId
         delete next.dateISO
         delete next.time
+      } else if (field === 'variant') {
+        // Cambiar la respuesta cambia el precio, asi que se vuelve a preguntar
+        // desde ahi: lo elegido despues sigue siendo valido y no se borra.
+        delete next.varianteOpcionId
       } else if (field === 'professional') {
         delete next.professionalId
         delete next.dateISO
@@ -212,7 +266,7 @@ export default function BookingFlow() {
     <div className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10 overflow-x-auto">
         <div className="min-w-[560px]">
-          <Stepper currentIndex={stepIndex} />
+          <Stepper currentIndex={stepIndex} labels={etiquetasPasos} />
         </div>
       </div>
 
@@ -240,6 +294,20 @@ export default function BookingFlow() {
         <ServiceStep
           preselectedProfessional={professional}
           onSelect={(serviceId) => setBookingDraft((d) => ({ ...d, serviceId }))}
+        />
+      )}
+
+      {/* Solo para los servicios que preguntan algo. `service.variantes` no es
+          null aqui: es lo que puso el paso en 'variant'. */}
+      {step === 'variant' && service?.variantes && (
+        <ServiceVariantStep
+          servicioNombre={service.nombre}
+          variante={service.variantes}
+          opcionElegidaId={bookingDraft.varianteOpcionId}
+          onSelect={(varianteOpcionId) =>
+            setBookingDraft((d) => ({ ...d, varianteOpcionId }))
+          }
+          onBack={() => clearFrom('service')}
         />
       )}
 
@@ -280,6 +348,7 @@ export default function BookingFlow() {
       {step === 'date' && !esperandoHorario && service && professional && (
         <DateStep
           service={service}
+          precio={precioTotal}
           professional={professional}
           days={getMonthDays(calendarView.year, calendarView.month, professional, bookings)}
           calendarView={calendarView}
@@ -303,6 +372,16 @@ export default function BookingFlow() {
       {step === 'confirm' && !esperandoHorario && service && professional && bookingDraft.dateISO && bookingDraft.time && (
         <ConfirmStep
           service={service}
+          precio={precioTotal}
+          eleccion={
+            opcionElegida
+              ? {
+                  pregunta: service.variantes?.pregunta ?? '',
+                  etiqueta: opcionElegida.etiqueta,
+                }
+              : null
+          }
+          onChangeEleccion={() => clearFrom('variant')}
           professionalName={professional.name}
           dateISO={bookingDraft.dateISO}
           time={bookingDraft.time}
@@ -336,10 +415,23 @@ export default function BookingFlow() {
                 // Sin sesión va NULL, que es lo que la política de inserción
                 // exige del rol anónimo.
                 clienteId: usuario?.id ?? null,
-        // El paso de variantes llega despues. Hasta entonces toda reserva se
-        // crea sin eleccion, que es lo correcto para los 17 servicios actuales:
-        // ninguno pregunta nada.
-        varianteElegida: null,
+                /**
+                 * COPIA de lo elegido, no su id. El estudio va a editar estas
+                 * opciones: guardar solo el id dejaria que un cambio de precio
+                 * reescribiera lo cobrado en reservas ya hechas. Y pesa mas
+                 * porque `reservas` no tiene columna de precio.
+                 *
+                 * `null` cuando el servicio no pregunta nada, que es el caso de
+                 * los 17 actuales.
+                 */
+                varianteElegida: opcionElegida
+                  ? {
+                      pregunta: service.variantes?.pregunta ?? '',
+                      opcionId: opcionElegida.id,
+                      etiqueta: opcionElegida.etiqueta,
+                      precio: opcionElegida.precio,
+                    }
+                  : null,
               })
 
               // Si la base la rechazó no se avanza: el paso de confirmación
@@ -361,7 +453,7 @@ export default function BookingFlow() {
                 dateISO: bookingDraft.dateISO!,
                 time: horaInicio,
                 durationMin: service.duracionMinutos,
-                price: service.precioBase,
+                price: precioTotal,
                 // La base la guarda como 'pendiente': confirmarla es decisión
                 // del estudio, no de quien reserva.
                 status: 'confirmada',
@@ -457,7 +549,7 @@ function ServiceStep({
                   <h3 className="mt-1 font-serif-display text-lg text-ink">{s.nombre}</h3>
                   <div className="mt-3 flex items-center justify-between text-sm text-ink">
                     <span>{s.duracionMinutos} min</span>
-                    <span className="font-medium">{formatPrice(s.precioBase)}</span>
+                    <span className="font-medium">{etiquetaDePrecio(s)}</span>
                   </div>
                 </div>
               </button>
@@ -554,6 +646,7 @@ function ProfessionalStep({
 
 function DateStep({
   service,
+  precio,
   professional,
   days,
   calendarView,
@@ -562,6 +655,12 @@ function DateStep({
   onSelect,
 }: {
   service: ServicioReservaVista
+  /**
+   * El precio ya resuelto: el de la opcion elegida, o el base si el servicio no
+   * pregunta nada. Llega como prop y no se lee de `service.precioBase` porque
+   * ese seria el precio equivocado en cuanto hay variantes.
+   */
+  precio: number
   professional: Professional
   days: ReturnType<typeof getMonthDays>
   calendarView: { year: number; month: number }
@@ -617,7 +716,7 @@ function DateStep({
           <div className="mt-5 flex items-center justify-between border-t border-line pt-4">
             <span className="text-sm text-muted">Total</span>
             <span className="font-serif-display text-2xl text-ink">
-              {formatPrice(service.precioBase)}
+              {formatPrice(precio)}
             </span>
           </div>
         </div>
@@ -679,6 +778,9 @@ function TimeStep({
 
 function ConfirmStep({
   service,
+  precio,
+  eleccion,
+  onChangeEleccion,
   professionalName,
   dateISO,
   time,
@@ -690,6 +792,17 @@ function ConfirmStep({
   errorAlGuardar,
 }: {
   service: ServicioReservaVista
+  /** Precio ya resuelto. Ver la nota en `DateStep`. */
+  precio: number
+  /**
+   * Lo respondido en el paso de la pregunta, si hubo uno.
+   *
+   * Se muestra en el total porque es lo que explica la cifra: sin esto, alguien
+   * que reservo "Largo" veria $22.000 sin saber de donde sale.
+   */
+  eleccion: { pregunta: string; etiqueta: string } | null
+  /** Vuelve al paso de la pregunta para cambiar la respuesta. */
+  onChangeEleccion: () => void
   professionalName: string
   dateISO: string
   time: string
@@ -793,8 +906,23 @@ function ConfirmStep({
         <div className="h-fit rounded-2xl bg-line-soft/60 p-6">
           <p className="text-sm text-muted">Total a pagar en el salón</p>
           <p className="mt-1 font-serif-display text-4xl text-ink">
-            {formatPrice(service.precioBase)}
+            {formatPrice(precio)}
           </p>
+
+          {eleccion && (
+            <div className="mt-4 border-t border-line pt-4 text-sm">
+              <p className="text-muted">{eleccion.pregunta}</p>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <p className="text-ink">{eleccion.etiqueta}</p>
+                <button
+                  onClick={onChangeEleccion}
+                  className="shrink-0 text-xs text-muted underline decoration-line underline-offset-4 hover:text-ink"
+                >
+                  Cambiar
+                </button>
+              </div>
+            </div>
+          )}
           <Button
             full
             className="mt-6"
@@ -829,7 +957,7 @@ function ConfirmStep({
                 Estás reservando sin cuenta. Tu hora queda igual de confirmada, pero no quedará
                 guardada en un perfil ni sumará los{' '}
                 <span className="text-ink">
-                  {pointsForPrice(service.precioBase)} puntos
+                  {pointsForPrice(precio)} puntos
                 </span>{' '}
                 que corresponden a este servicio.
               </p>

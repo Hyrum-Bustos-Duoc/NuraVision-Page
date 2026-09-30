@@ -7,7 +7,8 @@ import { TODAY_ISO } from '@/shared/data/seed'
 import { getSlotsForDate } from '@/shared/lib/availability'
 import type { Professional } from '@/shared/types'
 import { AppImage, Kicker } from '@/shared/ui/ui'
-import { formatPrice, getWeekDates, parseISODate, WEEKDAYS_SHORT } from '@/shared/lib/format'
+import { getWeekDates, parseISODate, WEEKDAYS_SHORT } from '@/shared/lib/format'
+import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 
 export default function ProfessionalDetail() {
   const { id } = useParams()
@@ -91,7 +92,7 @@ export default function ProfessionalDetail() {
                     <p className="text-xs text-muted">{servicio.duracionMinutos} min</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-ink">{formatPrice(servicio.precioBase)}</span>
+                    <span className="text-sm text-ink">{etiquetaDePrecio(servicio)}</span>
                     <button
                       onClick={() => goToBooking(servicio.id)}
                       className="text-sm font-medium text-ink hover:text-olive-700"

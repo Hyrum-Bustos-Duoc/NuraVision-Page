@@ -2,9 +2,9 @@ import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { useServiciosDeProfesional } from '@/modules/servicios/ui/useServiciosDeProfesional'
 import { AppImage, Card, Kicker } from '@/shared/ui/ui'
-import { formatPrice } from '@/shared/lib/format'
 import { useMiFichaProfesional } from '@/modules/profesionales/ui/useMiFichaProfesional'
 import { FichaActiva, SelectorDeFicha } from '@/modules/profesionales/ui/SelectorDeFicha'
+import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 
 export default function ProServices() {
   // La ficha sale de la base: antes se buscaba en los datos de ejemplo con el
@@ -68,7 +68,7 @@ export default function ProServices() {
                 <Kicker>{categoryLabel(servicio.categoria)}</Kicker>
                 <p className="mt-1 font-serif-display text-xl text-ink">{servicio.nombre}</p>
                 <p className="mt-1 text-sm text-muted">
-                  {servicio.duracionMinutos} min · {formatPrice(servicio.precioBase)}
+                  {servicio.duracionMinutos} min · {etiquetaDePrecio(servicio)}
                 </p>
               </div>
               <span className="rounded-full bg-olive-50 px-3 py-1 text-xs font-medium text-olive-700">
