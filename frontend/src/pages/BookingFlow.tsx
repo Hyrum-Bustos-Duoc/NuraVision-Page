@@ -207,6 +207,7 @@ export default function BookingFlow() {
         servicioNombre={confirmado.servicioNombre}
         profesionalNombre={confirmado.profesionalNombre}
         registered={!confirmado.booking.guest}
+        correoEnviado={reserva.correoEnviado}
       />
     )
   }
@@ -989,6 +990,7 @@ function SuccessScreen({
   servicioNombre,
   profesionalNombre,
   registered,
+  correoEnviado,
 }: {
   booking: Booking
   servicioNombre: string
@@ -1001,6 +1003,8 @@ function SuccessScreen({
    */
   profesionalNombre: string
   registered: boolean
+  /** `null` mientras el correo viaja, `true` si salio, `false` si fallo. */
+  correoEnviado: boolean | null
 }) {
   const navigate = useNavigate()
 
@@ -1010,10 +1014,18 @@ function SuccessScreen({
         ✓
       </div>
       <h1 className="mt-6 font-serif-display text-4xl text-ink">Tu reserva está confirmada</h1>
+      {/* Lo que dice depende de si el correo SALIO de verdad.
+          Antes afirmaba "te enviamos el detalle" sin que existiera ningun envio,
+          y ademas prometia un recordatorio 24 h antes que nadie manda. Ahora el
+          envio existe, puede fallar, y en ese caso no se promete. */}
       <p className="mt-3 text-sm text-muted">
-        {registered
-          ? 'Te enviamos el detalle a tu correo y un recordatorio 24 h antes.'
-          : `Enviamos el detalle a ${booking.clientEmail}. Guarda tu código: es lo que necesitas para consultar o modificar tu hora.`}
+        {correoEnviado === false
+          ? 'No pudimos enviarte el correo de confirmación, pero tu hora está tomada.'
+          : correoEnviado === null
+            ? `Estamos enviando el detalle a ${booking.clientEmail}.`
+            : `Enviamos el detalle a ${booking.clientEmail}.`}
+        {!registered &&
+          ' Guarda tu código: es lo que necesitas para consultar o modificar tu hora.'}
       </p>
 
       <div className="mt-8 rounded-2xl border border-line-soft bg-paper p-6 text-left">
