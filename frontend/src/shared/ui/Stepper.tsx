@@ -2,10 +2,22 @@ import { Check } from 'lucide-react'
 
 const STEP_LABELS = ['Servicio', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
 
-export function Stepper({ currentIndex }: { currentIndex: number }) {
+/**
+ * Las etiquetas se pueden pasar porque el asistente de reserva tiene un paso
+ * condicional: los servicios con variantes preguntan algo antes de elegir
+ * profesional, y los demas no. Con la lista fija, ese paso no tendria como
+ * aparecer y el indicador marcaria un numero que no corresponde.
+ */
+export function Stepper({
+  currentIndex,
+  labels = STEP_LABELS,
+}: {
+  currentIndex: number
+  labels?: string[]
+}) {
   return (
     <div className="flex items-center">
-      {STEP_LABELS.map((label, index) => {
+      {labels.map((label, index) => {
         const done = index < currentIndex
         const current = index === currentIndex
         return (
@@ -30,7 +42,7 @@ export function Stepper({ currentIndex }: { currentIndex: number }) {
                 {label}
               </span>
             </div>
-            {index < STEP_LABELS.length - 1 && (
+            {index < labels.length - 1 && (
               <div className="mx-3 h-px flex-1 bg-line sm:mx-4" />
             )}
           </div>

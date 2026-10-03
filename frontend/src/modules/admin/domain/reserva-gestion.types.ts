@@ -1,4 +1,5 @@
 import type { EstadoReserva } from '@/shared/types/supabase'
+import type { VarianteElegida } from '@/modules/reservas/domain/reserva.types'
 
 export type { EstadoReserva }
 
@@ -30,6 +31,14 @@ export interface ReservaGestion {
   /** uuid de la cuenta, o `null` si reservo como invitada. */
   clienteId: string | null
   estado: EstadoReserva
+  /**
+   * Lo que la clienta eligio al reservar, o `null` si el servicio no preguntaba.
+   *
+   * Importa que el estudio lo vea: es lo unico que dice a que precio se acordo
+   * la hora. `reservas` no tiene columna de precio, asi que sin esto el panel
+   * mostraria el precio que el servicio tenga HOY.
+   */
+  varianteElegida: VarianteElegida | null
 }
 
 /**

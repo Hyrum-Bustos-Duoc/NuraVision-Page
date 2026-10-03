@@ -4,6 +4,8 @@ import { useToast } from '@/shared/state/Toast'
 import { categoryLabel, serviceCategories } from '@/modules/servicios/domain/serviceCategories'
 import { useServiciosGestion } from '@/modules/servicios/ui/useServiciosGestion'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
+import { EditorVariantes } from '@/modules/servicios/ui/EditorVariantes'
+import { motivoParaNoGuardarVariantes } from '@/modules/servicios/domain/servicio.reglas'
 import type { DatosServicio, Servicio } from '@/modules/servicios/application'
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { ImageUploader } from '@/shared/components/ImageUploader'
@@ -28,6 +30,9 @@ const BORRADOR_VACIO: DatosServicio = {
   activo: true,
   imagenUrl: null,
   incluye: [],
+  // El editor de variantes llega en el siguiente paso. Hasta entonces un
+  // servicio nuevo nace sin pregunta, que es como se comportan los 17 actuales.
+  variantes: null,
 }
 
 /** Entidad -> borrador del formulario. Solo quita el `id`. */
@@ -42,6 +47,9 @@ function aBorrador(servicio: Servicio): DatosServicio {
     activo: servicio.activo,
     imagenUrl: servicio.imagenUrl,
     incluye: servicio.incluye,
+    // Se arrastran tal cual: el formulario todavia no las muestra, y perderlas
+    // al guardar otro campo seria borrar la configuracion sin avisar.
+    variantes: servicio.variantes,
   }
 }
 
@@ -317,6 +325,10 @@ function ModalServicio({
       siguiente.duracionMinutos = 'Debe ser múltiplo de 30 minutos.'
     }
     if (borrador.precioBase < 0) siguiente.precioBase = 'El precio no puede ser negativo.'
+    // Se reutiliza la regla del dominio en vez de repetirla: es la misma que
+    // aplica el caso de uso al guardar, asi que no pueden discrepar.
+    const motivoVariantes = motivoParaNoGuardarVariantes(borrador.variantes)
+    if (motivoVariantes !== null) siguiente.variantes = motivoVariantes
     return siguiente
   }, [borrador])
 
@@ -419,6 +431,21 @@ function ModalServicio({
           placeholder="Agregar ítem"
           hint="Lista de lo que contempla el servicio."
         />
+
+        <EditorVariantes
+          valor={borrador.variantes}
+          onChange={(variantes) => set('variantes', variantes)}
+          mostrarErrores={mostrarErrores}
+        />
+
+        {/* El editor marca en rojo los campos vacios, pero hay motivos que no
+            pertenecen a un campo concreto —dos opciones con el mismo nombre— y
+            sin esto no se verian en ninguna parte. */}
+        {mostrarErrores && errores.variantes && (
+          <p role="alert" className="text-sm text-danger">
+            {errores.variantes}
+          </p>
+        )}
       </div>
     </Modal>
   )

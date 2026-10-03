@@ -3,11 +3,11 @@ import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfesionalesPorServicio'
 import { AppImage, Avatar, Button, Kicker, Placeholder } from '@/shared/ui/ui'
-import { formatPrice } from '@/shared/lib/format'
 import type { ServiceCategoryId } from '@/shared/types'
 import type { Servicio } from '../domain/servicio.types'
 import { useServicioDetalle } from './useServicioDetalle'
 import { fotoDeServicio } from './servicio.imagenes'
+import { etiquetaDePrecio } from './precio'
 
 /**
  * Lo que esta pantalla necesita pintar. La tabla `servicios` todavia no tiene
@@ -23,6 +23,7 @@ interface ServicioDetalleVista {
   incluye: string[]
   duracionMinutos: number
   precioBase: number
+  variantes: Servicio['variantes']
   /**
    * La tabla `servicios` aun no tiene columna de imagen: la resuelve
    * `fotoDeServicio`, que siempre devuelve una. Por eso no es opcional y la
@@ -43,6 +44,7 @@ function toVista(servicio: Servicio): ServicioDetalleVista {
     incluye: [],
     duracionMinutos: servicio.duracionMinutos,
     precioBase: servicio.precioBase,
+    variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
     activo: servicio.activo,
   }
@@ -179,7 +181,7 @@ export default function ServiceDetail() {
 
         <div className="h-fit rounded-2xl border border-line-soft bg-paper p-6">
           <div className="flex items-baseline justify-between">
-            <p className="font-serif-display text-4xl text-ink">{formatPrice(service.precioBase)}</p>
+            <p className="font-serif-display text-4xl text-ink">{etiquetaDePrecio(service)}</p>
             <span className="text-sm text-muted">{service.duracionMinutos} min</span>
           </div>
 

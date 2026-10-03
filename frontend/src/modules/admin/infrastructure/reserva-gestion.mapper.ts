@@ -1,4 +1,5 @@
 import type { Tables } from '@/shared/types/supabase'
+import { aVarianteElegida } from '@/modules/reservas/infrastructure/reserva.mapper'
 import type { ReservaGestion } from '../domain/reserva-gestion.types'
 
 export type ReservaRow = Tables<'reservas'>
@@ -24,5 +25,8 @@ export function toReservaGestion(row: ReservaRow): ReservaGestion {
     clienteTelefono: row.cliente_telefono,
     clienteId: row.cliente_id,
     estado: row.estado,
+    // Se reutiliza el parser del modulo reservas a proposito: es la misma
+    // columna de la misma tabla, y dos copias podrian interpretarla distinto.
+    varianteElegida: aVarianteElegida(row.detalles_extra),
   }
 }
