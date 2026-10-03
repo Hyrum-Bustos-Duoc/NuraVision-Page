@@ -22,3 +22,7 @@ pnpm-debug.log*
 # Claude Code: los comandos y skills de .claude/ si se versionan (los usa
 # todo el equipo); los ajustes de permisos son de cada maquina.
 .claude/settings.local.json
+
+# Vercel: .vercel/ guarda el projectId y el orgId de cada maquina al enlazar
+# el repo con el proyecto; no es configuracion compartida.
+.vercel
