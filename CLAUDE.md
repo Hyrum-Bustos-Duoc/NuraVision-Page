@@ -95,3 +95,28 @@ Al terminar cualquier tarea, entrega un resumen breve y claro con esta estructur
 **Siguiente paso:** [qué sigue o qué necesitas revisar/decidir]
 
 Mantén el reporte corto y directo — evita explicaciones largas o detalles innecesarios que puedan generar confusión.
+
+# Vercel
+
+La CLI esta fijada como dependencia de desarrollo en el `package.json` de la
+raiz, asi que llega con el repositorio:
+
+```bash
+npm install            # desde la raiz, una sola vez tras clonar o hacer pull
+npx vercel login       # autenticacion, una vez por maquina
+npx vercel link        # enlaza esta copia con el proyecto; crea .vercel/
+```
+
+`.vercel/` queda fuera del control de versiones: guarda el `projectId` y el
+`orgId` de cada maquina, no configuracion compartida.
+
+La rama que se despliega a produccion **no** se define en `.vercel/` ni en
+`frontend/vercel.json`. Se configura en el proyecto, en
+*Settings -> Git -> Production Branch*, o desde la CLI una vez enlazado:
+
+```bash
+npx vercel project ls                 # proyectos de la cuenta
+npx vercel git connect                # revisa el repo conectado
+```
+
+El resto de las ramas se despliega como *preview* de forma automatica.
