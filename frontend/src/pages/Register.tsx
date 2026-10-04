@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/ui/useAuth'
+import { rutaDeRetorno } from '@/modules/auth/ui/ruta-inicial'
 import { Button } from '@/shared/ui/ui'
 
 export default function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const volver = rutaDeRetorno(params.get('volver'))
   const [accepted, setAccepted] = useState(false)
   const [nombre, setNombre] = useState('')
   const [apellido, setApellido] = useState('')
@@ -36,7 +39,7 @@ export default function Register() {
         telefono,
       })
 
-      if (resultado.sesionIniciada) navigate('/')
+      if (resultado.sesionIniciada) navigate(volver ?? '/')
       else setFaltaConfirmar(true)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No pudimos crear tu cuenta.')
