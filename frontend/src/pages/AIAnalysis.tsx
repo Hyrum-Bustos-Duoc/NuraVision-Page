@@ -5,12 +5,15 @@ import { useAppState } from '@/shared/state/AppState'
 import { AppImage, Button, FilterPills, Kicker } from '@/shared/ui/ui'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
 import { formatPrice } from '@/shared/lib/format'
+import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
+import { ProductGrid } from '@/modules/tienda/ui/ProductGrid'
 
 type Step = 'prepare' | 'upload' | 'result'
 type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
 
 export default function AIAnalysis() {
   const { siteContent, activeServices: services } = useAppState()
+  const { porSlug } = useCatalogo()
   const focusOptions = siteContent.aiFocusOptions
 
   const [focusId, setFocusId] = useState(focusOptions[0]?.id ?? '')
@@ -37,6 +40,9 @@ export default function AIAnalysis() {
   }
 
   const recommended = services.filter((s) => focus.recommendedServiceIds.includes(s.id))
+  const productosParaCasa = (focus.productosRecomendados ?? [])
+    .map((slug) => porSlug(slug))
+    .filter((p) => p !== undefined)
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-14">
@@ -224,7 +230,24 @@ export default function AIAnalysis() {
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4">
+          {/* Spec §11: despues del aviso de los servicios, lo que sigue en
+              casa. Si la tienda no cargo o no hay productos para este enfoque,
+              el bloque no aparece. */}
+          {productosParaCasa.length > 0 && (
+            <section className="mt-11">
+              <h2 className="font-serif text-[26px] font-light text-ink sm:text-[30px]">
+                Y para continuar en casa
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                Productos de la tienda que complementan los servicios sugeridos.
+              </p>
+              <div className="mt-5">
+                <ProductGrid productos={productosParaCasa} columnas={3} />
+              </div>
+            </section>
+          )}
+
+          <div className="mt-8 flex flex-wrap gap-4">
             <Link
               to="/reservar"
               className="rounded-full bg-ink px-6 py-3 text-sm font-medium text-white hover:bg-ink-soft"

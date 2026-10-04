@@ -26,6 +26,7 @@ export const CONTENIDO_SITIO: SiteContent = {
       label: 'Manos y uñas',
       analysisLabel: 'manos y uñas',
       recommendedServiceIds: ['manicure-ritual-nura', 'unas-esculpidas', 'pedicure-spa'],
+      productosRecomendados: ['aceite-de-cuticula-nura', 'crema-de-manos-reparadora', 'kit-ritual-manos'],
       tips: [
         {
           id: 'manos-luz',
@@ -54,6 +55,7 @@ export const CONTENIDO_SITIO: SiteContent = {
       label: 'Tono de piel',
       analysisLabel: 'tono de piel',
       recommendedServiceIds: ['limpieza-facial-profunda'],
+      productosRecomendados: ['gel-limpiador-suave', 'protector-solar-fps-50'],
       tips: [
         {
           id: 'piel-luz',
@@ -82,6 +84,7 @@ export const CONTENIDO_SITIO: SiteContent = {
       label: 'Cuero cabelludo',
       analysisLabel: 'cuero cabelludo',
       recommendedServiceIds: ['diagnostico-capilar', 'tratamiento-capilar-reconstructivo'],
+      productosRecomendados: ['serum-cuero-cabelludo', 'champu-reconstructor', 'mascarilla-reparacion-profunda'],
       tips: [
         {
           id: 'cuero-luz',
