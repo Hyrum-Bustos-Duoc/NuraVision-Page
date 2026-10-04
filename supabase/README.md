@@ -164,7 +164,16 @@ precio. Además:
 - Si `productos.stock` tiene valor, lo descuenta con bloqueo de fila y rechaza
   la compra si no alcanza.
 - Cada cuenta lee sus pedidos; el personal (`es_staff`) lee todos y solo puede
-  cambiar `estado`.
+  cambiar `estado`. Para eso 0013 revoca primero el `ALL` que Supabase concede
+  por defecto en cada tabla nueva: un `GRANT UPDATE (estado)` encima de ese
+  `ALL` no limitaría nada.
+- Cancelar un pedido devuelve su stock; un pedido cancelado no se reabre.
+- Frenos contra el spam: como mucho 3 pedidos sin pagar por correo y hora, y
+  topes de longitud en los textos. Se esquivan rotando correos: el límite real
+  (por IP o captcha) queda pendiente.
+- Como `productos` existía con políticas creadas a mano, 0013 las elimina todas
+  y deja solo las suyas. Las filas anteriores con otra categoría o precio no
+  entero no se pueden comprar.
 - Las reglas de dinero tienen un espejo en
   `frontend/src/modules/pedidos/domain/pedido.reglas.ts`. Si cambias una,
   cambia la otra.

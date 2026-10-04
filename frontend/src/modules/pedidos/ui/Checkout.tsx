@@ -188,6 +188,7 @@ export default function Checkout() {
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                       autoComplete="name"
+                      maxLength={120}
                       className={claseInput}
                     />
                   </Campo>
@@ -197,6 +198,7 @@ export default function Checkout() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
+                      maxLength={254}
                       className={claseInput}
                     />
                   </Campo>
@@ -211,6 +213,7 @@ export default function Checkout() {
                         value={direccion}
                         onChange={(e) => setDireccion(e.target.value)}
                         autoComplete="street-address"
+                        maxLength={300}
                         className={claseInput}
                       />
                     </Campo>
@@ -220,6 +223,7 @@ export default function Checkout() {
                         onChange={(e) => setComuna(e.target.value)}
                         list="comunas-con-despacho"
                         autoComplete="address-level2"
+                        maxLength={80}
                         className={claseInput}
                       />
                       <datalist id="comunas-con-despacho">

@@ -175,7 +175,12 @@ create table if not exists public.pedidos (
   constraint pedidos_reserva_si_cita
     check (entrega <> 'cita' or reserva_id is not null),
   constraint pedidos_pago_en_estudio_sin_despacho
-    check (not (metodo_pago = 'estudio' and entrega = 'despacho'))
+    check (not (metodo_pago = 'estudio' and entrega = 'despacho')),
+  -- Topes de longitud: sin ellos, cada pedido anonimo podria cargar megabytes.
+  constraint pedidos_longitudes check (
+    length(cliente_nombre) <= 120 and length(cliente_email) <= 254
+    and coalesce(length(cliente_telefono), 0) <= 30
+    and coalesce(length(direccion), 0) <= 300 and coalesce(length(comuna), 0) <= 80)
 );
 
 comment on table public.pedidos is
@@ -217,6 +222,10 @@ create index if not exists pedido_items_pedido_idx
 create table if not exists public.suscripciones_newsletter (
   email      text primary key,
   creado_en  timestamptz not null default now(),
+  -- Doble confirmacion: hoy no se envia ningun correo, pero el dia que se envie
+  -- la newsletter tiene que ir SOLO a quien confirmo. Cualquiera puede suscribir
+  -- un correo ajeno.
+  confirmado_en timestamptz,
 
   constraint newsletter_email_normalizado check (email = lower(btrim(email))),
   constraint newsletter_email_formato check (email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -232,6 +241,23 @@ alter table public.productos                enable row level security;
 alter table public.pedidos                  enable row level security;
 alter table public.pedido_items             enable row level security;
 alter table public.suscripciones_newsletter enable row level security;
+
+-- `productos` existia fuera de migrations/: si se le crearon politicas desde el
+-- dashboard (p. ej. "Enable update for authenticated users" con using (true)),
+-- se sumarian por OR a las de abajo y cualquier clienta podria fijar precios.
+-- Se eliminan TODAS antes de crear las propias: el acceso a esta tabla tiene
+-- que ser exactamente el que declara este archivo.
+do $$
+declare
+  v_politica record;
+begin
+  for v_politica in
+    select policyname from pg_policies where schemaname = 'public' and tablename = 'productos'
+  loop
+    execute format('drop policy %I on public.productos', v_politica.policyname);
+  end loop;
+end
+$$;
 
 -- productos: lectura publica, como servicios. El filtro de activo lo hace la
 -- consulta, para que el panel pueda ver los inactivos (mismo criterio que 0002).
@@ -290,22 +316,56 @@ create policy "Lectura de items de pedidos visibles"
 -- ----------------------------------------------------------------------------
 grant usage on schema public to anon, authenticated;
 
+-- Se parte de cero en las cuatro tablas: Supabase concede ALL por defecto a anon
+-- y authenticated en cada tabla nueva de public, y `productos` puede arrastrar
+-- grants de cuando se creo a mano. Despues se concede solo lo necesario.
+revoke all on public.productos, public.pedidos, public.pedido_items,
+  public.suscripciones_newsletter from anon, authenticated;
+
 grant select on public.productos to anon, authenticated;
-revoke insert, update, delete on public.productos from anon;
 grant insert, update, delete on public.productos to authenticated;
 
 -- Sin INSERT ni DELETE para nadie: los pedidos nacen en crear_pedido() y no se
 -- borran, se cancelan. El personal solo cambia el estado.
-revoke all on public.pedidos from anon;
-revoke insert, delete on public.pedidos from authenticated;
 grant select on public.pedidos to authenticated;
 grant update (estado, actualizado_en) on public.pedidos to authenticated;
 
-revoke all on public.pedido_items from anon;
-revoke insert, update, delete on public.pedido_items from authenticated;
 grant select on public.pedido_items to authenticated;
 
-revoke all on public.suscripciones_newsletter from anon, authenticated;
+-- ----------------------------------------------------------------------------
+-- Stock al cancelar
+-- ----------------------------------------------------------------------------
+-- crear_pedido descuenta el stock al crear el pedido. Al cancelarlo se devuelve.
+-- Un pedido cancelado no se reabre: habria que volver a descontar un stock que
+-- quiza ya se vendio a otra persona. Se crea un pedido nuevo.
+--
+-- Corre con los permisos de quien cancela (el personal), que ya puede escribir
+-- productos por su politica.
+create or replace function public.devolver_stock_pedido()
+  returns trigger
+  language plpgsql
+  set search_path = public, pg_temp
+as $$
+begin
+  if old.estado = 'cancelado' and new.estado <> 'cancelado' then
+    raise exception 'Un pedido cancelado no se puede reabrir.' using errcode = 'P0001';
+  end if;
+  if new.estado = 'cancelado' and old.estado <> 'cancelado' then
+    update public.productos p
+       set stock = p.stock + i.cantidad
+      from public.pedido_items i
+     where i.pedido_id = new.id
+       and i.producto_id = p.id
+       and p.stock is not null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists pedidos_devolver_stock on public.pedidos;
+create trigger pedidos_devolver_stock
+  after update of estado on public.pedidos
+  for each row execute function public.devolver_stock_pedido();
 
 -- ----------------------------------------------------------------------------
 -- crear_pedido
@@ -348,6 +408,7 @@ declare
   c_umbral_gratis     constant integer := 40000;
   c_descuento_combo   constant numeric := 0.15;
   c_max_lineas        constant integer := 30;
+  c_max_pendientes    constant integer := 3;
 
   v_uid               uuid := auth.uid();
   v_servicio_cita     bigint;
@@ -368,6 +429,17 @@ begin
       using errcode = 'P0001';
   end if;
 
+  -- Freno al spam: como mucho 3 pedidos sin pagar por correo en una hora. Se
+  -- esquiva rotando correos; el limite real contra anonimos (IP, captcha) no se
+  -- resuelve en SQL y queda pendiente.
+  if (select count(*) from public.pedidos x
+       where x.cliente_email = lower(btrim(p_email))
+         and x.estado = 'pendiente_pago'
+         and x.creado_en > now() - interval '1 hour') >= c_max_pendientes then
+    raise exception 'Ya tienes pedidos pendientes de pago. Escríbenos si necesitas ayuda.'
+      using errcode = 'P0001';
+  end if;
+
   -- --- Productos ------------------------------------------------------------
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'Tu carrito está vacío.' using errcode = 'P0001';
@@ -379,7 +451,7 @@ begin
   -- Se agrupa por slug: dos lineas del mismo producto suman cantidad en vez de
   -- saltarse el tope por linea.
   drop table if exists pg_temp._lineas;
-  create temporary table _lineas on commit drop as
+  create temporary table _lineas on commit drop as  -- siempre en pg_temp
   select
     e ->> 'slug'                          as slug,
     sum((e ->> 'cantidad')::integer)      as cantidad
@@ -387,12 +459,12 @@ begin
   where coalesce(e ->> 'cantidad', '') ~ '^[0-9]{1,3}$'
   group by e ->> 'slug';
 
-  if (select count(*) from _lineas) <> (
+  if (select count(*) from pg_temp._lineas) <> (
        select count(distinct e ->> 'slug') from jsonb_array_elements(p_items) e
      ) then
     raise exception 'Hay una cantidad no válida en el carrito.' using errcode = 'P0001';
   end if;
-  if exists (select 1 from _lineas where cantidad < 1 or cantidad > 20) then
+  if exists (select 1 from pg_temp._lineas where cantidad < 1 or cantidad > 20) then
     raise exception 'Cada producto admite entre 1 y 20 unidades.' using errcode = 'P0001';
   end if;
 
@@ -433,8 +505,13 @@ begin
   -- --- Precios y stock ------------------------------------------------------
   if exists (
     select 1
-      from _lineas l
-      left join public.productos p on p.slug = l.slug and p.activo
+      from pg_temp._lineas l
+      left join public.productos p
+             on p.slug = l.slug and p.activo
+            -- Filas anteriores a 0013 (checks NOT VALID) no se venden: solo las
+            -- del vocabulario de la tienda y con precio entero positivo.
+            and p.categoria in ('unas_manos', 'cabello', 'piel', 'kits', 'gift_cards')
+            and p.precio > 0 and p.precio = trunc(p.precio)
      where p.id is null
   ) then
     raise exception 'Un producto de tu carrito ya no está disponible. Revisa el carrito.'
@@ -446,7 +523,7 @@ begin
   for v_linea in
     select l.slug, l.cantidad, p.id, p.nombre, p.precio, p.stock,
            p.categoria, p.servicio_id
-      from _lineas l
+      from pg_temp._lineas l
       join public.productos p on p.slug = l.slug
      order by p.id
        for update of p
@@ -499,12 +576,12 @@ begin
         then round(p.precio * l.cantidad * c_descuento_combo)::integer
       else 0
     end
-  from _lineas l
+  from pg_temp._lineas l
   join public.productos p on p.slug = l.slug;
 
   update public.productos p
      set stock = p.stock - l.cantidad
-    from _lineas l
+    from pg_temp._lineas l
    where p.slug = l.slug
      and p.stock is not null;
 
