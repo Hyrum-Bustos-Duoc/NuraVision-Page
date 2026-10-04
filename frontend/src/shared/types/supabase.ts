@@ -329,7 +329,10 @@ export interface Database {
       }
       /**
        * Productos de la tienda (0013). Lectura publica; escritura del personal.
-       * `precio` y `precio_anterior` son pesos enteros.
+       *
+       * En el proyecto remoto la tabla ya existia (fuera de migrations/) y
+       * `precio` es numeric; en un proyecto nuevo es integer. PostgREST los
+       * entrega igual, como numero. Los precios son pesos enteros.
        */
       productos: {
         Row: {
