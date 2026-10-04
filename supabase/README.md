@@ -41,12 +41,30 @@ En el menú lateral, **SQL Editor** → **New query**. Luego, **en este orden**:
 2. Nueva query: pega `migrations/0002_rls.sql` y **Run**.
 3. Nueva query: pega `migrations/0003_reservas.sql` y **Run**.
 4. Nueva query: pega `migrations/0004_auth_reservas_policy.sql` y **Run**.
-5. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
+5. Sigue igual con el resto de `migrations/`, en orden numérico, hasta
+   `0013_tienda.sql`. Esta última deja cargados los 10 productos de la tienda y
+   al final devuelve cuántos quedaron vinculados a un servicio.
+6. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
    filas por tabla.
 
 El orden importa: 0002 referencia las tablas que crea 0001, 0003 apunta con
 claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
 0003, y el seed necesita el catálogo ya creado.
+
+> **0013 en el proyecto actual.** Allí `productos` ya existía, creada a mano
+> y con otra forma. La migración no la borra: le agrega las columnas que
+> faltan. Antes de aplicarla conviene revisar que nada más la use:
+>
+> ```sql
+> select column_name, data_type, is_nullable, column_default
+>   from information_schema.columns
+>  where table_schema = 'public' and table_name = 'productos';
+> select count(*) from public.productos;
+> ```
+>
+> Si aparece una columna `NOT NULL` sin valor por defecto que no esté en
+> 0013, el `insert` del catálogo fallará y la migración entera se revierte:
+> no queda a medias.
 
 > **Ojo con 0003 en una base que ya está en uso.** Empieza con
 > `drop table if exists public.reservas cascade`, así que borra las reservas
