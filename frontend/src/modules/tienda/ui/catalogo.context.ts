@@ -7,6 +7,8 @@ export interface CatalogoValue {
   error: string | null
   /** Producto activo por su slug, o `undefined` si no existe o no cargo aun. */
   porSlug: (slug: string) => Producto | undefined
+  /** Vuelve a leer el catalogo. Lo usa el panel tras crear o editar productos. */
+  recargar: () => void
 }
 
 /** Vive aparte del proveedor por la regla react/only-export-components. */

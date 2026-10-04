@@ -15,13 +15,16 @@ export function CatalogoProvider({ children }: { children: ReactNode }) {
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     let cancelado = false
 
     obtenerProductos(productoRepository)
       .then((resultado) => {
-        if (!cancelado) setProductos(resultado)
+        if (cancelado) return
+        setProductos(resultado)
+        setError(null)
       })
       .catch((e: unknown) => {
         if (!cancelado) setError(e instanceof Error ? e.message : 'No se pudo cargar la tienda.')
@@ -33,14 +36,18 @@ export function CatalogoProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelado = true
     }
-  }, [])
+  }, [version])
+
+  // Sin poner `cargando` en true: tras editar en el panel, la tienda conserva lo
+  // que mostraba hasta que llega la version nueva, en vez de parpadear.
+  const recargar = useCallback(() => setVersion((v) => v + 1), [])
 
   const indice = useMemo(() => new Map(productos.map((p) => [p.slug, p])), [productos])
   const porSlug = useCallback((slug: string) => indice.get(slug), [indice])
 
   const value = useMemo<CatalogoValue>(
-    () => ({ productos, cargando, error, porSlug }),
-    [productos, cargando, error, porSlug],
+    () => ({ productos, cargando, error, porSlug, recargar }),
+    [productos, cargando, error, porSlug, recargar],
   )
 
   return <CatalogoContext.Provider value={value}>{children}</CatalogoContext.Provider>
