@@ -1,13 +1,16 @@
+import { useCarrito } from '@/modules/carrito/ui/useCarrito'
 import { NuvaAvatar } from './NuvaAvatar'
 import { useNuva } from './useNuva'
 
 /**
  * Boton flotante de Nuva (spec §12.1). Desaparece mientras el panel esta
- * abierto. En movil queda solo el avatar, para no tapar el contenido.
+ * abierto, y tambien con el carrito abierto: su esquina es la del boton "Ir a
+ * pagar" del drawer, y lo tapaba. En movil queda solo el avatar.
  */
 export function NuvaLauncher() {
   const { abierto, abrir } = useNuva()
-  if (abierto) return null
+  const carrito = useCarrito()
+  if (abierto || carrito.abierto) return null
 
   return (
     <button
