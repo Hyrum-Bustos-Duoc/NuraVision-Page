@@ -6,8 +6,8 @@ import type { BookingStatus } from '@/shared/types'
 type Variant = 'solid' | 'olive' | 'outline' | 'danger-outline'
 
 const variantClasses: Record<Variant, string> = {
-  solid: 'bg-ink text-white hover:bg-ink-soft',
-  olive: 'bg-olive-600 text-white hover:bg-olive-700',
+  solid: 'bg-ink text-nv-bg hover:bg-nv-accent',
+  olive: 'bg-olive-600 text-nv-bg hover:bg-olive-700',
   outline: 'border border-line text-ink bg-paper hover:bg-ivory hover:border-muted-light',
   'danger-outline': 'border border-[#e6c9c0] text-danger bg-paper hover:bg-danger-soft',
 }
