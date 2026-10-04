@@ -11,6 +11,11 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // Permite exponer el dev server con `cloudflared tunnel --url http://localhost:5173`.
+    // El punto inicial acepta cualquier subdominio: cada tunel rapido cambia de nombre.
+    allowedHosts: ['.trycloudflare.com'],
+  },
   test: {
     // `describe`, `it` y `expect` disponibles sin importarlos en cada archivo.
     globals: true,
