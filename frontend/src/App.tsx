@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   UserCircle,
   Users,
@@ -39,6 +40,7 @@ import AIAnalysis from '@/pages/AIAnalysis'
 import Tienda from '@/modules/tienda/ui/Tienda'
 import DetalleProducto from '@/modules/tienda/ui/DetalleProducto'
 import Checkout from '@/modules/pedidos/ui/Checkout'
+import AdminPedidos from '@/modules/pedidos/ui/AdminPedidos'
 import Profile from '@/pages/Profile'
 
 import { ProShell } from '@/pages/professional/ProShell'
@@ -71,6 +73,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/reservas', label: 'Reservas', icon: ClipboardList },
+  { to: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag },
   { to: '/admin/clientes', label: 'Clientes', icon: Users },
   { to: '/admin/usuarios', label: 'Usuarios', icon: ShieldCheck },
   { to: '/admin/profesionales', label: 'Profesionales', icon: UserCircle },
@@ -164,6 +167,7 @@ export default function App() {
                 >
                   <Route path="admin" element={<AdminDashboard />} />
                   <Route path="admin/reservas" element={<AdminReservas />} />
+                  <Route path="admin/pedidos" element={<AdminPedidos />} />
                   <Route path="admin/clientes" element={<AdminClients />} />
                   <Route path="admin/usuarios" element={<AdminUsers />} />
                   <Route path="admin/profesionales" element={<AdminProfessionals />} />
