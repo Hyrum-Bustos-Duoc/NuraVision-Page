@@ -32,3 +32,38 @@ export interface Producto {
   /** `null` = sin control de stock. */
   stock: number | null
 }
+
+/**
+ * Producto visto desde el panel de administracion.
+ *
+ * Trae lo que la tienda publica no necesita (`activo`, `orden`) y conserva las
+ * filas con una categoria fuera del vocabulario: la tienda las descarta, pero
+ * el panel tiene que mostrarlas para que alguien pueda corregirlas.
+ */
+export interface ProductoAdmin extends Omit<Producto, 'categoria'> {
+  /** Texto tal como esta en la base. Ver `categoriaValida`. */
+  categoria: string
+  categoriaValida: boolean
+  activo: boolean
+  /** Menor primero en el catalogo. */
+  orden: number
+}
+
+/** Lo que se escribe al crear o editar un producto. Todo menos el `id`. */
+export interface DatosProducto {
+  slug: string
+  nombre: string
+  categoria: CategoriaProducto
+  tamano: string
+  precio: number
+  precioAnterior: number | null
+  imagenUrl: string | null
+  insignia: InsigniaProducto | null
+  servicioId: string | null
+  descripcion: string
+  modoUso: string
+  ingredientes: string
+  stock: number | null
+  activo: boolean
+  orden: number
+}

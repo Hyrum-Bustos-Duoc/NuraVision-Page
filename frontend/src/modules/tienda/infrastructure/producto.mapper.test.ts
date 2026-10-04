@@ -1,4 +1,4 @@
-import { toProducto, type ProductoRow } from './producto.mapper'
+import { fromDatosProducto, toProducto, toProductoAdmin, type ProductoRow } from './producto.mapper'
 
 const fila: ProductoRow = {
   id: 9,
@@ -48,5 +48,31 @@ describe('toProducto', () => {
     expect(toProducto({ ...fila, categoria: 'zapatos' })).toBeNull()
     expect(aviso).toHaveBeenCalled()
     aviso.mockRestore()
+  })
+})
+
+describe('toProductoAdmin', () => {
+  it('conserva una fila con categoria desconocida y la marca', () => {
+    const p = toProductoAdmin({ ...fila, categoria: 'cremas' })
+    expect(p).toMatchObject({ categoria: 'cremas', categoriaValida: false, activo: true, orden: 90 })
+  })
+
+  it('no oculta un precio anterior incoherente: el panel tiene que verlo', () => {
+    expect(toProductoAdmin({ ...fila, precio_anterior: 1000 }).precioAnterior).toBe(1000)
+  })
+})
+
+describe('fromDatosProducto', () => {
+  it('recorta textos, vacia la imagen en blanco y convierte el servicio a numero', () => {
+    const p = toProductoAdmin(fila)
+    const insert = fromDatosProducto({
+      ...p,
+      categoria: 'kits',
+      nombre: '  Kit  ',
+      imagenUrl: '   ',
+      servicioId: '6',
+    })
+    expect(insert).toMatchObject({ nombre: 'Kit', imagen_url: null, servicio_id: 6 })
+    expect(insert).not.toHaveProperty('id')
   })
 })
