@@ -4,11 +4,14 @@ import type { Producto } from '../domain/producto.types'
 import { toProducto } from './producto.mapper'
 
 /**
- * Codigos con los que PostgREST dice "esa tabla no existe": 42P01 viene de
- * Postgres y PGRST205 del cache de esquema de PostgREST. En los dos casos lo
- * mas probable es que falte aplicar la migracion, y el mensaje lo dice.
+ * Codigos con los que la base dice "esa tabla o columna no existe": 42P01 y
+ * 42703 vienen de Postgres y PGRST205 del cache de esquema de PostgREST. Lo mas
+ * probable es que falte aplicar la migracion, y el mensaje lo dice.
+ *
+ * 42703 importa en particular: en el proyecto remoto `productos` ya existia con
+ * otra forma, asi que sin 0013 la tabla esta pero le faltan columnas.
  */
-const TABLA_INEXISTENTE = new Set(['42P01', 'PGRST205'])
+const ESQUEMA_INCOMPLETO = new Set(['42P01', '42703', 'PGRST205'])
 
 export class SupabaseProductoRepository implements ProductoRepository {
   async listarActivos(): Promise<Producto[]> {
@@ -20,7 +23,7 @@ export class SupabaseProductoRepository implements ProductoRepository {
       .order('nombre', { ascending: true })
 
     if (error) {
-      if (TABLA_INEXISTENTE.has(error.code)) {
+      if (ESQUEMA_INCOMPLETO.has(error.code)) {
         throw new Error(
           'La tienda todavía no está disponible: falta aplicar la migración 0013_tienda.sql.',
         )

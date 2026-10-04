@@ -20,3 +20,4 @@ export {
 export type { FiltroCategoria } from '../domain/categorias'
 export type { Producto, CategoriaProducto, InsigniaProducto } from '../domain/producto.types'
 export type { ProductoRepository } from '../domain/producto.repository'
+export { SLUG_KIT_COMBO, DESCUENTO_COMBO } from '../domain/combo'
