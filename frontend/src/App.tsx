@@ -18,6 +18,7 @@ import { AuthProvider } from '@/modules/auth/ui/AuthProvider'
 import { ToastProvider } from '@/shared/state/Toast'
 import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
 import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
+import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
 import { DashboardShell, type NavItem } from '@/shared/components/DashboardChrome'
 import { RequireRole } from '@/shared/components/RequireRole'
@@ -92,6 +93,7 @@ export default function App() {
               sobrevivir a la navegacion. */}
           <CatalogoProvider>
           <CarritoProvider>
+          <NuvaProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
@@ -175,6 +177,7 @@ export default function App() {
               <Route path="*" element={<Landing />} />
             </Routes>
           </BrowserRouter>
+          </NuvaProvider>
           </CarritoProvider>
           </CatalogoProvider>
         </ToastProvider>

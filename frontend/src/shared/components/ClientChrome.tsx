@@ -5,6 +5,8 @@ import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Avatar, LinkButton } from '@/shared/ui/ui'
 import { CartDrawer } from '@/modules/carrito/ui/CartDrawer'
+import { NuvaLauncher } from '@/modules/nuva/ui/NuvaLauncher'
+import { NuvaPanel } from '@/modules/nuva/ui/NuvaPanel'
 
 function Brand() {
   return (
@@ -232,6 +234,8 @@ export function ClientLayout() {
       </main>
       <ClientFooter />
       <CartDrawer />
+      <NuvaLauncher />
+      <NuvaPanel />
     </div>
   )
 }
