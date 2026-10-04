@@ -16,6 +16,8 @@ import {
 import { AppStateProvider } from '@/shared/state/AppState'
 import { AuthProvider } from '@/modules/auth/ui/AuthProvider'
 import { ToastProvider } from '@/shared/state/Toast'
+import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
+import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
 import { DashboardShell, type NavItem } from '@/shared/components/DashboardChrome'
 import { RequireRole } from '@/shared/components/RequireRole'
@@ -82,6 +84,11 @@ export default function App() {
     <AuthProvider>
       <AppStateProvider>
         <ToastProvider>
+          {/* El carrito resuelve sus lineas contra el catalogo, asi que va
+              dentro de el. Los dos envuelven al router porque el estado debe
+              sobrevivir a la navegacion. */}
+          <CatalogoProvider>
+          <CarritoProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
@@ -162,6 +169,8 @@ export default function App() {
               <Route path="*" element={<Landing />} />
             </Routes>
           </BrowserRouter>
+          </CarritoProvider>
+          </CatalogoProvider>
         </ToastProvider>
       </AppStateProvider>
     </AuthProvider>

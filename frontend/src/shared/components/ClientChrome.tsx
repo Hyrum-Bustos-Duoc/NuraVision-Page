@@ -4,6 +4,7 @@ import { Menu, Sparkles, X } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Avatar, LinkButton } from '@/shared/ui/ui'
+import { CartDrawer } from '@/modules/carrito/ui/CartDrawer'
 
 function Brand() {
   return (
@@ -230,6 +231,7 @@ export function ClientLayout() {
         <Outlet />
       </main>
       <ClientFooter />
+      <CartDrawer />
     </div>
   )
 }
