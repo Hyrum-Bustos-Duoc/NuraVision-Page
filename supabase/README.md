@@ -12,6 +12,7 @@ frontend y con datos de ejemplo para recorrer el flujo de reserva completo.
 | `migrations/0002_rls.sql` | Activa Row Level Security y abre la lectura pública de esas 4. |
 | `migrations/0003_reservas.sql` | Crea `reservas` y permite reservar sin cuenta. **Empieza con un `DROP TABLE`.** |
 | `migrations/0004_auth_reservas_policy.sql` | Deja que cada persona lea sus propias reservas, con Supabase Auth. |
+| `migrations/0013_tienda.sql` | Tienda: `productos`, `pedidos`, `pedido_items`, newsletter y las funciones `crear_pedido` y `suscribir_newsletter`. Aditiva y reaplicable. |
 | `seed.sql` | Carga el catálogo y el equipo reales. Opcional, pero recomendado. |
 
 El contrato de nombres y tipos de columna vive en
@@ -132,6 +133,23 @@ proteger ahí.
   teléfono y el correo de toda la clientela.
 - **Ni UPDATE ni DELETE para nadie.** Cancelar y reprogramar todavía no están
   implementados contra la base.
+
+`pedidos` (0013) va un paso más allá: **nadie tiene INSERT**, ni siquiera con
+sesión. Un pedido solo nace en la función `crear_pedido`, que recibe productos y
+cantidades y calcula en la base el subtotal, el despacho, el descuento del combo
+y el total. Si el navegador pudiera insertar la fila, también podría fijar el
+precio. Además:
+
+- La función valida cobertura (Viña del Mar y Valparaíso), que «pagar en el
+  estudio» no vaya con despacho y que la «entrega en tu cita» use una reserva
+  propia y vigente.
+- Si `productos.stock` tiene valor, lo descuenta con bloqueo de fila y rechaza
+  la compra si no alcanza.
+- Cada cuenta lee sus pedidos; el personal (`es_staff`) lee todos y solo puede
+  cambiar `estado`.
+- Las reglas de dinero tienen un espejo en
+  `frontend/src/modules/pedidos/domain/pedido.reglas.ts`. Si cambias una,
+  cambia la otra.
 
 Una reserva hecha sin cuenta queda con `cliente_id` NULL, así que **ninguna
 política la devuelve**: ni a su autora. Su único vínculo con ella es el código
