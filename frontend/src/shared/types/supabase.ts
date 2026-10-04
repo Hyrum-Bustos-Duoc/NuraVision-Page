@@ -426,7 +426,16 @@ export interface Database {
         }
         Insert: never
         Update: never
-        Relationships: []
+        /** Declarada para que `select('*, pedido_items(*)')` quede tipado. */
+        Relationships: [
+          {
+            foreignKeyName: 'pedido_items_pedido_id_fkey'
+            columns: ['pedido_id']
+            isOneToOne: false
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: Record<never, never>

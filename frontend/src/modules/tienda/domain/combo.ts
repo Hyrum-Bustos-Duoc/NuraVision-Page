@@ -7,4 +7,3 @@
  * se entrega en una cita de su servicio vinculado.
  */
 export const SLUG_KIT_COMBO = 'kit-ritual-manos'
-export const DESCUENTO_COMBO = 0.15

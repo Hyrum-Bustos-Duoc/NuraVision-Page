@@ -37,6 +37,7 @@ import BookingDetail from '@/pages/BookingDetail'
 import AIAnalysis from '@/pages/AIAnalysis'
 import Tienda from '@/modules/tienda/ui/Tienda'
 import DetalleProducto from '@/modules/tienda/ui/DetalleProducto'
+import Checkout from '@/modules/pedidos/ui/Checkout'
 import Profile from '@/pages/Profile'
 
 import { ProShell } from '@/pages/professional/ProShell'
@@ -120,6 +121,7 @@ export default function App() {
                 <Route path="servicios/:id" element={<ServiceDetail />} />
                 <Route path="tienda" element={<Tienda />} />
                 <Route path="tienda/:slug" element={<DetalleProducto />} />
+                <Route path="checkout" element={<Checkout />} />
                 <Route path="profesionales" element={<Professionals />} />
                 <Route path="profesionales/:id" element={<ProfessionalDetail />} />
                 <Route path="reservar" element={<BookingFlow />} />
