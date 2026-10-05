@@ -12,6 +12,7 @@ import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
 import { useContenido } from '@/modules/contenido/ui/useContenido'
+import { CONTENIDO_POR_DEFECTO, esCorreoSimple } from '@/modules/contenido/application'
 import { DialogoCerrarSesion } from '@/shared/ui/DialogoCerrarSesion'
 
 
@@ -317,6 +318,9 @@ const claseLinkFooter = 'text-nv-tint3 transition-colors hover:text-nv-accent-mi
 export function ClientFooter() {
   const { enviar } = useNuva()
   const { footer } = useContenido().contenido
+  // Un correo con parametros (`?bcc=`) haria que el mensaje de la visitante
+  // saliera con copia a un tercero: se usa el original.
+  const email = esCorreoSimple(footer.email) ? footer.email : CONTENIDO_POR_DEFECTO.footer.email
 
   return (
     <footer className="overflow-hidden bg-nv-ink text-nv-tint3">
@@ -347,8 +351,8 @@ export function ClientFooter() {
                   {footer.telefono}
                 </a>{' '}
                 ·{' '}
-                <a href={`mailto:${footer.email}`} className="hover:text-nv-accent-mid">
-                  {footer.email}
+                <a href={`mailto:${email}`} className="hover:text-nv-accent-mid">
+                  {email}
                 </a>
               </span>
             </address>

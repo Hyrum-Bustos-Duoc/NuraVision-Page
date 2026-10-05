@@ -1,5 +1,12 @@
 import { CONTENIDO_POR_DEFECTO } from './contenido.defecto'
-import { contenidoDesdeGuardado, fragmentosConEnfasis, mezclarContenido, motivoParaNoGuardarContenido } from './contenido.reglas'
+import {
+  contenidoDesdeGuardado,
+  crearFiltroImagenes,
+  esCorreoSimple,
+  fragmentosConEnfasis,
+  mezclarContenido,
+  motivoParaNoGuardarContenido,
+} from './contenido.reglas'
 
 describe('contenidoDesdeGuardado', () => {
   it('sin nada guardado devuelve el contenido original', () => {
@@ -74,5 +81,28 @@ describe('motivoParaNoGuardarContenido', () => {
     const base = structuredClone(CONTENIDO_POR_DEFECTO)
     expect(motivoParaNoGuardarContenido({ ...base, portada: { ...base.portada, titulo: ' ' } })).not.toBeNull()
     expect(motivoParaNoGuardarContenido({ ...base, anuncios: Array(11).fill('x') })).not.toBeNull()
+  })
+})
+
+describe('fotos y correo', () => {
+  const permitida = crearFiltroImagenes('https://abc.supabase.co/')
+
+  it('acepta el bucket y Unsplash, y descarta otros origenes', () => {
+    const bucket = 'https://abc.supabase.co/storage/v1/object/public/contenido/login-1.jpg'
+    const c = contenidoDesdeGuardado(
+      CONTENIDO_POR_DEFECTO,
+      { imagenes: { login: bucket, bandaIA: 'https://rastreo.example/p.gif', portadaTienda: null } },
+      permitida,
+    )
+    expect(c.imagenes.login).toBe(bucket)
+    expect(c.imagenes.bandaIA).toBe(CONTENIDO_POR_DEFECTO.imagenes.bandaIA)
+    expect(c.imagenes.portadaTienda).toBeNull()
+    expect(permitida('https://images.unsplash.com/photo-1')).toBe(true)
+    expect(permitida('data:image/png;base64,xx')).toBe(false)
+  })
+
+  it('valida un correo sin parametros', () => {
+    expect(esCorreoSimple('hola@estudionura.cl')).toBe(true)
+    expect(esCorreoSimple('hola@estudionura.cl?bcc=otro@x.com')).toBe(false)
   })
 })

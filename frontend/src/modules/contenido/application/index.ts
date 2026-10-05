@@ -2,6 +2,8 @@
 export { CONTENIDO_POR_DEFECTO } from '../domain/contenido.defecto'
 export {
   contenidoDesdeGuardado,
+  crearFiltroImagenes,
+  esCorreoSimple,
   fragmentosConEnfasis,
   motivoParaNoGuardarContenido,
   MAX_ANUNCIOS,

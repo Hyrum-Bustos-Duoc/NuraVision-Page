@@ -61,10 +61,47 @@ export function mezclarAnalisis(
   return resultado
 }
 
-/** Lo guardado en la base -> contenido completo y seguro de mostrar. */
-export function contenidoDesdeGuardado(defecto: ContenidoSitio, guardado: unknown): ContenidoSitio {
+/**
+ * Lo guardado en la base -> contenido completo y seguro de mostrar.
+ *
+ * `imagenPermitida` decide de que origenes se aceptan fotos. Una URL de otro
+ * sitio en la portada haria que cada visitante le avisara a ese servidor que
+ * entro (IP, navegador): se vuelve a la foto original.
+ */
+export function contenidoDesdeGuardado(
+  defecto: ContenidoSitio,
+  guardado: unknown,
+  imagenPermitida: (url: string) => boolean = () => true,
+): ContenidoSitio {
   const base = mezclarContenido(defecto, guardado)
-  return { ...base, analisis: mezclarAnalisis(defecto.analisis, esObjeto(guardado) ? guardado.analisis : undefined) }
+  // En las fotos un `null` guardado SI cuenta: es "Quitar foto". La mezcla
+  // general lo trataria como "falta" y volveria a la original.
+  const fotosGuardadas = esObjeto(guardado) && esObjeto(guardado.imagenes) ? guardado.imagenes : {}
+  const imagenes = { ...base.imagenes }
+  for (const clave of Object.keys(imagenes) as (keyof typeof imagenes)[]) {
+    if (fotosGuardadas[clave] === null) {
+      imagenes[clave] = null
+      continue
+    }
+    const url = imagenes[clave]
+    if (url !== null && !imagenPermitida(url)) imagenes[clave] = defecto.imagenes[clave]
+  }
+  return {
+    ...base,
+    imagenes,
+    analisis: mezclarAnalisis(defecto.analisis, esObjeto(guardado) ? guardado.analisis : undefined),
+  }
+}
+
+/** Correo simple, sin parametros: `?bcc=` en un mailto copiaria a terceros. */
+export function esCorreoSimple(correo: string): boolean {
+  return /^[^\s@?&#]+@[^\s@?&#]+\.[^\s@?&#]+$/.test(correo)
+}
+
+/** Origenes de foto aceptados: el bucket del proyecto y Unsplash (los originales). */
+export function crearFiltroImagenes(urlSupabase: string): (url: string) => boolean {
+  const origenes = [`${urlSupabase.replace(/\/$/, '')}/storage/v1/object/public/contenido/`, 'https://images.unsplash.com/']
+  return (url) => origenes.some((o) => url.startsWith(o))
 }
 
 export interface Fragmento {

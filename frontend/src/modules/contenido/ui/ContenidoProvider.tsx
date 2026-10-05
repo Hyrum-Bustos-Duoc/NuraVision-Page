@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { CONTENIDO_POR_DEFECTO, contenidoDesdeGuardado } from '../application'
+import { CONTENIDO_POR_DEFECTO, contenidoDesdeGuardado, crearFiltroImagenes } from '../application'
 import type { ClaveImagen, ContenidoSitio } from '../domain/contenido.types'
 import { contenidoRepository, SIN_MIGRACION } from '../infrastructure/supabase-contenido.repository'
 import { ContenidoContext, type ContenidoValue } from './contenido.context'
@@ -10,10 +10,14 @@ import { ContenidoContext, type ContenidoValue } from './contenido.context'
  */
 const CLAVE_CACHE = 'nv-contenido'
 
+const imagenPermitida = crearFiltroImagenes(String(import.meta.env.VITE_SUPABASE_URL ?? ''))
+
+const desdeGuardado = (datos: unknown) => contenidoDesdeGuardado(CONTENIDO_POR_DEFECTO, datos, imagenPermitida)
+
 function leerCache(): ContenidoSitio {
   try {
     const crudo = window.localStorage.getItem(CLAVE_CACHE)
-    return crudo ? contenidoDesdeGuardado(CONTENIDO_POR_DEFECTO, JSON.parse(crudo)) : CONTENIDO_POR_DEFECTO
+    return crudo ? desdeGuardado(JSON.parse(crudo)) : CONTENIDO_POR_DEFECTO
   } catch {
     return CONTENIDO_POR_DEFECTO
   }
@@ -47,7 +51,7 @@ export function ContenidoProvider({ children }: { children: ReactNode }) {
           setContenido(CONTENIDO_POR_DEFECTO)
           return
         }
-        setContenido(contenidoDesdeGuardado(CONTENIDO_POR_DEFECTO, guardado.datos))
+        setContenido(desdeGuardado(guardado.datos))
         setActualizadoEn(guardado.actualizadoEn)
         escribirCache(guardado.datos)
       })
@@ -67,7 +71,7 @@ export function ContenidoProvider({ children }: { children: ReactNode }) {
     async (nuevo: ContenidoSitio) => {
       if (!editable) throw new Error(SIN_MIGRACION)
       const guardado = await contenidoRepository.guardar(nuevo)
-      setContenido(contenidoDesdeGuardado(CONTENIDO_POR_DEFECTO, guardado.datos))
+      setContenido(desdeGuardado(guardado.datos))
       setActualizadoEn(guardado.actualizadoEn)
       setError(null)
       escribirCache(guardado.datos)
