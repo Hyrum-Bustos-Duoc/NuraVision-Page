@@ -137,6 +137,7 @@ export default function Landing() {
           />
           <TileHero
             to="/tienda"
+            imagen={siteContent.shopImage}
             etiquetaImagen="Fotografía · Productos"
             eyebrow="La tienda"
             titulo="Lo que usamos, para tu casa"
@@ -240,7 +241,7 @@ export default function Landing() {
       )}
 
       {/* ------------------------------------------------------- NuraVision IA */}
-      <BandaAnalisis />
+      <BandaAnalisis imagen={siteContent.aiTeaserImage} />
 
       {/* -------------------------------------------------------- Como funciona */}
       <section className="border-t border-nv-ink3 bg-nv-ink py-16">
@@ -381,7 +382,7 @@ function TileHero({
 }
 
 /** Banda oscura "Una foto. Tu rutina completa." (spec §6.3). */
-function BandaAnalisis() {
+function BandaAnalisis({ imagen }: { imagen?: string }) {
   const pasoActivo = usePasoCiclico(PASOS_IA.length, 2400)
 
   return (
@@ -423,9 +424,18 @@ function BandaAnalisis() {
         </div>
 
         <div className="placeholder-stripes-dark relative aspect-[4/5] w-full overflow-hidden rounded-md">
-          <span className="absolute inset-0 flex items-center justify-center font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft2">
-            foto · manos
-          </span>
+          {imagen ? (
+            <img
+              src={imagen}
+              alt="Mano con manicura natural, como la que analiza NuraVision IA"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft2">
+              foto · manos
+            </span>
+          )}
           <span
             aria-hidden="true"
             className="animate-nv-scan absolute inset-x-[6%] h-0.5 bg-nv-accent-mid shadow-[0_0_24px_4px_var(--nv-accent-mid)]"
