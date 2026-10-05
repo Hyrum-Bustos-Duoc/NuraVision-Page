@@ -5,6 +5,8 @@ import { useProfesionales } from '@/modules/profesionales/ui/useProfesionales'
 import { useServiciosPorIds } from '@/modules/servicios/ui/useServiciosPorIds'
 import { useProfesionalesPorIds } from '@/modules/profesionales/ui/useProfesionalesPorIds'
 import { Button, StatusBadge } from '@/shared/ui/ui'
+import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
+import { contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 import { formatLongDate } from '@/shared/lib/format'
 import { ESTADOS_FILTRABLES, esConfirmable } from '../application'
 import type { EstadoReserva, FiltrosReservas } from '../domain/reserva-gestion.types'
@@ -123,7 +125,7 @@ export default function AdminReservas() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Reservas</h1>
       <p className="mt-2 text-sm text-muted">
         Todas las reservas del estudio, leídas de la base de datos.
@@ -136,49 +138,34 @@ export default function AdminReservas() {
         )}
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <input
+      <BarraFiltros className="mt-6">
+        <CampoBusqueda
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={setBusqueda}
           placeholder="Buscar por cliente o código…"
-          className="w-60 rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink outline-none focus:border-ink"
+          etiqueta="Buscar reservas"
+          className="sm:w-64"
         />
-
-        <select
+        <SelectFiltro
           value={estado}
-          onChange={(e) => setEstado(e.target.value as EstadoReserva | typeof TODOS)}
-          aria-label="Filtrar por estado"
-          className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-        >
-          <option value={TODOS}>Todos los estados</option>
-          {ESTADOS_FILTRABLES.map((e) => (
-            <option key={e} value={e}>
-              {ETIQUETA_ESTADO[e]}
-            </option>
-          ))}
-        </select>
-
-        <select
+          onChange={setEstado}
+          etiqueta="Filtrar por estado"
+          opciones={[
+            { value: TODOS, label: 'Todos los estados' },
+            ...ESTADOS_FILTRABLES.map((e) => ({ value: e, label: ETIQUETA_ESTADO[e] })),
+          ]}
+        />
+        <SelectFiltro
           value={profesionalId}
-          onChange={(e) => setProfesionalId(e.target.value)}
-          aria-label="Filtrar por profesional"
-          className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-        >
-          <option value={TODOS}>Todos los profesionales</option>
-          {equipo.profesionales.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={recargar}
-          className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-ivory"
-        >
-          Actualizar
-        </button>
-      </div>
+          onChange={setProfesionalId}
+          etiqueta="Filtrar por profesional"
+          opciones={[
+            { value: TODOS, label: 'Todos los profesionales' },
+            ...equipo.profesionales.map((p) => ({ value: p.id, label: p.nombre })),
+          ]}
+        />
+        <BotonActualizar onClick={recargar} cargando={cargando} />
+      </BarraFiltros>
 
       {/* Un fallo al confirmar se informa arriba de la tabla, donde se ve sin
           desplazarse, y la fila sigue disponible para reintentar. */}
@@ -221,48 +208,48 @@ export default function AdminReservas() {
       )}
 
       {!cargando && !error && reservas.length > 0 && (
-        <div className="mt-8 overflow-x-auto rounded-2xl border border-line-soft bg-paper">
-          <table className="w-full min-w-[900px] text-left text-sm">
+        <div className={`mt-6 ${tabla.contenedor}`}>
+          <table className="w-full min-w-[960px] text-sm">
             <thead>
-              <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
-                <th className="px-6 py-4 font-medium">Código</th>
-                <th className="px-6 py-4 font-medium">Cliente</th>
-                <th className="px-6 py-4 font-medium">Servicio</th>
-                <th className="px-6 py-4 font-medium">Profesional</th>
-                <th className="px-6 py-4 font-medium">Fecha y hora</th>
-                <th className="px-6 py-4 font-medium">Estado</th>
-                <th className="px-6 py-4 font-medium" />
+              <tr className={tabla.cabecera}>
+                <th className={tabla.th}>Código</th>
+                <th className={tabla.th}>Cliente</th>
+                <th className={tabla.th}>Servicio</th>
+                <th className={tabla.th}>Profesional</th>
+                <th className={tabla.th}>Fecha y hora</th>
+                <th className={tabla.th}>Estado</th>
+                <th className={tabla.th}>
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {visibles.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-6 py-4 text-xs tracking-wide text-muted-light">{r.codigo}</td>
-                  <td className="px-6 py-4">
+                <tr key={r.id} className={tabla.fila}>
+                  <td className={`${tabla.td} whitespace-nowrap font-mono text-xs text-muted`}>{r.codigo}</td>
+                  <td className={tabla.td}>
                     <p className="text-ink">{r.clienteNombre}</p>
                     <p className="text-xs text-muted">{r.clienteEmail}</p>
                     {/* Una reserva de invitada no tiene cuenta asociada: el
                         contacto es el único vínculo con ella. */}
-                    {r.clienteId === null && (
-                      <p className="mt-0.5 text-xs text-muted-light">Sin cuenta</p>
-                    )}
+                    {r.clienteId === null && <p className="mt-0.5 text-xs text-muted-light">Sin cuenta</p>}
                   </td>
-                  <td className="px-6 py-4 text-ink">{nombreServicio(r.servicioId)}</td>
-                  <td className="px-6 py-4 text-ink">{nombreProfesional(r.profesionalId)}</td>
-                  <td className="px-6 py-4 text-ink">
+                  <td className={`${tabla.td} text-ink`}>{nombreServicio(r.servicioId)}</td>
+                  <td className={`${tabla.td} text-ink`}>{nombreProfesional(r.profesionalId)}</td>
+                  <td className={`${tabla.td} whitespace-nowrap text-ink`}>
                     <p className="first-letter:uppercase">{formatLongDate(r.fecha)}</p>
                     <p className="text-xs text-muted">
                       {r.horaInicio}–{r.horaFin} h
                     </p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={tabla.td}>
                     <StatusBadge status={r.estado} />
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className={`${tabla.td} text-right`}>
                     {esConfirmable(r) && (
                       <Button
                         variant="olive"
-                        className="px-4 py-2 text-xs"
+                        className="whitespace-nowrap px-4 py-2 text-xs"
                         disabled={confirmando === r.id}
                         onClick={() => void confirmar(r)}
                       >
