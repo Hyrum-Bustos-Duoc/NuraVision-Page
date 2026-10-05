@@ -13,6 +13,7 @@ frontend y con datos de ejemplo para recorrer el flujo de reserva completo.
 | `migrations/0003_reservas.sql` | Crea `reservas` y permite reservar sin cuenta. **Empieza con un `DROP TABLE`.** |
 | `migrations/0004_auth_reservas_policy.sql` | Deja que cada persona lea sus propias reservas, con Supabase Auth. |
 | `migrations/0013_tienda.sql` | Tienda: `productos`, `pedidos`, `pedido_items`, newsletter y las funciones `crear_pedido` y `suscribir_newsletter`. Aditiva y reaplicable. |
+| `migrations/0014_contenido_sitio.sql` | Contenido editable desde Panel → Contenido: tabla `contenido_sitio` (una fila) y bucket de Storage `contenido` para las fotos. Aditiva y reaplicable. |
 | `seed.sql` | Carga el catálogo y el equipo reales. Opcional, pero recomendado. |
 
 El contrato de nombres y tipos de columna vive en
@@ -42,8 +43,8 @@ En el menú lateral, **SQL Editor** → **New query**. Luego, **en este orden**:
 3. Nueva query: pega `migrations/0003_reservas.sql` y **Run**.
 4. Nueva query: pega `migrations/0004_auth_reservas_policy.sql` y **Run**.
 5. Sigue igual con el resto de `migrations/`, en orden numérico, hasta
-   `0013_tienda.sql`. Esta última deja cargados los 10 productos de la tienda y
-   al final devuelve cuántos quedaron vinculados a un servicio.
+   `0014_contenido_sitio.sql`. `0013` deja cargados los 10 productos de la
+   tienda y al final devuelve cuántos quedaron vinculados a un servicio.
 6. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
    filas por tabla.
 
@@ -63,8 +64,22 @@ claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
 > ```
 >
 > Si aparece una columna `NOT NULL` sin valor por defecto que no esté en
-> 0013, el `insert` del catálogo fallará y la migración entera se revierte:
-> no queda a medias.
+> 0013, el `insert` del catálogo fallará. Los archivos no traen `begin` /
+> `commit` propio: envuélvelos en `begin; … commit;` para que un error no
+> deje la migración a medias.
+
+> **0014 y el contenido del sitio.** Sin esta migración el sitio se ve igual
+> que antes (usa los textos y fotos originales del código) y Panel → Contenido
+> avisa que no se puede guardar. Al aplicarla, la fila queda con `datos = '{}'`,
+> que el frontend completa con esos mismos originales: nada cambia hasta que
+> alguien publique desde el panel. Para comprobarla:
+>
+> ```sql
+> select id, datos, actualizado_en from public.contenido_sitio;   -- 1 fila
+> select id, public, file_size_limit from storage.buckets where id = 'contenido';
+> select policyname, cmd from pg_policies
+>  where tablename in ('contenido_sitio', 'objects') and policyname ilike '%contenido%';
+> ```
 
 > **Ojo con 0003 en una base que ya está en uso.** Empieza con
 > `drop table if exists public.reservas cascade`, así que borra las reservas
