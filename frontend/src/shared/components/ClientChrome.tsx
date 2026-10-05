@@ -11,14 +11,10 @@ import { useNuva } from '@/modules/nuva/ui/useNuva'
 import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
+import { useContenido } from '@/modules/contenido/ui/useContenido'
+import { CONTENIDO_POR_DEFECTO, esCorreoSimple } from '@/modules/contenido/application'
+import { DialogoCerrarSesion } from '@/shared/ui/DialogoCerrarSesion'
 
-const ANUNCIOS = [
-  'Retiro en Estudio inmediato',
-  'Servicios hechos por Profesionales',
-  'Agenda en línea 24/7',
-  'Nuva: Tu asistente IA',
-  'Análisis IA para tu comodidad',
-]
 
 /**
  * Barra de anuncios (spec §4.2b). La lista va dos veces para que el
@@ -26,10 +22,17 @@ const ANUNCIOS = [
  * los lectores de pantalla para que no la lean dos veces.
  */
 function BarraAnuncios() {
+  const { contenido } = useContenido()
+  const anuncios = contenido.anuncios.filter((a) => a.trim())
+
+  // Sin anuncios la barra no se muestra: una franja negra vacia moviendose no
+  // dice nada.
+  if (anuncios.length === 0) return null
+
   const lista = (copia: boolean) => (
     <ul aria-hidden={copia || undefined} className="flex shrink-0 items-center">
-      {ANUNCIOS.map((texto) => (
-        <li key={texto} className="flex items-center gap-12 pr-12">
+      {anuncios.map((texto, i) => (
+        <li key={i} className="flex items-center gap-12 pr-12">
           <span className="whitespace-nowrap">{texto}</span>
           <span aria-hidden="true" className="h-1 w-1 rounded-full bg-nv-accent-mid" />
         </li>
@@ -105,6 +108,7 @@ export function ClientHeader() {
   // El menu recuerda en que ruta se abrio: al navegar deja de coincidir y se
   // cierra solo, sin un efecto que lo resetee.
   const [menuAbiertoEn, setMenuAbiertoEn] = useState<string | null>(null)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
   const menuAbierto = menuAbiertoEn === pathname
 
   // Una sesión de Supabase cuenta como sesión de clienta igual que la del
@@ -157,8 +161,14 @@ export function ClientHeader() {
     <header className="sticky top-0 z-40 border-b border-nv-line1 bg-nv-bg/90 backdrop-blur-[14px]">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-10">
         <div className="flex min-w-0 items-center gap-6 xl:gap-10">
-          <Link to="/" className="shrink-0 font-serif text-[21px] text-nv-ink sm:text-[23px]">
-            Estudio Nura
+          <Link to="/" className="flex shrink-0 items-center" aria-label="Nuravision, ir al inicio">
+            <img
+              src="/nuravision-logo.png"
+              alt="Nuravision"
+              className="h-9 w-auto sm:h-11"
+              width={800}
+              height={266}
+            />
           </Link>
           <nav aria-label="Principal" className="hidden items-center gap-0.5 lg:flex">
             {links.map((link) => (
@@ -200,7 +210,7 @@ export function ClientHeader() {
               </button>
               <button
                 type="button"
-                onClick={() => void salir()}
+                onClick={() => setConfirmarSalida(true)}
                 className="hidden text-[13px] text-nv-soft1 transition-colors hover:text-nv-ink lg:inline"
               >
                 Salir
@@ -264,7 +274,7 @@ export function ClientHeader() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => void salir()}
+                  onClick={() => setConfirmarSalida(true)}
                   className="rounded-lg px-3 py-3 text-left text-[15px] text-nv-soft1 hover:bg-nv-paper2"
                 >
                   Cerrar sesión
@@ -283,6 +293,12 @@ export function ClientHeader() {
           </div>
         </div>
       )}
+
+      <DialogoCerrarSesion
+        open={confirmarSalida}
+        onClose={() => setConfirmarSalida(false)}
+        onConfirm={() => void salir()}
+      />
     </header>
   )
 }
@@ -301,28 +317,42 @@ const claseLinkFooter = 'text-nv-tint3 transition-colors hover:text-nv-accent-mi
 /** Footer global oscuro (spec §6.2). */
 export function ClientFooter() {
   const { enviar } = useNuva()
+  const { footer } = useContenido().contenido
+  // Un correo con parametros (`?bcc=`) haria que el mensaje de la visitante
+  // saliera con copia a un tercero: se usa el original.
+  const email = esCorreoSimple(footer.email) ? footer.email : CONTENIDO_POR_DEFECTO.footer.email
 
   return (
     <footer className="overflow-hidden bg-nv-ink text-nv-tint3">
       <div className="mx-auto max-w-[1240px] px-4 pb-9 pt-14 sm:px-6 sm:pt-20 lg:px-10">
         <div className="grid gap-12 border-b border-nv-ink3 pb-12 sm:grid-cols-3 sm:pb-[60px] lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div className="sm:col-span-3 lg:col-span-1">
+            {/* El dorado del logo se oscurece hacia el cafe; sobre el fondo
+                oscuro se aclara para que no se pierda. */}
+            <img
+              src="/nuravision-logo.png"
+              alt="Nuravision"
+              className="-ml-1.5 mb-8 h-12 w-auto brightness-[1.9] sm:h-14"
+              width={800}
+              height={266}
+              loading="lazy"
+            />
             <p className="max-w-[440px] font-serif text-[28px] font-light leading-[1.08] text-nv-bg sm:text-[34px]">
-              Mantente actualizado y no te pierdas de nada!
+              {footer.newsletterTitulo}
               <br />
-              <em className="text-nv-accent-mid">Nunca spam.</em>
+              <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
             </p>
             <NewsletterForm />
             <address className="mt-[26px] flex flex-col gap-1.5 text-[13px] not-italic leading-[1.5] text-nv-faint2">
-              <span>Estudio Nura · Av. Libertad 1250, Viña del Mar</span>
-              <span>Martes a sábado · 10:00–19:00</span>
+              <span>{footer.direccion}</span>
+              <span>{footer.horario}</span>
               <span>
-                <a href="tel:+56912345678" className="hover:text-nv-accent-mid">
-                  +56 9 1234 5678
+                <a href={`tel:${footer.telefono.replace(/[^\d+]/g, '')}`} className="hover:text-nv-accent-mid">
+                  {footer.telefono}
                 </a>{' '}
                 ·{' '}
-                <a href="mailto:hola@estudionura.cl" className="hover:text-nv-accent-mid">
-                  hola@estudionura.cl
+                <a href={`mailto:${email}`} className="hover:text-nv-accent-mid">
+                  {email}
                 </a>
               </span>
             </address>
@@ -393,8 +423,8 @@ export function ClientFooter() {
               </button>
             </li>
             <li>
-              <a href="tel:+56912345678" className={claseLinkFooter}>
-                +56 9 1234 5678
+              <a href={`tel:${footer.telefono.replace(/[^\d+]/g, '')}`} className={claseLinkFooter}>
+                {footer.telefono}
               </a>
             </li>
           </ColumnaFooter>

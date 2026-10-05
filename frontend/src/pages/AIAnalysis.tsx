@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, Upload } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
@@ -7,6 +7,7 @@ import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
 import { formatPrice } from '@/shared/lib/format'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { ProductGrid } from '@/modules/tienda/ui/ProductGrid'
+import { useContenido } from '@/modules/contenido/ui/useContenido'
 
 type Step = 'prepare' | 'upload' | 'result'
 type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
@@ -14,7 +15,30 @@ type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
 export default function AIAnalysis() {
   const { siteContent, activeServices: services } = useAppState()
   const { porSlug } = useCatalogo()
-  const focusOptions = siteContent.aiFocusOptions
+  const { contenido } = useContenido()
+
+  // Las opciones (ids, servicios y productos recomendados) siguen en el codigo;
+  // el nombre y los consejos se editan en Panel -> Contenido.
+  const focusOptions = useMemo(
+    () =>
+      siteContent.aiFocusOptions.map((o) => {
+        const editado = contenido.analisis[o.id]
+        if (!editado) return o
+        return {
+          ...o,
+          label: editado.label,
+          tips: editado.tips
+            .filter((t) => t.titulo.trim())
+            .map((t, i) => ({
+              id: o.tips[i]?.id ?? `${o.id}-${i}`,
+              title: t.titulo,
+              description: t.detalle,
+              imageUrl: o.tips[i]?.imageUrl,
+            })),
+        }
+      }),
+    [siteContent.aiFocusOptions, contenido.analisis],
+  )
 
   const [focusId, setFocusId] = useState(focusOptions[0]?.id ?? '')
   const [step, setStep] = useState<Step>('prepare')

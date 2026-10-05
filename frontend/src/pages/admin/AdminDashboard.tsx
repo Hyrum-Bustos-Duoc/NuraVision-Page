@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
+import { BarraFiltros, SelectFiltro } from '@/shared/ui/controles'
 import { CalendarCheck, Clock, TrendingDown, Users } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { TODAY_ISO } from '@/shared/data/seed'
 import { BookingsTable } from '@/shared/components/BookingsTable'
 import { Card, StatCard } from '@/shared/ui/ui'
 import type { BookingStatus } from '@/shared/types'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MONTHS_LONG = [
@@ -82,7 +84,7 @@ export default function AdminDashboard() {
   }`
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Dashboard</h1>
       <p className="mt-2 text-sm text-muted">Estudio Nura · 1 de septiembre, 2026</p>
 
@@ -168,31 +170,23 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="font-serif-display text-2xl text-ink">Reservas recientes</h2>
-          <div className="flex flex-wrap gap-3">
-            <select
+          <BarraFiltros>
+            <SelectFiltro
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as BookingStatus | 'todos')}
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
+              onChange={setStatusFilter}
+              etiqueta="Filtrar por estado"
+              opciones={STATUS_OPTIONS}
+            />
+            <SelectFiltro
               value={professionalFilter}
-              onChange={(e) => setProfessionalFilter(e.target.value)}
-              className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-            >
-              <option value="todos">Todos los profesionales</option>
-              {professionals.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              onChange={setProfessionalFilter}
+              etiqueta="Filtrar por profesional"
+              opciones={[
+                { value: 'todos', label: 'Todos los profesionales' },
+                ...professionals.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </BarraFiltros>
         </div>
         <BookingsTable bookings={filtered} />
       </div>

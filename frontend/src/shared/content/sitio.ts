@@ -13,11 +13,28 @@ import type { SiteContent } from '@/shared/types'
  * el se iban tambien estos textos, asi que la portada perdia el pie de la foto
  * y el analisis de IA se quedaba sin sus opciones de enfoque.
  *
- * Las imagenes (`heroImage`, `aiTeaserImage`, `loginImage`) siguen siendo
- * opcionales y no se declaran: hasta que exista una columna para ellas, cada
- * hueco muestra su marcador.
+ * Las imagenes son opcionales: un hueco sin imagen muestra su marcador a
+ * rayas. Las de la portada son fotos de Unsplash (licencia libre, uso
+ * comercial sin atribucion) mientras el estudio no tenga fotos propias;
+ * cambiarlas es reemplazar el id de la foto aqui.
  */
+const UNSPLASH = 'https://images.unsplash.com'
+
+/** Recorte en el CDN de Unsplash: el ancho cubre pantallas retina. */
+function fotoUnsplash(id: string, ancho: number): string {
+  return `${UNSPLASH}/${id}?auto=format&fit=crop&w=${ancho}&q=80`
+}
+
 export const CONTENIDO_SITIO: SiteContent = {
+  // Salon en tonos beige con espejos en arco.
+  heroImage: fotoUnsplash('photo-1706629505300-168aa1604912', 700),
+  // Repisas minimalistas con productos de cuidado.
+  shopImage: fotoUnsplash('photo-1760862652442-e8ff7ebdd2f8', 700),
+  // Mano con manicura nude: la foto de ejemplo de la banda de NuraVision IA.
+  aiTeaserImage: fotoUnsplash('photo-1610992015762-45dca7fa3a85', 1000),
+  // Recepcion con flores secas: el panel derecho del login, a media pantalla y
+  // todo el alto, por eso pide mas ancho que las demas.
+  loginImage: fotoUnsplash('photo-1695527082039-5f96003b97e4', 2000),
   heroCaption: 'Fotografía · Salón / interior',
   aiTeaserCaption: 'Detalle · Manos y uñas',
   aiFocusOptions: [

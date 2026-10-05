@@ -167,8 +167,15 @@ export function StatusBadge({ status }: { status: BadgeStatus }) {
   const estilo = statusStyles[status] ?? 'bg-line-soft text-muted'
   const etiqueta = statusLabels[status] ?? String(status)
 
+  // Sin salto de linea: en una columna angosta "Por confirmar" se partia en
+  // dos y la pildora quedaba deforme.
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-medium ${estilo}`}>{etiqueta}</span>
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${estilo}`}
+    >
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+      {etiqueta}
+    </span>
   )
 }
 

@@ -4,6 +4,7 @@ import { LogOut, Menu, X, type LucideIcon } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { initialsFromName } from '@/shared/lib/format'
+import { DialogoCerrarSesion } from '@/shared/ui/DialogoCerrarSesion'
 
 export interface NavItem {
   to: string
@@ -44,6 +45,7 @@ export function DashboardShell({
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
 
   // El panel lateral se cierra al navegar en pantallas pequeñas.
   useEffect(() => setSidebarOpen(false), [pathname])
@@ -95,12 +97,16 @@ export function DashboardShell({
         />
       )}
 
+      {/* En escritorio el panel queda fijo al alto de la pantalla. Antes era
+          `static` dentro de un contenedor tan alto como la pagina, asi que en
+          las secciones largas crecia con ella y la tarjeta del usuario bajaba
+          hasta el final. Ahora solo se desplaza la lista de secciones. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col bg-ink px-6 py-8 text-white/70 transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-72 shrink-0 flex-col bg-ink px-6 py-8 text-white/70 transition-transform duration-300 lg:sticky lg:top-0 lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="mb-10 flex items-center justify-between gap-3">
+        <div className="mb-10 flex shrink-0 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25">
               <img
@@ -127,7 +133,7 @@ export function DashboardShell({
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+        <nav className="-mx-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2">
           {navItems.map((item) => {
             const Icon = item.icon
             return (
@@ -166,7 +172,7 @@ export function DashboardShell({
         </nav>
 
         {tarjeta && (
-          <div className="mt-8 border-t border-white/10 pt-5">
+          <div className="mt-6 shrink-0 border-t border-white/10 pt-5">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white">
                 {tarjeta.initials}
@@ -177,8 +183,9 @@ export function DashboardShell({
               </div>
             </div>
             <button
-              onClick={signOut}
-              className="mt-4 inline-flex items-center gap-1.5 text-xs text-white/45 transition-colors hover:text-white/80"
+              type="button"
+              onClick={() => setConfirmarSalida(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-xs text-white/45 transition-colors hover:text-white/80"
             >
               <LogOut className="h-3.5 w-3.5" />
               Cerrar sesión
@@ -186,6 +193,12 @@ export function DashboardShell({
           </div>
         )}
       </aside>
+
+      <DialogoCerrarSesion
+        open={confirmarSalida}
+        onClose={() => setConfirmarSalida(false)}
+        onConfirm={() => void signOut()}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-line-soft bg-ivory/95 px-5 py-3 backdrop-blur lg:hidden">

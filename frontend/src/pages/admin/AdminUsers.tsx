@@ -15,7 +15,9 @@ import {
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { Button, FilterPills } from '@/shared/ui/ui'
 import { SelectField, TextField } from '@/shared/ui/form'
-import { formatLongDate } from '@/shared/lib/format'
+import { formatLongDate, initialsFromName } from '@/shared/lib/format'
+import { CampoBusqueda } from '@/shared/ui/controles'
+import { botonFila, contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 
 const ESTILO_ROL: Record<UsuarioRol, string> = {
   cliente: 'border-line bg-ivory text-muted',
@@ -61,13 +63,17 @@ export default function AdminUsers() {
   const [creando, setCreando] = useState<NuevaCuenta | null>(null)
   const [borrando, setBorrando] = useState<Usuario | null>(null)
 
-  const visibles = useMemo(
-    () =>
-      filtro === 'todos'
-        ? gestion.usuarios
-        : gestion.usuarios.filter((u) => u.rol === filtro),
-    [gestion.usuarios, filtro],
-  )
+  const [busqueda, setBusqueda] = useState('')
+  const visibles = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase()
+    return gestion.usuarios.filter(
+      (u) =>
+        (filtro === 'todos' || u.rol === filtro) &&
+        (!termino ||
+          u.nombre.toLowerCase().includes(termino) ||
+          (u.email ?? '').toLowerCase().includes(termino)),
+    )
+  }, [gestion.usuarios, filtro, busqueda])
 
   const cuentas = useMemo(() => {
     const porRol = Object.fromEntries(
@@ -106,8 +112,8 @@ export default function AdminUsers() {
   // de "no hay usuarios". Se dice lo que pasa en vez de enseñar un vacio.
   if (!esStaff) {
     return (
-      <div className="animate-fade-up">
-        <h1 className="font-serif-display text-3xl text-ink">Usuarios y roles</h1>
+      <div className={contenedorPanel}>
+        <h1 className="font-serif-display text-4xl text-ink">Usuarios y roles</h1>
         <p
           role="alert"
           className="mt-6 rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted"
@@ -120,11 +126,11 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="animate-fade-up">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className={contenedorPanel}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif-display text-3xl text-ink">Usuarios y roles</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="font-serif-display text-4xl text-ink">Usuarios y roles</h1>
+          <p className="mt-2 text-sm text-muted">
             Administra quién accede a NuraVision y con qué permisos.
           </p>
         </div>
@@ -134,7 +140,7 @@ export default function AdminUsers() {
         </Button>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <FilterPills
           options={[
             { value: 'todos', label: `Todos (${cuentas.todos})` },
@@ -142,6 +148,13 @@ export default function AdminUsers() {
           ]}
           value={filtro}
           onChange={(v) => setFiltro(v as UsuarioRol | 'todos')}
+        />
+        <CampoBusqueda
+          value={busqueda}
+          onChange={setBusqueda}
+          placeholder="Buscar por nombre o correo…"
+          etiqueta="Buscar usuarios"
+          className="w-full sm:w-72"
         />
       </div>
 
@@ -157,44 +170,53 @@ export default function AdminUsers() {
       )}
 
       {!gestion.cargando && !gestion.error && (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-line-soft bg-paper">
-          <table className="w-full min-w-[760px] text-left text-sm">
+        <div className={`mt-6 ${tabla.contenedor}`}>
+          <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
-                <th className="px-6 py-4 font-medium">Usuario</th>
-                <th className="px-6 py-4 font-medium">Contacto</th>
-                <th className="px-6 py-4 font-medium">Rol</th>
-                <th className="px-6 py-4 font-medium">Registro</th>
-                <th className="px-6 py-4" />
+              <tr className={tabla.cabecera}>
+                <th className={tabla.th}>Usuario</th>
+                <th className={tabla.th}>Contacto</th>
+                <th className={tabla.th}>Rol</th>
+                <th className={tabla.th}>Registro</th>
+                <th className={tabla.th}>
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {visibles.map((u) => (
-                <tr key={u.id} className="transition-colors hover:bg-ivory/70">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-ink">{u.nombre}</p>
-                    {u.profesionalId && (
-                      <p className="text-xs text-muted">
-                        Ficha: {nombrePorFicha[u.profesionalId] ?? `#${u.profesionalId}`}
-                      </p>
-                    )}
+                <tr key={u.id} className={tabla.fila}>
+                  <td className={tabla.td}>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-olive-50 text-xs font-medium text-olive-700">
+                        {initialsFromName(u.nombre)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-ink">{u.nombre}</p>
+                        {u.profesionalId && (
+                          <p className="text-xs text-muted">
+                            Ficha: {nombrePorFicha[u.profesionalId] ?? `#${u.profesionalId}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={tabla.td}>
                     <p className="text-ink">{u.email ?? '—'}</p>
                     <p className="text-xs text-muted">{u.telefono ?? '—'}</p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={tabla.td}>
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${ESTILO_ROL[u.rol]}`}
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${ESTILO_ROL[u.rol]}`}
                     >
                       {u.rol === 'admin' && <ShieldCheck className="h-3.5 w-3.5" />}
                       {ETIQUETA_ROL[u.rol]}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-muted first-letter:uppercase">
+                  <td className={`${tabla.td} whitespace-nowrap text-muted first-letter:uppercase`}>
                     {formatLongDate(u.creadoEn.slice(0, 10))}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={tabla.td}>
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() =>
@@ -204,7 +226,7 @@ export default function AdminUsers() {
                           })
                         }
                         aria-label={`Editar a ${u.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                        className={botonFila.normal}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                         Editar
@@ -216,7 +238,7 @@ export default function AdminUsers() {
                           u.id === usuario?.id ? 'No puedes eliminar tu propia cuenta.' : undefined
                         }
                         aria-label={`Eliminar a ${u.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft disabled:cursor-not-allowed disabled:opacity-40"
+                        className={botonFila.peligro}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Eliminar
@@ -228,7 +250,7 @@ export default function AdminUsers() {
               {visibles.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center text-sm text-muted">
-                    No hay usuarios con este rol.
+                    {busqueda ? `Ningún usuario coincide con «${busqueda}».` : 'No hay usuarios con este rol.'}
                   </td>
                 </tr>
               )}

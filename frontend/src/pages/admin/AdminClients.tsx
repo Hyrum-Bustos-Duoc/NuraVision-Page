@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useAppState } from '@/shared/state/AppState'
 import { formatPrice } from '@/shared/lib/format'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 export default function AdminClients() {
   const { bookings } = useAppState()
@@ -26,7 +27,7 @@ export default function AdminClients() {
   }, [bookings])
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Clientes</h1>
       <p className="mt-2 text-sm text-muted">{clients.length} clientes con reservas registradas.</p>
 

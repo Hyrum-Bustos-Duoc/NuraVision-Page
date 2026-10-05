@@ -5,6 +5,7 @@ import { serviceCategories } from '@/modules/servicios/domain/serviceCategories'
 import { useAppState } from '@/shared/state/AppState'
 import { Card, FilterPills } from '@/shared/ui/ui'
 import { formatLongDate, formatPrice } from '@/shared/lib/format'
+import { contenedorPanel, controlFiltro } from '@/shared/ui/nv-estilos'
 
 type PresetId = '30d' | '3m' | '6m' | 'anio' | 'personalizado'
 
@@ -98,7 +99,7 @@ export default function AdminAnalytics() {
   const maxPro = Math.max(1, ...topProfessionals.map((p) => p.count))
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Analítica</h1>
       <p className="mt-2 text-sm text-muted">
         Desempeño del estudio a partir de las reservas registradas.
@@ -124,22 +125,22 @@ export default function AdminAnalytics() {
 
         {preset === 'personalizado' && (
           <div className="mt-4 flex flex-wrap items-end gap-4">
-            <label className="text-xs text-muted">
+            <label className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
               Desde
               <input
                 type="date"
                 value={custom.from}
                 onChange={(e) => setCustom({ ...custom, from: e.target.value })}
-                className="mt-1 block rounded-lg border border-line bg-ivory px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+                className={`${controlFiltro} mt-1.5 block px-4`}
               />
             </label>
-            <label className="text-xs text-muted">
+            <label className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
               Hasta
               <input
                 type="date"
                 value={custom.to}
                 onChange={(e) => setCustom({ ...custom, to: e.target.value })}
-                className="mt-1 block rounded-lg border border-line bg-ivory px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+                className={`${controlFiltro} mt-1.5 block px-4`}
               />
             </label>
           </div>

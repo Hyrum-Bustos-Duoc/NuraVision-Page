@@ -3,6 +3,7 @@ import { useAppState } from '@/shared/state/AppState'
 import { useToast } from '@/shared/state/Toast'
 import { ConfirmDialog } from '@/shared/ui/Modal'
 import { Button, Card, Kicker } from '@/shared/ui/ui'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 export default function AdminSettings() {
   const [name, setName] = useState('Estudio Nura')
@@ -14,12 +15,12 @@ export default function AdminSettings() {
   const { toast } = useToast()
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Configuración</h1>
       <p className="mt-2 text-sm text-muted">Datos generales del negocio.</p>
 
       <form
-        className="mt-8 space-y-5"
+        className="mt-8 max-w-2xl space-y-5"
         onSubmit={(e) => {
           e.preventDefault()
           toast({ title: 'Configuración guardada' })

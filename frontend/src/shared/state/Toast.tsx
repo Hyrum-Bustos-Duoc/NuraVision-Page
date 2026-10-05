@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Sobre el launcher de Nuva (spec §4.3) para no taparlo. */}
       <div
-        className="pointer-events-none fixed inset-x-4 bottom-20 z-[95] flex flex-col items-end gap-2 sm:inset-x-auto sm:bottom-[150px] sm:right-6"
+        className="pointer-events-none fixed inset-x-4 bottom-20 z-[99] flex flex-col items-end gap-2 sm:inset-x-auto sm:bottom-[150px] sm:right-6"
         role="status"
         aria-live="polite"
       >

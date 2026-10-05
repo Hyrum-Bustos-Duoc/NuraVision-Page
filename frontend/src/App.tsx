@@ -19,6 +19,7 @@ import { AppStateProvider } from '@/shared/state/AppState'
 import { AuthProvider } from '@/modules/auth/ui/AuthProvider'
 import { ToastProvider } from '@/shared/state/Toast'
 import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
+import { ContenidoProvider } from '@/modules/contenido/ui/ContenidoProvider'
 import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
 import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
@@ -59,7 +60,7 @@ import AdminClients from '@/pages/admin/AdminClients'
 import AdminUsers from '@/pages/admin/AdminUsers'
 import AdminProfessionals from '@/pages/admin/AdminProfessionals'
 import AdminServices from '@/pages/admin/AdminServices'
-import AdminContent from '@/pages/admin/AdminContent'
+import AdminContenido from '@/modules/contenido/ui/AdminContenido'
 import AdminAnalytics from '@/pages/admin/AdminAnalytics'
 import AdminSettings from '@/pages/admin/AdminSettings'
 
@@ -97,6 +98,7 @@ export default function App() {
           {/* El carrito resuelve sus lineas contra el catalogo, asi que va
               dentro de el. Los dos envuelven al router porque el estado debe
               sobrevivir a la navegacion. */}
+          <ContenidoProvider>
           <CatalogoProvider>
           <CarritoProvider>
           <NuvaProvider>
@@ -176,7 +178,7 @@ export default function App() {
                   <Route path="admin/usuarios" element={<AdminUsers />} />
                   <Route path="admin/profesionales" element={<AdminProfessionals />} />
                   <Route path="admin/servicios" element={<AdminServices />} />
-                  <Route path="admin/contenido" element={<AdminContent />} />
+                  <Route path="admin/contenido" element={<AdminContenido />} />
                   <Route path="admin/analitica" element={<AdminAnalytics />} />
                   <Route path="admin/configuracion" element={<AdminSettings />} />
                 </Route>
@@ -188,6 +190,7 @@ export default function App() {
           </NuvaProvider>
           </CarritoProvider>
           </CatalogoProvider>
+          </ContenidoProvider>
         </ToastProvider>
       </AppStateProvider>
     </AuthProvider>

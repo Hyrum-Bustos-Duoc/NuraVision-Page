@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react'
+import { ChevronDown, Plus, X } from 'lucide-react'
 import { createId } from '@/shared/lib/id'
 import { minutesToTime, timeToMinutes } from '@/shared/lib/availability'
 import type { DayAvailability, Weekday, WeeklyAvailability } from '@/shared/types'
@@ -31,12 +31,13 @@ function TimeSelect({
   label: string
 }) {
   return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border border-line bg-ivory px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink"
-    >
+    <div className="relative inline-flex">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cursor-pointer appearance-none rounded-lg border border-line bg-ivory py-2 pl-3 pr-8 text-sm text-ink outline-none transition-colors hover:border-muted-light focus:border-olive-600"
+      >
       {/* Si el horario guardado no cae en la grilla, se conserva como opción. */}
       {!TIME_OPTIONS.includes(value) && <option value={value}>{value}</option>}
       {TIME_OPTIONS.map((time) => (
@@ -44,7 +45,12 @@ function TimeSelect({
           {time}
         </option>
       ))}
-    </select>
+      </select>
+      <ChevronDown
+        aria-hidden="true"
+        className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted"
+      />
+    </div>
   )
 }
 

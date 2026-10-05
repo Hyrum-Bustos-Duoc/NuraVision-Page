@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useCarrito } from '@/modules/carrito/ui/useCarrito'
 import { useIniciarReserva } from '@/modules/reservas/ui/useIniciarReserva'
@@ -167,17 +167,23 @@ export default function Checkout() {
 
               {entrega === 'cita' && citas.length > 1 && (
                 <Campo etiqueta="¿En qué cita?" error={mostrarError('reserva')} className="mt-5">
-                  <select
-                    value={cita?.id ?? ''}
-                    onChange={(e) => setCitaElegida(e.target.value)}
-                    className={claseInput}
-                  >
-                    {citas.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.etiqueta}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={cita?.id ?? ''}
+                      onChange={(e) => setCitaElegida(e.target.value)}
+                      className={`${claseInput} cursor-pointer appearance-none pr-10`}
+                    >
+                      {citas.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nv-soft1"
+                    />
+                  </div>
                 </Campo>
               )}
 

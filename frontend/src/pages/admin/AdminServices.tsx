@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/form'
 import { AppImage, Button } from '@/shared/ui/ui'
 import { formatPrice } from '@/shared/lib/format'
+import { botonFila, contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 import type { ServiceCategoryId } from '@/shared/types'
 
 const BORRADOR_VACIO: DatosServicio = {
@@ -107,7 +108,7 @@ export default function AdminServices() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-4xl text-ink">Servicios</h1>
@@ -133,17 +134,19 @@ export default function AdminServices() {
       )}
 
       {!gestion.cargando && !gestion.error && (
-        <div className="overflow-x-auto rounded-2xl border border-line-soft bg-paper">
-          <table className="w-full min-w-[720px] text-left text-sm">
+        <div className={tabla.contenedor}>
+          <table className="w-full min-w-[980px] text-sm">
             <thead>
-              <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
-                <th className="px-6 py-4 font-medium">Servicio</th>
-                <th className="px-6 py-4 font-medium">Categoría</th>
-                <th className="px-6 py-4 font-medium">Duración</th>
-                <th className="px-6 py-4 font-medium">Precio</th>
-                <th className="px-6 py-4 font-medium">Profesionales</th>
-                <th className="px-6 py-4 font-medium">Estado</th>
-                <th className="px-6 py-4" />
+              <tr className={tabla.cabecera}>
+                <th className={tabla.th}>Servicio</th>
+                <th className={tabla.th}>Categoría</th>
+                <th className={tabla.th}>Duración</th>
+                <th className={tabla.th}>Precio</th>
+                <th className={tabla.th}>Profesionales</th>
+                <th className={tabla.th}>Estado</th>
+                <th className={tabla.th}>
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
@@ -152,9 +155,9 @@ export default function AdminServices() {
                 return (
                   <tr
                     key={s.id}
-                    className={`transition-colors hover:bg-ivory/70 ${s.activo ? '' : 'opacity-55'}`}
+                    className={`${tabla.fila} ${s.activo ? '' : 'opacity-55'}`}
                   >
-                    <td className="px-6 py-4">
+                    <td className={`${tabla.td} min-w-[260px]`}>
                       <div className="flex items-center gap-3">
                         <AppImage
                           src={fotoDeServicio(s)}
@@ -164,25 +167,27 @@ export default function AdminServices() {
                         />
                         <div>
                           <p className="font-medium text-ink">{s.nombre}</p>
-                          <p className="text-xs text-muted">{s.descripcion}</p>
+                          <p className="line-clamp-1 max-w-[260px] text-xs text-muted" title={s.descripcion}>
+                            {s.descripcion}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-ink">{categoryLabel(s.categoria)}</td>
-                    <td className="px-6 py-4 text-ink">{s.duracionMinutos} min</td>
-                    <td className="px-6 py-4 text-ink">{formatPrice(s.precioBase)}</td>
-                    <td className="px-6 py-4 text-muted">
+                    <td className={`${tabla.td} whitespace-nowrap text-ink`}>{categoryLabel(s.categoria)}</td>
+                    <td className={`${tabla.td} whitespace-nowrap text-ink`}>{s.duracionMinutos} min</td>
+                    <td className={`${tabla.td} whitespace-nowrap text-ink`}>{formatPrice(s.precioBase)}</td>
+                    <td className={`${tabla.td} whitespace-nowrap text-muted`}>
                       {/* Un servicio que nadie realiza aparece en el catalogo y no
                           se puede reservar, porque no hay con quien. */}
                       {loRealizan > 0 ? loRealizan : <span className="text-danger">Sin asignar</span>}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={tabla.td}>
                       <button
                         onClick={() => void alternarActivo(s)}
                         disabled={gestion.guardando}
                         aria-pressed={s.activo}
                         aria-label={`${s.activo ? 'Desactivar' : 'Activar'} ${s.nombre}`}
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                           s.activo
                             ? 'border-olive-300 bg-olive-50 text-olive-700 hover:bg-olive-100'
                             : 'border-line bg-ivory text-muted hover:bg-line-soft'
@@ -196,12 +201,12 @@ export default function AdminServices() {
                         {s.activo ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={tabla.td}>
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setEditando({ id: s.id, borrador: aBorrador(s) })}
                           aria-label={`Editar ${s.nombre}`}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                          className={botonFila.normal}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Editar
@@ -209,7 +214,7 @@ export default function AdminServices() {
                         <button
                           onClick={() => setBorrando(s)}
                           aria-label={`Eliminar ${s.nombre}`}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+                          className={botonFila.peligro}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           Eliminar
