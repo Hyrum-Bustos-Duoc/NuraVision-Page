@@ -157,8 +157,14 @@ export function ClientHeader() {
     <header className="sticky top-0 z-40 border-b border-nv-line1 bg-nv-bg/90 backdrop-blur-[14px]">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-10">
         <div className="flex min-w-0 items-center gap-6 xl:gap-10">
-          <Link to="/" className="shrink-0 font-serif text-[21px] text-nv-ink sm:text-[23px]">
-            Estudio Nura
+          <Link to="/" className="flex shrink-0 items-center" aria-label="Nuravision, ir al inicio">
+            <img
+              src="/nuravision-logo.png"
+              alt="Nuravision"
+              className="h-9 w-auto sm:h-11"
+              width={800}
+              height={266}
+            />
           </Link>
           <nav aria-label="Principal" className="hidden items-center gap-0.5 lg:flex">
             {links.map((link) => (
@@ -307,6 +313,16 @@ export function ClientFooter() {
       <div className="mx-auto max-w-[1240px] px-4 pb-9 pt-14 sm:px-6 sm:pt-20 lg:px-10">
         <div className="grid gap-12 border-b border-nv-ink3 pb-12 sm:grid-cols-3 sm:pb-[60px] lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div className="sm:col-span-3 lg:col-span-1">
+            {/* El dorado del logo se oscurece hacia el cafe; sobre el fondo
+                oscuro se aclara para que no se pierda. */}
+            <img
+              src="/nuravision-logo.png"
+              alt="Nuravision"
+              className="-ml-1.5 mb-8 h-12 w-auto brightness-[1.9] sm:h-14"
+              width={800}
+              height={266}
+              loading="lazy"
+            />
             <p className="max-w-[440px] font-serif text-[28px] font-light leading-[1.08] text-nv-bg sm:text-[34px]">
               Mantente actualizado y no te pierdas de nada!
               <br />
