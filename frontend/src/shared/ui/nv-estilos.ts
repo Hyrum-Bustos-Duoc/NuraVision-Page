@@ -29,3 +29,23 @@ export const linkSubrayado =
 
 /** Contenedor de pagina: 1240px con 40px de lateral en escritorio. */
 export const contenedor = 'mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-10'
+
+/** Contenedor de las paginas de los paneles (admin y profesional). */
+export const contenedorPanel = 'mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10'
+
+/**
+ * Controles de los filtros y barras de herramientas de los paneles: misma
+ * altura (40px), pildora, borde de linea y foco en el acento. Asi un buscador,
+ * un desplegable y un boton puestos en fila quedan alineados.
+ */
+export const controlFiltro =
+  'h-10 rounded-full border border-line bg-paper text-sm text-ink transition-[border-color,box-shadow,background-color] hover:border-muted-light focus-visible:border-olive-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-olive-600/20 disabled:cursor-not-allowed disabled:opacity-50'
+
+/** Tablas de los paneles. */
+export const tabla = {
+  contenedor: 'overflow-x-auto rounded-2xl border border-line-soft bg-paper',
+  cabecera: 'border-b border-line-soft bg-ivory/60',
+  th: 'whitespace-nowrap px-5 py-3.5 text-left text-[11px] font-medium uppercase tracking-[0.1em] text-muted',
+  td: 'px-5 py-4 align-middle',
+  fila: 'transition-colors hover:bg-ivory/50',
+} as const
