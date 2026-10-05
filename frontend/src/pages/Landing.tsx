@@ -110,7 +110,6 @@ export default function Landing() {
             eyebrow={c.portada.tarjetaTienda.eyebrow}
             titulo={c.portada.tarjetaTienda.titulo}
             link={c.portada.tarjetaTienda.enlace}
-            desplazado
           />
         </div>
       </section>
@@ -309,6 +308,11 @@ function Stat({ value, label }: { value: string; label: string }) {
   )
 }
 
+/**
+ * Foto de la portada como lamina impresa: remate en arco (el de los espejos
+ * del salon), marco blanco y leyenda centrada debajo. Las dos laminas miden
+ * lo mismo y quedan alineadas arriba y abajo.
+ */
 function TileHero({
   to,
   imagen,
@@ -316,7 +320,6 @@ function TileHero({
   eyebrow,
   titulo,
   link,
-  desplazado = false,
 }: {
   to: string
   imagen?: string
@@ -324,26 +327,25 @@ function TileHero({
   eyebrow: string
   titulo: string
   link: string
-  desplazado?: boolean
 }) {
   return (
     <Link
       to={to}
-      className={`group relative block aspect-[3/5] overflow-hidden rounded-md transition-transform duration-300 hover:-translate-y-1 ${
-        desplazado ? 'mt-8 sm:mt-12' : 'mb-8 sm:mb-12'
-      }`}
+      className="group flex flex-col rounded-[4px] bg-white p-2 pb-4 shadow-[0_1px_2px_rgba(38,40,32,0.06),0_14px_32px_-18px_rgba(38,40,32,0.28)] transition-transform duration-300 hover:-translate-y-1 sm:p-3 sm:pb-6"
     >
-      {imagen ? (
-        <AppImage src={imagen} alt={titulo} className="absolute inset-0 h-full w-full" />
-      ) : (
-        <div className="placeholder-stripes absolute inset-0 flex justify-center pt-6">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
-        </div>
-      )}
-      <div className="absolute inset-x-2 bottom-2 rounded-md bg-nv-bg p-3 sm:inset-x-4 sm:bottom-4 sm:p-5">
+      <div className="relative aspect-[3/4.4] overflow-hidden rounded-b-[2px] rounded-t-full bg-nv-tint2">
+        {imagen ? (
+          <AppImage src={imagen} alt={titulo} className="absolute inset-0 h-full w-full" />
+        ) : (
+          <div className="placeholder-stripes absolute inset-0 flex items-end justify-center pb-6">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col items-center px-1 pt-4 text-center sm:pt-5">
         <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
-        <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
-        <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
+        <p className="mt-1.5 text-balance font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
+        <p className="mt-auto pt-2 text-xs text-nv-ink sm:pt-3 sm:text-[13px]">{link}</p>
       </div>
     </Link>
   )
