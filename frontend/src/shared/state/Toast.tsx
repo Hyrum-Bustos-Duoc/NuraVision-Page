@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { AlertTriangle, Check, Info, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 type Tone = 'success' | 'error' | 'info'
 
@@ -25,6 +25,12 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null)
 
 const DURATION_MS = 3600
+
+const COLOR_PUNTO: Record<Tone, string> = {
+  success: 'bg-nv-online',
+  error: 'bg-[#e8a08c]',
+  info: 'bg-nv-faint2',
+}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -48,29 +54,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+      {/* Sobre el launcher de Nuva (spec §4.3) para no taparlo. */}
       <div
-        className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6"
+        className="pointer-events-none fixed inset-x-4 bottom-20 z-[95] flex flex-col items-end gap-2 sm:inset-x-auto sm:bottom-[150px] sm:right-6"
         role="status"
         aria-live="polite"
       >
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-slide-in-up pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl bg-ink px-4 py-3 text-white shadow-lg"
+            className="animate-nv-rise pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[9px] bg-nv-ink px-5 py-3.5 text-nv-tint3 shadow-toast"
           >
-            <span className="mt-0.5 shrink-0">
-              {t.tone === 'success' && <Check className="h-4 w-4 text-olive-400" />}
-              {t.tone === 'error' && <AlertTriangle className="h-4 w-4 text-[#e8a08c]" />}
-              {t.tone === 'info' && <Info className="h-4 w-4 text-white/70" />}
-            </span>
+            <span
+              aria-hidden="true"
+              className={`mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full ${COLOR_PUNTO[t.tone]}`}
+            />
             <div className="flex-1">
-              <p className="text-sm font-medium">{t.title}</p>
-              {t.description && <p className="mt-0.5 text-xs text-white/70">{t.description}</p>}
+              <p className="text-[13.5px]">{t.title}</p>
+              {t.description && <p className="mt-0.5 text-xs text-nv-faint2">{t.description}</p>}
             </div>
             <button
               onClick={() => dismiss(t.id)}
               aria-label="Cerrar aviso"
-              className="rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              className="-mr-2 rounded-full p-1 text-nv-soft2 transition-colors hover:bg-nv-ink3 hover:text-nv-bg"
             >
               <X className="h-3.5 w-3.5" />
             </button>

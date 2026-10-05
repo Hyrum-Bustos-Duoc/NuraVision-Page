@@ -1,13 +1,19 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { categoryLabel } from '@/modules/servicios/domain/serviceCategories'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
 import { useEquipoConAgenda } from '@/modules/profesionales/ui/useEquipoConAgenda'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
-import { AppImage, Kicker, LinkButton } from '@/shared/ui/ui'
-import { Reveal } from '@/shared/ui/Reveal'
-import { getNextAvailableSlots } from '@/shared/lib/availability'
 import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
+import { useIniciarReserva } from '@/modules/reservas/ui/useIniciarReserva'
+import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
+import { ProductGrid, ProductGridSkeleton } from '@/modules/tienda/ui/ProductGrid'
+import { BandaNuva, TarjetaNuvaHero } from '@/modules/nuva/ui/NuvaPortada'
+import { AppImage } from '@/shared/ui/ui'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Reveal } from '@/shared/ui/Reveal'
+import { boton, contenedor, linkSubrayado } from '@/shared/ui/nv-estilos'
 
 const STEPS = [
   {
@@ -32,289 +38,294 @@ const STEPS = [
   },
 ]
 
+/** Los cuatro de la seccion "Tienda Nura" (spec §6), por slug de 0013. */
+const DESTACADOS_TIENDA = [
+  'aceite-de-cuticula-nura',
+  'champu-reconstructor',
+  'kit-ritual-manos',
+  'protector-solar-fps-50',
+]
+
+const MODOS_ENTREGA = [
+  { titulo: 'Despacho en 24–72 h', detalle: 'Gratis sobre $40.000 en Viña del Mar y Valparaíso' },
+  { titulo: 'Retiro en el estudio', detalle: 'Listo en 2 horas, sin costo' },
+  { titulo: 'Entrega en tu cita', detalle: 'Te lo dejamos listo para tu próxima reserva' },
+]
+
+const PASOS_IA = [
+  { n: '01', titulo: 'Elige qué mirar', detalle: 'Manos, piel, cabello o cuero cabelludo.' },
+  { n: '02', titulo: 'Sube una foto', detalle: 'Con luz natural. La analizamos en segundos.' },
+  { n: '03', titulo: 'Recibe tu rutina', detalle: 'Un servicio en el estudio y productos para casa.' },
+]
+
+const HALLAZGOS_IA = ['Hidratación baja', 'Cutícula irregular', 'Borde libre con descamación']
+
 export default function Landing() {
-  // `bookings` sigue siendo local: es lo unico que hay para marcar las horas
-  // ya tomadas al calcular la proxima libre.
-  const { activeServices: services, siteContent, bookings } = useAppState()
+  const { siteContent } = useAppState()
+  const iniciarReserva = useIniciarReserva()
 
   /**
-   * Los destacados salen de la base, no de los datos de ejemplo.
-   *
-   * Es lo que hace que la imagen cruce: el mapa de `servicio.imagenes` esta
-   * escrito con los nombres reales del catalogo, y los del prototipo son
-   * otros ("Manicure Ritual Nura", "Pedicure Spa"). Con esos, los tres
-   * servicios de uñas caian todos en la imagen generica de la categoria y la
-   * portada mostraba la misma foto tres veces seguidas.
-   *
-   * De paso arregla los enlaces: apuntaban a ids del prototipo, que la ficha
-   * de servicio ya no sabe resolver contra la base.
+   * Los destacados salen de la base, no de los datos de ejemplo: el mapa de
+   * `servicio.imagenes` esta escrito con los nombres reales del catalogo, y los
+   * enlaces apuntan a ids que la ficha de servicio sabe resolver.
    */
   const catalogo = useServicios()
   const featured = catalogo.servicios.slice(0, 4)
-  /**
-   * El equipo sale de la base, igual que los destacados.
-   *
-   * Se usa `useEquipoConAgenda` y no `useProfesionales` a proposito: trae
-   * ademas el horario semanal, que es lo que permite seguir mostrando la
-   * tarjeta de "proxima hora libre". Con la entidad de dominio a secas habria
-   * que quitarla, porque sin agenda no hay proxima hora que calcular.
-   */
   const equipo = useEquipoConAgenda()
   const professionals = equipo.equipo
 
-  const firstProfessional = professionals[0]
-  const nextSlot = firstProfessional
-    ? getNextAvailableSlots(firstProfessional, bookings, 1)[0]
-    : undefined
+  const tienda = useCatalogo()
+  const destacados = DESTACADOS_TIENDA.map((slug) => tienda.porSlug(slug)).filter((p) => p !== undefined)
 
   return (
     <div>
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-2 md:items-center md:py-24">
+      {/* ---------------------------------------------------------------- Hero */}
+      <section
+        className={`${contenedor} grid gap-12 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:gap-14 lg:pb-[88px]`}
+      >
         <div className="animate-fade-up">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-olive-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-olive-600" />
-            Análisis visual con IA
+          <span className="inline-flex items-center gap-2 rounded-full border border-nv-accent-line px-3.5 py-1.5 text-[10.5px] uppercase tracking-[0.13em] text-nv-accent sm:text-[11px]">
+            <span className="h-[5px] w-[5px] rounded-full bg-nv-accent" />
+            Estudio de belleza · Tienda de cuidado
           </span>
-          <h1 className="mt-6 font-serif-display text-5xl leading-[1.05] text-ink sm:text-6xl">
-            Reserva tu próxima <em className="italic text-olive-700">experiencia</em> de belleza
+          <h1 className="mt-6 text-balance font-serif text-[clamp(42px,6.4vw,66px)] font-light leading-[1.02] tracking-[-0.02em] text-nv-ink">
+            Belleza en el estudio, <em className="text-nv-accent">cuidado</em> en casa
           </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-muted">
-            Elige tu servicio, tu profesional y tu horario en menos de un minuto. Y si no sabes por
-            dónde empezar, deja que NuraVision analice una fotografía y te oriente.
+          <p className="mt-6 max-w-[460px] text-pretty text-[16px] leading-[1.65] text-nv-muted1 sm:text-[17px]">
+            Reserva con nuestras profesionales o lleva a casa los mismos productos que usamos en
+            cada ritual. Y si no sabes por dónde empezar, NuraVision analiza una fotografía y te
+            orienta en ambos.
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <LinkButton to="/reservar">Reservar ahora</LinkButton>
-            <LinkButton to="/servicios" variant="outline">
-              Conocer servicios
-            </LinkButton>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => iniciarReserva()}
+              className={`${boton.primario} px-[30px] py-[15px] text-[14.5px]`}
+            >
+              Reservar servicio
+            </button>
+            <Link to="/tienda" className={`${boton.primario} px-[30px] py-[15px] text-[14.5px]`}>
+              Comprar productos
+            </Link>
           </div>
-          <div className="mt-12 flex gap-10 border-t border-line-soft pt-8">
-            <Stat value={String(catalogo.servicios.length || services.length)} label="servicios" />
+
+          <TarjetaNuvaHero />
+
+          <div className="mt-10 flex flex-wrap gap-x-[34px] gap-y-4 border-t border-nv-line1 pt-7">
             {/* Mientras carga se muestra un guion en vez de un 0, que se leeria
-                como "el estudio no tiene profesionales". */}
+                como "el estudio no tiene servicios". */}
             <Stat
-              value={equipo.cargando || equipo.error ? '—' : String(professionals.length)}
-              label="profesionales"
+              value={catalogo.cargando || catalogo.error ? '—' : String(catalogo.servicios.length)}
+              label="servicios"
             />
-            <Stat value="24/7" label="agenda en línea" />
+            <Stat
+              value={tienda.cargando || tienda.error ? '—' : String(tienda.productos.length)}
+              label="productos del estudio"
+            />
+            <Stat value="Gratis" label="retiro en el estudio" />
           </div>
         </div>
 
-        <div className="animate-fade-up relative [animation-delay:120ms]">
-          <AppImage
-            src={siteContent.heroImage}
-            label={siteContent.heroCaption}
-            alt="Estudio Nura"
-            className="aspect-[4/5] w-full rounded-2xl"
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
+          <TileHero
+            to="/servicios"
+            imagen={siteContent.heroImage}
+            etiquetaImagen="Fotografía · Estudio"
+            eyebrow="El estudio"
+            titulo="Servicios con hora en línea"
+            link="Ver servicios →"
           />
-          {firstProfessional && nextSlot && (
-            <div className="animate-fade-up absolute bottom-6 left-6 w-56 rounded-xl border border-line-soft bg-paper p-4 shadow-sm [animation-delay:320ms]">
-              <Kicker>Próxima hora libre</Kicker>
-              <p className="mt-2 text-sm font-medium text-ink">{firstProfessional.name}</p>
-              <p className="text-sm text-muted">{nextSlot.label.replace(' ', ' · ')}</p>
+          <TileHero
+            to="/tienda"
+            etiquetaImagen="Fotografía · Productos"
+            eyebrow="La tienda"
+            titulo="Lo que usamos, para tu casa"
+            link="Ver tienda →"
+            desplazado
+          />
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------- Banda Nuva */}
+      <div className={`${contenedor} pb-16 lg:pb-[88px]`}>
+        <BandaNuva />
+      </div>
+
+      {/* ----------------------------------------------- Servicios destacados */}
+      <Reveal>
+        <section className="bg-nv-paper2 py-16 lg:py-[84px]">
+          <div className={contenedor}>
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <Eyebrow>Servicios destacados</Eyebrow>
+                <h2 className="mt-3 font-serif text-[32px] font-light leading-[1.1] tracking-[-0.015em] text-nv-ink sm:text-[40px]">
+                  Cuidado que se nota
+                </h2>
+              </div>
+              <Link to="/servicios" className={linkSubrayado}>
+                Ver catálogo completo →
+              </Link>
+            </div>
+            {/* En la portada un error de carga no se muestra: el resto de la
+                pagina sigue siendo util y la seccion simplemente no aparece. */}
+            {catalogo.cargando && (
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="overflow-hidden rounded-lg border border-nv-line1 bg-nv-surface">
+                    <div className="aspect-square w-full animate-pulse bg-nv-tint2" />
+                    <div className="p-5">
+                      <div className="h-3 w-16 animate-pulse rounded bg-nv-tint2" />
+                      <div className="mt-3 h-5 w-32 animate-pulse rounded bg-nv-tint2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="stagger grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {featured.map((s) => (
+                <Link
+                  key={s.id}
+                  to={`/servicios/${s.id}`}
+                  className="nv-card overflow-hidden rounded-lg border border-nv-line1 bg-nv-surface"
+                >
+                  <AppImage
+                    src={fotoDeServicio(s)}
+                    label={s.nombre.split(' ')[0].toUpperCase()}
+                    alt={s.nombre}
+                    className="aspect-square w-full"
+                  />
+                  <div className="p-3 sm:p-4">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">
+                      {categoryLabel(s.categoria)}
+                    </p>
+                    <h3 className="mt-1 font-serif text-base text-nv-ink sm:text-lg">{s.nombre}</h3>
+                    <p className="mt-1 text-xs text-nv-soft1">
+                      {s.duracionMinutos} min · {etiquetaDePrecio(s)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ---------------------------------------------------------- Tienda Nura */}
+      {!tienda.error && (
+        <Reveal>
+          <section className={`${contenedor} py-16 lg:py-[84px]`}>
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <Eyebrow>Tienda Nura</Eyebrow>
+                <h2 className="mt-3 font-serif text-[32px] font-light leading-[1.1] tracking-[-0.015em] text-nv-ink sm:text-[40px]">
+                  El ritual continúa en casa
+                </h2>
+              </div>
+              <Link to="/tienda" className={linkSubrayado}>
+                Ver toda la tienda →
+              </Link>
+            </div>
+            {tienda.cargando ? <ProductGridSkeleton /> : <ProductGrid productos={destacados} />}
+
+            <ul className="mt-6 grid gap-px overflow-hidden rounded-lg border border-nv-line1 bg-nv-line1 sm:grid-cols-3">
+              {MODOS_ENTREGA.map((m) => (
+                <li key={m.titulo} className="bg-nv-bg px-6 py-5">
+                  <p className="text-[14.5px] text-nv-ink">{m.titulo}</p>
+                  <p className="mt-1 text-[13px] text-nv-soft1">{m.detalle}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </Reveal>
+      )}
+
+      {/* ------------------------------------------------------- NuraVision IA */}
+      <BandaAnalisis />
+
+      {/* -------------------------------------------------------- Como funciona */}
+      <section className="border-t border-nv-ink3 bg-nv-ink py-16">
+        <div className={contenedor}>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-nv-soft2">Cómo funciona</p>
+          <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step, i) => (
+              <div key={step.n} className={`sm:pl-6 ${i > 0 ? 'sm:border-l sm:border-nv-ink3' : ''}`}>
+                <p className="font-serif text-3xl text-nv-soft2">{step.n}</p>
+                <h3 className="mt-3 text-lg text-nv-bg">{step.title}</h3>
+                <p className="mt-2 text-sm text-nv-faint2">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------- El equipo */}
+      <Reveal>
+        <section className={`${contenedor} py-16 lg:py-[84px]`}>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Eyebrow>El equipo</Eyebrow>
+              <h2 className="mt-3 font-serif text-[32px] font-light leading-[1.1] tracking-[-0.015em] text-nv-ink sm:text-[40px]">
+                Quién te atiende
+              </h2>
+            </div>
+            <Link to="/profesionales" className={linkSubrayado}>
+              Ver profesionales →
+            </Link>
+          </div>
+          {equipo.cargando && (
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className="aspect-[3/4] w-full animate-pulse rounded-md bg-nv-tint2" />
+                  <div className="mt-3 h-5 w-28 animate-pulse rounded bg-nv-tint2" />
+                </div>
+              ))}
             </div>
           )}
-        </div>
-      </section>
 
+          {/* El fallo se dice, no se esconde: un hueco mudo bajo "Quién te
+              atiende" no se distingue de un estudio sin profesionales. */}
+          {!equipo.cargando && equipo.error && (
+            <p role="alert" className="rounded-lg border border-dashed border-nv-line3 p-10 text-center text-sm text-nv-muted1">
+              No pudimos cargar el equipo: {equipo.error}
+            </p>
+          )}
+
+          {!equipo.cargando && !equipo.error && professionals.length === 0 && (
+            <p className="rounded-lg border border-dashed border-nv-line3 p-10 text-center text-sm text-nv-muted1">
+              Todavía no hay profesionales publicados.
+            </p>
+          )}
+
+          {!equipo.cargando && !equipo.error && professionals.length > 0 && (
+            <div className="stagger grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {professionals.map((p) => (
+                <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
+                  <AppImage src={p.imageUrl} label="Retrato" alt={p.name} className="aspect-[3/4] w-full rounded-md" />
+                  <p className="mt-3 font-serif text-lg text-nv-ink">{p.name}</p>
+                  <p className="text-sm text-nv-soft1">{p.role}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      </Reveal>
+
+      {/* ------------------------------------------------------------ CTA final */}
       <Reveal>
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Kicker>Servicios destacados</Kicker>
-            <h2 className="mt-2 font-serif-display text-4xl text-ink">Cuidado que se nota</h2>
-          </div>
-          <Link
-            to="/servicios"
-            className="group text-sm font-medium text-ink transition-colors hover:text-olive-700"
+        <section className="mx-auto max-w-3xl px-4 pb-20 pt-6 text-center sm:px-6">
+          <h2 className="font-serif text-4xl font-light text-nv-ink sm:text-5xl">Tu hora te está esperando</h2>
+          <p className="mx-auto mt-4 max-w-md text-base text-nv-muted1">
+            Agenda en línea, confirma al instante y recibe tu recordatorio.
+          </p>
+          <button
+            type="button"
+            onClick={() => iniciarReserva()}
+            className={`${boton.primario} mt-8 px-[30px] py-[15px] text-[14.5px]`}
           >
-            Ver catálogo completo{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-        </div>
-        {/* En la portada un error de carga no se muestra: no hay nada que la
-            persona pueda hacer al respecto, y el resto de la pagina sigue
-            siendo util. La seccion simplemente no aparece. */}
-        {catalogo.cargando && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="overflow-hidden rounded-2xl border border-line-soft bg-paper"
-              >
-                <div className="aspect-square w-full animate-pulse bg-line-soft" />
-                <div className="p-5">
-                  <div className="h-3 w-16 animate-pulse rounded bg-line-soft" />
-                  <div className="mt-3 h-5 w-32 animate-pulse rounded bg-line-soft" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((s) => (
-            <Link
-              key={s.id}
-              to={`/servicios/${s.id}`}
-              className="card-hover overflow-hidden rounded-2xl border border-line-soft bg-paper"
-            >
-              {/* Mismo helper y mismo encuadre que el catalogo, para que la
-                  portada y /servicios muestren la misma fotografia. El
-                  `overflow-hidden` de la tarjeta recorta la imagen con su
-                  radio, sin redondearla por su cuenta. */}
-              <AppImage
-                src={fotoDeServicio(s)}
-                label={s.nombre.split(' ')[0].toUpperCase()}
-                alt={s.nombre}
-                className="aspect-square w-full"
-              />
-              <div className="p-5">
-                <Kicker>{categoryLabel(s.categoria)}</Kicker>
-                <h3 className="mt-1 font-serif-display text-xl text-ink">{s.nombre}</h3>
-                <p className="mt-2 text-sm text-muted">
-                  {s.duracionMinutos} min · {etiquetaDePrecio(s)}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-      </Reveal>
-
-      <Reveal>
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-2 md:items-center">
-        <AppImage
-          src={siteContent.aiTeaserImage}
-          label={siteContent.aiTeaserCaption}
-          alt="Análisis con NuraVision IA"
-          variant="lavender"
-          className="aspect-square w-full rounded-2xl"
-        />
-        <div>
-          <Kicker>NuraVision IA</Kicker>
-          <h2 className="mt-3 font-serif-display text-4xl leading-tight text-ink">
-            Una fotografía. Una orientación clara.
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted">
-            Sube o captura una imagen de tus manos, uñas, piel o cuero cabelludo. NuraVision
-            identifica características visuales y te sugiere servicios de nuestro catálogo que
-            podrían acompañarte.
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-ink">
-            {[
-              ...siteContent.aiFocusOptions.map((option) => option.label),
-              'Recomendación de servicios del catálogo',
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-olive-600" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-6 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-            NuraVision entrega una orientación estética basada en análisis visual.{' '}
-            <strong className="text-ink">No constituye un diagnóstico médico</strong> ni reemplaza la
-            evaluación de un profesional de la salud.
-          </div>
-          <LinkButton to="/analisis-ia" variant="olive" className="mt-6">
-            Probar el análisis
-          </LinkButton>
-        </div>
-      </section>
-      </Reveal>
-
-      <Reveal>
-      <section className="bg-ink py-16 text-white">
-        <div className="mx-auto max-w-6xl px-6">
-          <Kicker className="text-white/50">Cómo funciona</Kicker>
-          <div className="stagger mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((step, i) => (
-              <div key={step.n} className={`pl-6 ${i > 0 ? 'border-l border-white/15' : ''}`}>
-                <p className="font-serif-display text-3xl text-white/30">{step.n}</p>
-                <h3 className="mt-3 text-lg font-medium text-white">{step.title}</h3>
-                <p className="mt-2 text-sm text-white/55">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      </Reveal>
-
-      <Reveal>
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Kicker>El equipo</Kicker>
-            <h2 className="mt-2 font-serif-display text-4xl text-ink">Quién te atiende</h2>
-          </div>
-          <Link
-            to="/profesionales"
-            className="group text-sm font-medium text-ink transition-colors hover:text-olive-700"
-          >
-            Ver profesionales{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-        </div>
-        {equipo.cargando && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i}>
-                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-line-soft" />
-                <div className="mt-3 h-5 w-28 animate-pulse rounded bg-line-soft" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* El fallo se dice, no se esconde. Antes se ocultaba con el argumento
-            de que la visitante no puede hacer nada al respecto, pero eso deja
-            un hueco mudo justo bajo el titulo "Nuestro equipo": no se
-            distingue de un estudio sin profesionales, y quien reporte el
-            problema no tendra nada que contar. */}
-        {!equipo.cargando && equipo.error && (
-          <p role="alert" className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
-            No pudimos cargar el equipo: {equipo.error}
-          </p>
-        )}
-
-        {!equipo.cargando && !equipo.error && professionals.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
-            Todavía no hay profesionales publicados.
-          </p>
-        )}
-
-        {/* La rejilla solo aparece cuando hay algo que poner: con error o
-            cargando, pintar un grid vacio debajo del aviso sobra. */}
-        {!equipo.cargando && !equipo.error && professionals.length > 0 && (
-        <div className="stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {professionals.map((p) => (
-            <Link key={p.id} to={`/profesionales/${p.id}`} className="zoom-media group">
-              <AppImage
-                src={p.imageUrl}
-                label="Retrato"
-                alt={p.name}
-                className="aspect-[3/4] w-full rounded-2xl"
-              />
-              <p className="mt-3 font-serif-display text-lg text-ink">{p.name}</p>
-              <p className="text-sm text-muted">{p.role}</p>
-            </Link>
-          ))}
-        </div>
-        )}
-      </section>
-      </Reveal>
-
-      <Reveal>
-      <section className="mx-auto max-w-3xl px-6 py-20 text-center">
-        <h2 className="font-serif-display text-4xl text-ink sm:text-5xl">Tu hora te está esperando</h2>
-        <p className="mx-auto mt-4 max-w-md text-base text-muted">
-          Agenda en línea, confirma al instante y recibe tu recordatorio.
-        </p>
-        <LinkButton to="/reservar" className="mt-8">
-          Reservar ahora
-        </LinkButton>
-      </section>
+            Reservar ahora
+          </button>
+        </section>
       </Reveal>
     </div>
   )
@@ -323,8 +334,130 @@ export default function Landing() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <p className="font-serif-display text-3xl text-ink">{value}</p>
-      <p className="text-sm text-muted">{label}</p>
+      <p className="font-serif text-[30px] font-light text-nv-ink sm:text-[34px]">{value}</p>
+      <p className="text-[13px] text-nv-soft1">{label}</p>
     </div>
   )
+}
+
+function TileHero({
+  to,
+  imagen,
+  etiquetaImagen,
+  eyebrow,
+  titulo,
+  link,
+  desplazado = false,
+}: {
+  to: string
+  imagen?: string
+  etiquetaImagen: string
+  eyebrow: string
+  titulo: string
+  link: string
+  desplazado?: boolean
+}) {
+  return (
+    <Link
+      to={to}
+      className={`group relative block aspect-[3/5] overflow-hidden rounded-md transition-transform duration-300 hover:-translate-y-1 ${
+        desplazado ? 'mt-8 sm:mt-12' : 'mb-8 sm:mb-12'
+      }`}
+    >
+      {imagen ? (
+        <AppImage src={imagen} alt={titulo} className="absolute inset-0 h-full w-full" />
+      ) : (
+        <div className="placeholder-stripes absolute inset-0 flex justify-center pt-6">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+        </div>
+      )}
+      <div className="absolute inset-x-2 bottom-2 rounded-md bg-nv-bg p-3 sm:inset-x-4 sm:bottom-4 sm:p-5">
+        <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
+        <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
+        <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
+      </div>
+    </Link>
+  )
+}
+
+/** Banda oscura "Una foto. Tu rutina completa." (spec §6.3). */
+function BandaAnalisis() {
+  const pasoActivo = usePasoCiclico(PASOS_IA.length, 2400)
+
+  return (
+    <section className="overflow-hidden bg-nv-ink text-nv-tint3">
+      <div className={`${contenedor} grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2 lg:gap-20 lg:py-[110px]`}>
+        <div>
+          <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.14em] text-nv-accent-mid">
+            NuraVision IA · análisis con IA
+          </p>
+          <h2 className="font-serif text-[clamp(46px,5.2vw,76px)] font-light leading-[0.95] tracking-[-0.02em] text-nv-bg">
+            Una foto.
+            <br />
+            Tu rutina <em className="text-nv-accent-mid">completa</em>.
+          </h2>
+
+          <ol className="mt-10 border-t border-nv-ink3">
+            {PASOS_IA.map((paso, i) => (
+              <li
+                key={paso.n}
+                className={`grid grid-cols-[48px_1fr] border-b border-nv-ink3 py-5 transition-opacity duration-[600ms] sm:grid-cols-[60px_1fr] ${
+                  pasoActivo === null || pasoActivo === i ? 'opacity-100' : 'opacity-40'
+                }`}
+              >
+                <span className="pt-1 font-mono text-[10px] text-nv-accent-mid">{paso.n}</span>
+                <span>
+                  <span className="block text-[19px] text-nv-bg">{paso.titulo}</span>
+                  <span className="mt-1 block text-[13.5px] leading-[1.5] text-nv-faint2">{paso.detalle}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Link to="/analisis-ia" className={`${boton.claroSobreOscuro} px-7 py-[15px] text-sm`}>
+              Probar el análisis
+            </Link>
+            <span className="text-xs text-nv-soft2">Orientación estética · no es diagnóstico médico</span>
+          </div>
+        </div>
+
+        <div className="placeholder-stripes-dark relative aspect-[4/5] w-full overflow-hidden rounded-md">
+          <span className="absolute inset-0 flex items-center justify-center font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft2">
+            foto · manos
+          </span>
+          <span
+            aria-hidden="true"
+            className="animate-nv-scan absolute inset-x-[6%] h-0.5 bg-nv-accent-mid shadow-[0_0_24px_4px_var(--nv-accent-mid)]"
+          />
+          <ul className="absolute inset-x-5 bottom-5 flex flex-wrap gap-2">
+            {HALLAZGOS_IA.map((h) => (
+              <li key={h} className="rounded-full bg-[rgba(255,253,250,0.92)] px-3 py-2 text-xs text-nv-ink">
+                {h}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Indice que avanza solo cada `intervalo` ms. Con movimiento reducido devuelve
+ * `null`: todos los pasos quedan visibles y nada cambia por su cuenta.
+ */
+function usePasoCiclico(total: number, intervalo: number): number | null {
+  const [reducido] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  )
+  const [paso, setPaso] = useState(0)
+
+  useEffect(() => {
+    if (reducido) return
+    const id = window.setInterval(() => setPaso((p) => (p + 1) % total), intervalo)
+    return () => window.clearInterval(id)
+  }, [reducido, total, intervalo])
+
+  return reducido ? null : paso
 }

@@ -12,6 +12,7 @@ frontend y con datos de ejemplo para recorrer el flujo de reserva completo.
 | `migrations/0002_rls.sql` | Activa Row Level Security y abre la lectura pública de esas 4. |
 | `migrations/0003_reservas.sql` | Crea `reservas` y permite reservar sin cuenta. **Empieza con un `DROP TABLE`.** |
 | `migrations/0004_auth_reservas_policy.sql` | Deja que cada persona lea sus propias reservas, con Supabase Auth. |
+| `migrations/0013_tienda.sql` | Tienda: `productos`, `pedidos`, `pedido_items`, newsletter y las funciones `crear_pedido` y `suscribir_newsletter`. Aditiva y reaplicable. |
 | `seed.sql` | Carga el catálogo y el equipo reales. Opcional, pero recomendado. |
 
 El contrato de nombres y tipos de columna vive en
@@ -40,12 +41,30 @@ En el menú lateral, **SQL Editor** → **New query**. Luego, **en este orden**:
 2. Nueva query: pega `migrations/0002_rls.sql` y **Run**.
 3. Nueva query: pega `migrations/0003_reservas.sql` y **Run**.
 4. Nueva query: pega `migrations/0004_auth_reservas_policy.sql` y **Run**.
-5. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
+5. Sigue igual con el resto de `migrations/`, en orden numérico, hasta
+   `0013_tienda.sql`. Esta última deja cargados los 10 productos de la tienda y
+   al final devuelve cuántos quedaron vinculados a un servicio.
+6. Nueva query: pega `seed.sql` y **Run**. Al final te devuelve un recuento de
    filas por tabla.
 
 El orden importa: 0002 referencia las tablas que crea 0001, 0003 apunta con
 claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
 0003, y el seed necesita el catálogo ya creado.
+
+> **0013 en el proyecto actual.** Allí `productos` ya existía, creada a mano
+> y con otra forma. La migración no la borra: le agrega las columnas que
+> faltan. Antes de aplicarla conviene revisar que nada más la use:
+>
+> ```sql
+> select column_name, data_type, is_nullable, column_default
+>   from information_schema.columns
+>  where table_schema = 'public' and table_name = 'productos';
+> select count(*) from public.productos;
+> ```
+>
+> Si aparece una columna `NOT NULL` sin valor por defecto que no esté en
+> 0013, el `insert` del catálogo fallará y la migración entera se revierte:
+> no queda a medias.
 
 > **Ojo con 0003 en una base que ya está en uso.** Empieza con
 > `drop table if exists public.reservas cascade`, así que borra las reservas
@@ -132,6 +151,32 @@ proteger ahí.
   teléfono y el correo de toda la clientela.
 - **Ni UPDATE ni DELETE para nadie.** Cancelar y reprogramar todavía no están
   implementados contra la base.
+
+`pedidos` (0013) va un paso más allá: **nadie tiene INSERT**, ni siquiera con
+sesión. Un pedido solo nace en la función `crear_pedido`, que recibe productos y
+cantidades y calcula en la base el subtotal, el despacho, el descuento del combo
+y el total. Si el navegador pudiera insertar la fila, también podría fijar el
+precio. Además:
+
+- La función valida cobertura (Viña del Mar y Valparaíso), que «pagar en el
+  estudio» no vaya con despacho y que la «entrega en tu cita» use una reserva
+  propia y vigente.
+- Si `productos.stock` tiene valor, lo descuenta con bloqueo de fila y rechaza
+  la compra si no alcanza.
+- Cada cuenta lee sus pedidos; el personal (`es_staff`) lee todos y solo puede
+  cambiar `estado`. Para eso 0013 revoca primero el `ALL` que Supabase concede
+  por defecto en cada tabla nueva: un `GRANT UPDATE (estado)` encima de ese
+  `ALL` no limitaría nada.
+- Cancelar un pedido devuelve su stock; un pedido cancelado no se reabre.
+- Frenos contra el spam: como mucho 3 pedidos sin pagar por correo y hora, y
+  topes de longitud en los textos. Se esquivan rotando correos: el límite real
+  (por IP o captcha) queda pendiente.
+- Como `productos` existía con políticas creadas a mano, 0013 las elimina todas
+  y deja solo las suyas. Las filas anteriores con otra categoría o precio no
+  entero no se pueden comprar.
+- Las reglas de dinero tienen un espejo en
+  `frontend/src/modules/pedidos/domain/pedido.reglas.ts`. Si cambias una,
+  cambia la otra.
 
 Una reserva hecha sin cuenta queda con `cliente_id` NULL, así que **ninguna
 política la devuelve**: ni a su autora. Su único vínculo con ella es el código

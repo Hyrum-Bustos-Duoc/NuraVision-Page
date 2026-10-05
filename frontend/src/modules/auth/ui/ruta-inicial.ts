@@ -31,12 +31,31 @@ export function rutaDePanel(usuario: UsuarioAuth): string | null {
 }
 
 /**
+ * Valida el `?volver=` con que se llega al login, o `null` si no sirve.
+ *
+ * Solo acepta rutas internas: "/checkout" si, "//sitio-malo.com" o
+ * "https://…" no. Sin esta comprobacion el login seria una redireccion abierta:
+ * un enlace con el dominio del estudio que, tras escribir la contraseña, deja a
+ * la persona en otro sitio que imita al nuestro.
+ */
+export function rutaDeRetorno(valor: string | null): string | null {
+  if (!valor || !valor.startsWith('/') || valor.startsWith('//') || valor.includes('\\')) return null
+  // Volver al login o al registro despues de entrar no tiene sentido.
+  if (/^\/(login|registro)(\/|\?|$)/.test(valor)) return null
+  return valor
+}
+
+/**
  * A donde llevar a alguien que acaba de iniciar sesion.
  *
  * Antes el formulario mandaba a todo el mundo a `/mis-reservas`, asi que una
  * profesional entraba con sus credenciales correctas y aterrizaba en la vista de
  * clienta, sin nada que le indicara que su panel existia.
+ *
+ * Respeta `?volver=` (el checkout manda ahi a quien quiere recibir el pedido en
+ * su cita), pero el panel interno manda sobre el retorno: una profesional que
+ * entra desde el checkout tiene que llegar a su panel, no a la tienda.
  */
-export function rutaInicial(usuario: UsuarioAuth): string {
-  return rutaDePanel(usuario) ?? RUTA_CLIENTA
+export function rutaTrasIniciarSesion(usuario: UsuarioAuth, volver: string | null): string {
+  return rutaDePanel(usuario) ?? rutaDeRetorno(volver) ?? RUTA_CLIENTA
 }
