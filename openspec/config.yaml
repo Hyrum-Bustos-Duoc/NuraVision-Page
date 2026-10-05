@@ -26,3 +26,27 @@ context: |
 #     archive:
 #       guidance:
 #         - Summarize the archive outcome before finishing
+
+rules:
+  proposal:
+    - Empieza por el problema, nunca por la solucion pedida ni por un elogio a la idea.
+    - Incluye siempre una seccion de alternativas descartadas con el motivo del descarte.
+    - Fechas absolutas (2026-09-28), nunca relativas ("la semana que viene").
+    - Si el cambio cruza capas, declara el contrato de datos antes que las tareas.
+  spec:
+    - Describe comportamiento observable, no archivos a crear ni estructura de carpetas.
+    - Cero opciones de configuracion sin un segundo valor pedido hoy.
+  tasks:
+    - Cada tarea tiene un unico dueno y toca una sola ruta del repo.
+    - Todo criterio de aceptacion debe ser falsable: tiene que poder escribirse un test que lo rompa.
+    - La verificacion de cada tarea la ejecuta nv-qa, no el implementador.
+
+operations:
+  apply:
+    guidance:
+      - Pega la salida literal de los comandos de verificacion, no la resumas.
+      - No marques una tarea como hecha si su criterio de aceptacion no esta cubierto por un test.
+  archive:
+    guidance:
+      - Antes de archivar, comprueba que las specs reflejan lo que de verdad se implemento.
+      - Deja registrado que se descarto durante la implementacion y por que.
