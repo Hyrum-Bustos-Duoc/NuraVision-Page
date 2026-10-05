@@ -437,6 +437,21 @@ export interface Database {
           },
         ]
       }
+      /** Contenido editable del sitio (0014). Una sola fila, id = 1. */
+      contenido_sitio: {
+        Row: {
+          id: number
+          datos: Json
+          actualizado_en: string
+          actualizado_por: string | null
+        }
+        Insert: never
+        /** Solo `datos`: el sello lo pone un trigger. */
+        Update: {
+          datos?: Json
+        }
+        Relationships: []
+      }
     }
     Views: Record<never, never>
     Functions: {

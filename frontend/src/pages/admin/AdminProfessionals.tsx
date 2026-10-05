@@ -20,6 +20,7 @@ import {
 } from '@/shared/ui/form'
 import { AppImage, Button, Kicker } from '@/shared/ui/ui'
 import type { ServiceCategoryId, WeeklyAvailability } from '@/shared/types'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 /** Lo que maneja el modal: la ficha y su horario, que son dos tablas. */
 interface Borrador {
@@ -135,7 +136,7 @@ export default function AdminProfessionals() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-4xl text-ink">Profesionales</h1>

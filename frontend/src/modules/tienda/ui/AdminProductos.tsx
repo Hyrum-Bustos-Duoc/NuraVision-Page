@@ -9,6 +9,8 @@ import { useToast } from '@/shared/state/Toast'
 import { ConfirmDialog, Modal } from '@/shared/ui/Modal'
 import { NumberField, SelectField, TextAreaField, TextField } from '@/shared/ui/form'
 import { Button } from '@/shared/ui/ui'
+import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
+import { botonFila, contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 import {
   CATEGORIAS_PRODUCTO,
   ETIQUETA_INSIGNIA,
@@ -142,7 +144,7 @@ export default function AdminProductos() {
   const sinStock = gestion.productos.filter((p) => p.activo && p.stock === 0).length
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-serif-display text-4xl text-ink">Productos</h1>
@@ -163,35 +165,25 @@ export default function AdminProductos() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <input
+      <BarraFiltros>
+        <CampoBusqueda
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={setBusqueda}
           placeholder="Buscar por nombre o URL…"
-          aria-label="Buscar productos"
-          className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink outline-none focus:border-ink sm:w-72"
+          etiqueta="Buscar productos"
+          className="sm:w-72"
         />
-        <select
+        <SelectFiltro
           value={categoria}
-          onChange={(e) => setCategoria(e.target.value as CategoriaProducto | typeof TODAS)}
-          aria-label="Filtrar por categoría"
-          className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-        >
-          <option value={TODAS}>Todas las categorías</option>
-          {CATEGORIAS_PRODUCTO.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={gestion.recargar}
-          className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-ivory"
-        >
-          Actualizar
-        </button>
-      </div>
+          onChange={setCategoria}
+          etiqueta="Filtrar por categoría"
+          opciones={[
+            { value: TODAS, label: 'Todas las categorías' },
+            ...CATEGORIAS_PRODUCTO.map((c) => ({ value: c.id, label: c.label })),
+          ]}
+        />
+        <BotonActualizar onClick={gestion.recargar} cargando={gestion.cargando} />
+      </BarraFiltros>
 
       {gestion.cargando && <Vacio texto="Cargando productos…" />}
       {!gestion.cargando && gestion.error && <Vacio texto={gestion.error} />}
@@ -206,22 +198,24 @@ export default function AdminProductos() {
       )}
 
       {!gestion.cargando && !gestion.error && visibles.length > 0 && (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-line-soft bg-paper">
-          <table className="w-full min-w-[720px] text-left text-sm">
+        <div className={`mt-6 ${tabla.contenedor}`}>
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
-              <tr className="border-b border-line-soft bg-ivory/60 text-xs uppercase tracking-wide text-muted">
-                <th className="px-5 py-4 font-medium">Producto</th>
-                <th className="px-5 py-4 font-medium">Categoría</th>
-                <th className="px-5 py-4 font-medium">Precio</th>
-                <th className="px-5 py-4 font-medium">Stock</th>
-                <th className="px-5 py-4 font-medium">Estado</th>
-                <th className="px-5 py-4" />
+              <tr className={tabla.cabecera}>
+                <th className={tabla.th}>Producto</th>
+                <th className={tabla.th}>Categoría</th>
+                <th className={tabla.th}>Precio</th>
+                <th className={tabla.th}>Stock</th>
+                <th className={tabla.th}>Estado</th>
+                <th className={tabla.th}>
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {visibles.map((p) => (
                 <tr key={p.id} className={`transition-colors hover:bg-ivory/70 ${p.activo ? '' : 'opacity-55'}`}>
-                  <td className="max-w-[300px] px-5 py-4">
+                  <td className={`${tabla.td} max-w-[280px]`}>
                     <div className="flex items-center gap-3">
                       <ProductoImagen producto={p} conEtiqueta={false} className="h-11 w-11 shrink-0 rounded-lg" />
                       <div className="min-w-0">
@@ -274,18 +268,18 @@ export default function AdminProductos() {
                       <button
                         onClick={() => setEditando({ producto: p, borrador: aBorrador(p) })}
                         aria-label={`Editar ${p.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                        className={botonFila.normal}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        <span className="hidden 2xl:inline">Editar</span>
+                        Editar
                       </button>
                       <button
                         onClick={() => setBorrando(p)}
                         aria-label={`Eliminar ${p.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+                        className={botonFila.peligro}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        <span className="hidden 2xl:inline">Eliminar</span>
+                        Eliminar
                       </button>
                     </div>
                   </td>
@@ -537,7 +531,7 @@ function ModalProducto({
             type="checkbox"
             checked={borrador.activo}
             onChange={(e) => set('activo', e.target.checked)}
-            className="h-4 w-4 accent-current"
+            className="h-4 w-4"
           />
           Publicado en la tienda
         </label>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { Button } from './ui'
 
@@ -43,8 +44,11 @@ export function Modal({
 
   const maxWidth = size === 'sm' ? 'max-w-md' : size === 'lg' ? 'max-w-4xl' : 'max-w-2xl'
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6">
+  // Va en un portal a <body>: un ancestro con `transform` o `backdrop-filter`
+  // (el header del sitio, el panel lateral) convierte a `fixed` en relativo a
+  // el, y el dialogo quedaba encerrado en su caja.
+  return createPortal(
+    <div className="fixed inset-0 z-[98] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <div
         className="animate-fade-in absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
         onClick={onClose}
@@ -80,7 +84,8 @@ export function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
