@@ -11,6 +11,7 @@ import { useNuva } from '@/modules/nuva/ui/useNuva'
 import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
+import { DialogoCerrarSesion } from '@/shared/ui/DialogoCerrarSesion'
 
 const ANUNCIOS = [
   'Retiro en Estudio inmediato',
@@ -105,6 +106,7 @@ export function ClientHeader() {
   // El menu recuerda en que ruta se abrio: al navegar deja de coincidir y se
   // cierra solo, sin un efecto que lo resetee.
   const [menuAbiertoEn, setMenuAbiertoEn] = useState<string | null>(null)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
   const menuAbierto = menuAbiertoEn === pathname
 
   // Una sesión de Supabase cuenta como sesión de clienta igual que la del
@@ -270,7 +272,7 @@ export function ClientHeader() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => void salir()}
+                  onClick={() => setConfirmarSalida(true)}
                   className="rounded-lg px-3 py-3 text-left text-[15px] text-nv-soft1 hover:bg-nv-paper2"
                 >
                   Cerrar sesión
@@ -289,6 +291,12 @@ export function ClientHeader() {
           </div>
         </div>
       )}
+
+      <DialogoCerrarSesion
+        open={confirmarSalida}
+        onClose={() => setConfirmarSalida(false)}
+        onConfirm={() => void salir()}
+      />
     </header>
   )
 }
