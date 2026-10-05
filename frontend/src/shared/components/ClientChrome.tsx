@@ -209,7 +209,7 @@ export function ClientHeader() {
               </button>
               <button
                 type="button"
-                onClick={() => void salir()}
+                onClick={() => setConfirmarSalida(true)}
                 className="hidden text-[13px] text-nv-soft1 transition-colors hover:text-nv-ink lg:inline"
               >
                 Salir
