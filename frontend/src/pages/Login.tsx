@@ -5,9 +5,11 @@ import { useAuth } from '@/modules/auth/ui/useAuth'
 import { rutaDeRetorno, rutaTrasIniciarSesion } from '@/modules/auth/ui/ruta-inicial'
 import { AppImage, Button, Kicker } from '@/shared/ui/ui'
 import type { Role } from '@/shared/types'
+import { useContenido } from '@/modules/contenido/ui/useContenido'
 
 export default function Login() {
-  const { login, siteContent, realDataOnly, setRealDataOnly } = useAppState()
+  const { login, realDataOnly, setRealDataOnly } = useAppState()
+  const { contenido } = useContenido()
   const { signInWithPassword } = useAuth()
   const navigate = useNavigate()
   // A donde volver tras entrar (por ejemplo, el checkout). Validado: solo rutas
@@ -206,16 +208,14 @@ export default function Login() {
           el testimonio fuera de la vista. */}
       <div className="relative hidden md:sticky md:top-0 md:block md:h-screen">
         <AppImage
-          src={siteContent.loginImage}
+          src={contenido.imagenes.login ?? undefined}
           alt=""
           className="h-full w-full"
           imageClassName="object-[50%_70%]"
         />
         <div className="absolute bottom-10 left-10 max-w-xs rounded-xl border border-line-soft bg-paper p-5 shadow-sm">
-          <p className="font-serif-display text-xl italic leading-snug text-ink">
-            "Reservar dejó de ser una conversación de WhatsApp."
-          </p>
-          <p className="mt-3 text-xs text-muted">Estudio Nura · Viña del Mar</p>
+          <p className="font-serif-display text-xl italic leading-snug text-ink">{contenido.login.cita}</p>
+          <p className="mt-3 text-xs text-muted">{contenido.login.firma}</p>
         </div>
       </div>
     </div>

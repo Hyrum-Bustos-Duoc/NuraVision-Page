@@ -19,6 +19,7 @@ import { AppStateProvider } from '@/shared/state/AppState'
 import { AuthProvider } from '@/modules/auth/ui/AuthProvider'
 import { ToastProvider } from '@/shared/state/Toast'
 import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
+import { ContenidoProvider } from '@/modules/contenido/ui/ContenidoProvider'
 import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
 import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
@@ -97,6 +98,7 @@ export default function App() {
           {/* El carrito resuelve sus lineas contra el catalogo, asi que va
               dentro de el. Los dos envuelven al router porque el estado debe
               sobrevivir a la navegacion. */}
+          <ContenidoProvider>
           <CatalogoProvider>
           <CarritoProvider>
           <NuvaProvider>
@@ -188,6 +190,7 @@ export default function App() {
           </NuvaProvider>
           </CarritoProvider>
           </CatalogoProvider>
+          </ContenidoProvider>
         </ToastProvider>
       </AppStateProvider>
     </AuthProvider>

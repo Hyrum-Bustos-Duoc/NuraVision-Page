@@ -11,15 +11,9 @@ import { useNuva } from '@/modules/nuva/ui/useNuva'
 import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
+import { useContenido } from '@/modules/contenido/ui/useContenido'
 import { DialogoCerrarSesion } from '@/shared/ui/DialogoCerrarSesion'
 
-const ANUNCIOS = [
-  'Retiro en Estudio inmediato',
-  'Servicios hechos por Profesionales',
-  'Agenda en línea 24/7',
-  'Nuva: Tu asistente IA',
-  'Análisis IA para tu comodidad',
-]
 
 /**
  * Barra de anuncios (spec §4.2b). La lista va dos veces para que el
@@ -27,10 +21,17 @@ const ANUNCIOS = [
  * los lectores de pantalla para que no la lean dos veces.
  */
 function BarraAnuncios() {
+  const { contenido } = useContenido()
+  const anuncios = contenido.anuncios.filter((a) => a.trim())
+
+  // Sin anuncios la barra no se muestra: una franja negra vacia moviendose no
+  // dice nada.
+  if (anuncios.length === 0) return null
+
   const lista = (copia: boolean) => (
     <ul aria-hidden={copia || undefined} className="flex shrink-0 items-center">
-      {ANUNCIOS.map((texto) => (
-        <li key={texto} className="flex items-center gap-12 pr-12">
+      {anuncios.map((texto, i) => (
+        <li key={i} className="flex items-center gap-12 pr-12">
           <span className="whitespace-nowrap">{texto}</span>
           <span aria-hidden="true" className="h-1 w-1 rounded-full bg-nv-accent-mid" />
         </li>
@@ -315,6 +316,7 @@ const claseLinkFooter = 'text-nv-tint3 transition-colors hover:text-nv-accent-mi
 /** Footer global oscuro (spec §6.2). */
 export function ClientFooter() {
   const { enviar } = useNuva()
+  const { footer } = useContenido().contenido
 
   return (
     <footer className="overflow-hidden bg-nv-ink text-nv-tint3">
@@ -332,21 +334,21 @@ export function ClientFooter() {
               loading="lazy"
             />
             <p className="max-w-[440px] font-serif text-[28px] font-light leading-[1.08] text-nv-bg sm:text-[34px]">
-              Mantente actualizado y no te pierdas de nada!
+              {footer.newsletterTitulo}
               <br />
-              <em className="text-nv-accent-mid">Nunca spam.</em>
+              <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
             </p>
             <NewsletterForm />
             <address className="mt-[26px] flex flex-col gap-1.5 text-[13px] not-italic leading-[1.5] text-nv-faint2">
-              <span>Estudio Nura · Av. Libertad 1250, Viña del Mar</span>
-              <span>Martes a sábado · 10:00–19:00</span>
+              <span>{footer.direccion}</span>
+              <span>{footer.horario}</span>
               <span>
-                <a href="tel:+56912345678" className="hover:text-nv-accent-mid">
-                  +56 9 1234 5678
+                <a href={`tel:${footer.telefono.replace(/[^\d+]/g, '')}`} className="hover:text-nv-accent-mid">
+                  {footer.telefono}
                 </a>{' '}
                 ·{' '}
-                <a href="mailto:hola@estudionura.cl" className="hover:text-nv-accent-mid">
-                  hola@estudionura.cl
+                <a href={`mailto:${footer.email}`} className="hover:text-nv-accent-mid">
+                  {footer.email}
                 </a>
               </span>
             </address>
@@ -417,8 +419,8 @@ export function ClientFooter() {
               </button>
             </li>
             <li>
-              <a href="tel:+56912345678" className={claseLinkFooter}>
-                +56 9 1234 5678
+              <a href={`tel:${footer.telefono.replace(/[^\d+]/g, '')}`} className={claseLinkFooter}>
+                {footer.telefono}
               </a>
             </li>
           </ColumnaFooter>
