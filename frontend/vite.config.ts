@@ -19,10 +19,23 @@ export default defineConfig({
   test: {
     // `describe`, `it` y `expect` disponibles sin importarlos en cada archivo.
     globals: true,
-    // Aun no hay tests escritos: sin esto `npm test` fallaria por no encontrar ninguno.
-    passWithNoTests: true,
-    // Navegador simulado en memoria: permite renderizar componentes sin abrir Chrome.
-    environment: 'jsdom',
+    /**
+     * Entorno por defecto: Node, no jsdom.
+     *
+     * Lo que hay escrito prueba reglas, mappers y casos de uso —lógica pura que
+     * no toca el DOM—, así que jsdom solo añadiría tiempo de arranque.
+     *
+     * Y hoy, además, NO ARRANCA: jsdom 30 exige html-encoding-sniffer 7, que
+     * carga `@exodus/bytes` con require(). Ese paquete es ESM puro, y require()
+     * de un módulo ESM solo está soportado desde Node 20.19 / 22.12. Aquí hay
+     * 20.17 —el mismo Node por el que Vite avisa en cada build—, y no existe
+     * versión que fijar: todo el rango 1.x de `@exodus/bytes` es `type: module`.
+     *
+     * Un test de componente pide su entorno en su propio archivo, poniendo
+     * `// @vitest-environment jsdom` en la primera línea. Eso seguirá fallando
+     * mientras no se suba Node: subirlo es el arreglo de verdad, no esta línea.
+     */
+    environment: 'node',
     setupFiles: ['./src/test/setup.ts'],
     // Los tests unitarios viven junto al código que prueban.
     include: ['src/**/*.test.{ts,tsx}'],
