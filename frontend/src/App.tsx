@@ -60,7 +60,7 @@ import AdminClients from '@/pages/admin/AdminClients'
 import AdminUsers from '@/pages/admin/AdminUsers'
 import AdminProfessionals from '@/pages/admin/AdminProfessionals'
 import AdminServices from '@/pages/admin/AdminServices'
-import AdminContent from '@/pages/admin/AdminContent'
+import AdminContenido from '@/modules/contenido/ui/AdminContenido'
 import AdminAnalytics from '@/pages/admin/AdminAnalytics'
 import AdminSettings from '@/pages/admin/AdminSettings'
 
@@ -178,7 +178,7 @@ export default function App() {
                   <Route path="admin/usuarios" element={<AdminUsers />} />
                   <Route path="admin/profesionales" element={<AdminProfessionals />} />
                   <Route path="admin/servicios" element={<AdminServices />} />
-                  <Route path="admin/contenido" element={<AdminContent />} />
+                  <Route path="admin/contenido" element={<AdminContenido />} />
                   <Route path="admin/analitica" element={<AdminAnalytics />} />
                   <Route path="admin/configuracion" element={<AdminSettings />} />
                 </Route>
