@@ -201,8 +201,16 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="relative hidden md:block">
-        <AppImage src={siteContent.loginImage} alt="" className="h-full w-full" />
+      {/* Fijo al alto de la pantalla: la columna del formulario es mas alta que
+          ella, y estirado a toda la pagina el panel recortaba la foto y dejaba
+          el testimonio fuera de la vista. */}
+      <div className="relative hidden md:sticky md:top-0 md:block md:h-screen">
+        <AppImage
+          src={siteContent.loginImage}
+          alt=""
+          className="h-full w-full"
+          imageClassName="object-[50%_70%]"
+        />
         <div className="absolute bottom-10 left-10 max-w-xs rounded-xl border border-line-soft bg-paper p-5 shadow-sm">
           <p className="font-serif-display text-xl italic leading-snug text-ink">
             "Reservar dejó de ser una conversación de WhatsApp."
