@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
-import { rutaInicial } from '@/modules/auth/ui/ruta-inicial'
+import { rutaDeRetorno, rutaTrasIniciarSesion } from '@/modules/auth/ui/ruta-inicial'
 import { AppImage, Button, Kicker } from '@/shared/ui/ui'
 import type { Role } from '@/shared/types'
 
@@ -10,6 +10,10 @@ export default function Login() {
   const { login, siteContent, realDataOnly, setRealDataOnly } = useAppState()
   const { signInWithPassword } = useAuth()
   const navigate = useNavigate()
+  // A donde volver tras entrar (por ejemplo, el checkout). Validado: solo rutas
+  // internas, ver rutaDeRetorno.
+  const [params] = useSearchParams()
+  const volver = rutaDeRetorno(params.get('volver'))
   // Sin valores de ejemplo: este formulario ya no simula una sesión, entra de
   // verdad contra Supabase y una credencial inventada solo daría un error.
   const [email, setEmail] = useState('')
@@ -39,7 +43,7 @@ export default function Login() {
       // Antes esto mandaba a todo el mundo a '/mis-reservas', así que una
       // profesional entraba con sus credenciales correctas y aterrizaba en la
       // vista de clienta.
-      navigate(rutaInicial(usuario), { replace: true })
+      navigate(rutaTrasIniciarSesion(usuario, volver), { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No pudimos iniciar tu sesión.')
     } finally {
@@ -114,7 +118,9 @@ export default function Login() {
 
           <p className="text-center text-sm text-muted">
             ¿No tienes cuenta?{' '}
-            <Link to="/registro" className="font-medium text-ink underline underline-offset-4">
+            <Link
+              to={volver ? `/registro?volver=${encodeURIComponent(volver)}` : '/registro'}
+              className="font-medium text-ink underline underline-offset-4">
               Regístrate
             </Link>
           </p>

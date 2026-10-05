@@ -89,6 +89,11 @@ export interface AiFocusOption {
   /** Texto que se muestra al subir la fotografía ("Analizaremos …"). */
   analysisLabel: string
   recommendedServiceIds: string[]
+  /**
+   * Slugs de la tienda para "Y para continuar en casa" (spec §11). Los que no
+   * esten en el catalogo se omiten. Opcional: sin productos el bloque no sale.
+   */
+  productosRecomendados?: string[]
   tips: AiTip[]
   /** Imagen de resultado del análisis. */
   imageUrl?: string

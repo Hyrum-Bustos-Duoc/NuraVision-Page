@@ -1,38 +1,164 @@
 @import "tailwindcss";
 
-@theme {
-  --font-serif: "Fraunces", "Iowan Old Style", serif;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+/*
+ * Paleta del Diseño 1 «Tienda».
+ *
+ * Todos los colores salen de variables --nv-*. Oliva es el tema por defecto y
+ * vive en :root; Arcilla se activa con html[data-nv-theme="clay"]. Cambiar de
+ * tema solo cambia variables, nunca estructura.
+ *
+ * Los nombres que ya usaba el sitio (ink, ivory, paper, line, olive-600…) se
+ * conservan y pasan a apuntar a estas variables. Asi las pantallas BASE —login,
+ * reservas, paneles— heredan la paleta nueva sin reescribirlas.
+ */
+:root {
+  --nv-bg: #faf8f1;
+  --nv-surface: #fffefb;
+  --nv-paper2: #f2f0e4;
+  --nv-paper4: #efeee0;
+  --nv-tint2: #eae9d8;
+  --nv-tint3: #e9e8d9;
+  --nv-tint5: #e4e3d0;
+  --nv-line1: #e7e5d5;
+  --nv-line2: #dddcc8;
+  --nv-line3: #d6d5be;
+  --nv-line6: #cfd0b4;
+  --nv-line7: #c1c3a8;
+  --nv-ink: #262820;
+  --nv-ink2: #32352b;
+  --nv-ink3: #383b30;
+  --nv-ink4: #3a3d31;
+  --nv-muted1: #5a5c4c;
+  --nv-soft1: #868876;
+  --nv-soft2: #898b79;
+  --nv-soft3: #959784;
+  --nv-faint1: #a2a490;
+  --nv-faint2: #aeb09c;
+  --nv-accent: #4f5b33;
+  --nv-accent-dk: #3a4425;
+  --nv-accent-mid: #afba8e;
+  --nv-accent-line: #d7ddc3;
+  --nv-accent-line2: #c6cfac;
+  --nv-accent-wash1: #e2e7d6;
+  --nv-accent-wash3: #ecefe0;
+  --nv-accent-wash4: #f0f3e7;
+}
 
-  --color-ivory: #f7f4ec;
-  --color-paper: #fffdf9;
-  --color-ink: #1e1d18;
-  --color-ink-soft: #2a2921;
+html[data-nv-theme='clay'] {
+  --nv-bg: #fbf8f4;
+  --nv-surface: #fffdfa;
+  --nv-paper2: #f5efe7;
+  --nv-paper4: #f1eae0;
+  --nv-tint2: #efe6da;
+  --nv-tint3: #ede6dc;
+  --nv-tint5: #e9dfd0;
+  --nv-line1: #ebe2d6;
+  --nv-line2: #e2d8ca;
+  --nv-line3: #ddd1c2;
+  --nv-line6: #d9c7b4;
+  --nv-line7: #c9b9a6;
+  --nv-ink: #23201c;
+  --nv-ink2: #34302a;
+  --nv-ink3: #3a342d;
+  --nv-ink4: #3d372f;
+  --nv-muted1: #5f574c;
+  --nv-soft1: #8b8175;
+  --nv-soft2: #8e8377;
+  --nv-soft3: #9a8f81;
+  --nv-faint1: #a79c8e;
+  --nv-faint2: #b3a99c;
+  --nv-accent: #8a4b3c;
+  --nv-accent-dk: #6e3a2e;
+  --nv-accent-mid: #c9a88f;
+  --nv-accent-line: #e4d3c8;
+  --nv-accent-line2: #d9bcae;
+  --nv-accent-wash1: #e7d9cf;
+  --nv-accent-wash3: #f2e3da;
+  --nv-accent-wash4: #f7ede7;
+}
 
-  --color-line: #e4dfd0;
-  --color-line-soft: #ece8dc;
+/* `inline`: las utilidades usan var(--nv-*) directamente, de modo que el cambio
+   de tema en <html> llega a todo sin recalcular nada. */
+@theme inline {
+  --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  --color-muted: #8a8577;
-  --color-muted-light: #a8a396;
+  /* Tokens del diseño, disponibles como bg-nv-*, text-nv-*, border-nv-*. */
+  --color-nv-bg: var(--nv-bg);
+  --color-nv-surface: var(--nv-surface);
+  --color-nv-paper2: var(--nv-paper2);
+  --color-nv-paper4: var(--nv-paper4);
+  --color-nv-tint2: var(--nv-tint2);
+  --color-nv-tint3: var(--nv-tint3);
+  --color-nv-tint5: var(--nv-tint5);
+  --color-nv-line1: var(--nv-line1);
+  --color-nv-line2: var(--nv-line2);
+  --color-nv-line3: var(--nv-line3);
+  --color-nv-line6: var(--nv-line6);
+  --color-nv-line7: var(--nv-line7);
+  --color-nv-ink: var(--nv-ink);
+  --color-nv-ink2: var(--nv-ink2);
+  --color-nv-ink3: var(--nv-ink3);
+  --color-nv-ink4: var(--nv-ink4);
+  --color-nv-muted1: var(--nv-muted1);
+  --color-nv-soft1: var(--nv-soft1);
+  --color-nv-soft2: var(--nv-soft2);
+  --color-nv-soft3: var(--nv-soft3);
+  --color-nv-faint1: var(--nv-faint1);
+  --color-nv-faint2: var(--nv-faint2);
+  --color-nv-accent: var(--nv-accent);
+  --color-nv-accent-dk: var(--nv-accent-dk);
+  --color-nv-accent-mid: var(--nv-accent-mid);
+  --color-nv-accent-line: var(--nv-accent-line);
+  --color-nv-accent-line2: var(--nv-accent-line2);
+  --color-nv-accent-wash3: var(--nv-accent-wash3);
+  --color-nv-accent-wash4: var(--nv-accent-wash4);
+  /* Estados fijos: no cambian con el tema. */
+  --color-nv-online: #7fa98a;
+  --color-nv-ok-bg: #edf2ed;
+  --color-nv-ok: #3f5a47;
+  --color-nv-error-bg: #fbedea;
+  --color-nv-error: #8a3a2c;
+  --color-nv-error-line: #efcfc7;
+  --color-nv-warn-bg: #fdf6e8;
+  --color-nv-warn: #6e5a2e;
 
-  --color-olive-50: #eef0e2;
-  --color-olive-100: #dde2c8;
-  --color-olive-400: #6b7a3f;
-  --color-olive-600: #4a5a2e;
-  --color-olive-700: #3c4a25;
+  /* Nombres previos, ahora sobre la paleta del tema. */
+  --color-ivory: var(--nv-bg);
+  --color-paper: var(--nv-surface);
+  --color-ink: var(--nv-ink);
+  --color-ink-soft: var(--nv-ink2);
+
+  --color-line: var(--nv-line2);
+  --color-line-soft: var(--nv-line1);
+
+  --color-muted: var(--nv-soft1);
+  --color-muted-light: var(--nv-faint1);
+
+  --color-olive-50: var(--nv-accent-wash4);
+  --color-olive-100: var(--nv-accent-line);
+  --color-olive-400: #6b7a4c;
+  --color-olive-600: var(--nv-accent);
+  --color-olive-700: var(--nv-accent-dk);
   --color-olive-900: #2a3419;
 
   --color-lavender: #e7e2ee;
   --color-lavender-line: #d4cce3;
 
-  --color-danger: #b3543f;
-  --color-danger-soft: #f5e6e1;
+  --color-danger: #8a3a2c;
+  --color-danger-soft: #fbedea;
 
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quick: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-nv: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --shadow-card: 0 1px 2px rgba(30, 29, 24, 0.04), 0 8px 24px -12px rgba(30, 29, 24, 0.12);
-  --shadow-lift: 0 2px 4px rgba(30, 29, 24, 0.05), 0 18px 40px -20px rgba(30, 29, 24, 0.28);
+  --shadow-card: 0 1px 2px rgba(35, 32, 28, 0.04), 0 8px 24px -12px rgba(35, 32, 28, 0.12);
+  --shadow-lift: 0 2px 4px rgba(35, 32, 28, 0.05), 0 18px 40px -20px rgba(35, 32, 28, 0.28);
+  --shadow-drawer: -20px 0 60px rgba(35, 32, 28, 0.16);
+  --shadow-panel: 0 34px 90px rgba(35, 32, 28, 0.26);
+  --shadow-launcher: 0 14px 36px rgba(35, 32, 28, 0.24);
+  --shadow-toast: 0 16px 40px rgba(35, 32, 28, 0.24);
 }
 
 html {
@@ -40,8 +166,8 @@ html {
 }
 
 body {
-  background-color: var(--color-ivory);
-  color: var(--color-ink);
+  background-color: var(--nv-bg);
+  color: var(--nv-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -49,24 +175,35 @@ body {
 
 .font-serif-display {
   font-family: var(--font-serif);
-  letter-spacing: -0.01em;
+  font-weight: 300;
+  letter-spacing: -0.015em;
 }
 
 /* Foco visible y consistente en todo lo interactivo. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-olive-600);
+  outline: 2px solid var(--nv-accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
+/* Imagen pendiente: rayado diagonal del diseño. Reemplazar por fotografia real
+   manteniendo la proporcion. */
 .placeholder-stripes {
-  background-color: #ece7d9;
+  background-color: var(--nv-tint2);
   background-image: repeating-linear-gradient(
-    45deg,
-    rgba(30, 29, 24, 0.06),
-    rgba(30, 29, 24, 0.06) 2px,
-    transparent 2px,
-    transparent 14px
+    135deg,
+    var(--nv-tint2) 0 10px,
+    var(--nv-tint5) 10px 20px
+  );
+}
+
+/* La misma idea sobre fondo oscuro (banner combo, visor del análisis IA). */
+.placeholder-stripes-dark {
+  background-color: var(--nv-ink2);
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--nv-ink2) 0 14px,
+    var(--nv-ink4) 14px 28px
   );
 }
 
@@ -82,7 +219,7 @@ body {
 }
 
 ::selection {
-  background-color: var(--color-olive-100);
+  background-color: var(--nv-accent-wash1);
 }
 
 /* --- Animaciones --- */
@@ -264,6 +401,122 @@ body {
   transform: scale(1.04);
 }
 
+/* --- Animaciones del Diseño 1 --- */
+
+@keyframes nv-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes nv-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nv-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes nv-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes nv-scan {
+  from {
+    top: 8%;
+  }
+  to {
+    top: 88%;
+  }
+}
+
+/* Drawer del carrito. */
+.animate-nv-slide {
+  animation: nv-slide 0.28s var(--ease-nv) both;
+}
+
+/* Overlay detras del drawer. */
+.animate-nv-fade {
+  animation: fade-in 0.2s ease both;
+}
+
+/* Panel de Nuva: crece desde la esquina del launcher. */
+.animate-nv-pop {
+  transform-origin: bottom right;
+  animation: nv-pop 0.34s var(--ease-nv) both;
+}
+
+/* Burbujas de chat y aviso. */
+.animate-nv-rise {
+  animation: nv-rise 0.3s ease both;
+}
+
+/* Puntos de "escribiendo…", escalonados con animation-delay. */
+.animate-nv-pulse {
+  animation: nv-pulse 1s ease-in-out infinite;
+}
+
+/* Barra de anuncios: la lista va duplicada, asi que mover -50% cierra el ciclo
+   sin salto. */
+.animate-nv-marquee {
+  animation: nv-marquee 38s linear infinite;
+}
+
+/* Linea de escaneo del visor de NuraVision IA. */
+.animate-nv-scan {
+  animation: nv-scan 2.6s ease-in-out infinite alternate;
+}
+
+/* Tarjeta de producto: solo borde y desplazamiento, sin sombra (spec §5). */
+.nv-card {
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nv-card:hover {
+  border-color: var(--nv-line6);
+  transform: translateY(-3px);
+}
+
+/* Oculta la barra de desplazamiento sin quitar el scroll (carruseles). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -279,7 +532,19 @@ body {
     transform: none;
   }
 
-  .card-hover:hover {
+  .card-hover:hover,
+  .nv-card:hover {
     transform: none;
+  }
+
+  /* La barra de anuncios queda quieta: la regla general de arriba la dejaria
+     detenida a mitad de camino, con mensajes cortados. */
+  .animate-nv-marquee {
+    animation: none;
+  }
+
+  .animate-nv-scan {
+    animation: none;
+    top: 48%;
   }
 }

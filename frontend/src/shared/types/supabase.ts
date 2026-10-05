@@ -27,6 +27,18 @@ export type EstadoReserva = 'pendiente' | 'confirmada' | 'completada' | 'cancela
  */
 export type UsuarioRol = 'cliente' | 'profesional' | 'admin'
 
+/** Enums de la tienda (0013). */
+export type EntregaPedido = 'despacho' | 'retiro' | 'cita'
+export type MetodoPagoPedido = 'webpay' | 'transferencia' | 'estudio'
+export type EstadoPedido =
+  | 'pendiente_pago'
+  | 'pagado'
+  | 'preparando'
+  | 'listo'
+  | 'despachado'
+  | 'entregado'
+  | 'cancelado'
+
 export interface Database {
   public: {
     Tables: {
@@ -315,12 +327,153 @@ export interface Database {
         }
         Relationships: []
       }
+      /**
+       * Productos de la tienda (0013). Lectura publica; escritura del personal.
+       *
+       * En el proyecto remoto la tabla ya existia (fuera de migrations/) y
+       * `precio` es numeric; en un proyecto nuevo es integer. PostgREST los
+       * entrega igual, como numero. Los precios son pesos enteros.
+       */
+      productos: {
+        Row: {
+          id: number
+          slug: string
+          nombre: string
+          /** 'unas_manos' | 'cabello' | 'piel' | 'kits' | 'gift_cards' (check). */
+          categoria: string
+          tamano: string
+          precio: number
+          precio_anterior: number | null
+          imagen_url: string | null
+          /** 'mas_vendido' | 'nuevo' | 'kit' | null (check). */
+          insignia: string | null
+          /** bigint, FK -> servicios.id */
+          servicio_id: number | null
+          descripcion: string
+          modo_uso: string
+          ingredientes: string
+          /** NULL = sin control de stock. */
+          stock: number | null
+          activo: boolean
+          orden: number
+          creado_en: string
+        }
+        Insert: {
+          id?: number
+          slug: string
+          nombre: string
+          categoria: string
+          tamano?: string
+          precio: number
+          precio_anterior?: number | null
+          imagen_url?: string | null
+          insignia?: string | null
+          servicio_id?: number | null
+          descripcion?: string
+          modo_uso?: string
+          ingredientes?: string
+          stock?: number | null
+          activo?: boolean
+          orden?: number
+          creado_en?: string
+        }
+        Update: Partial<Database['public']['Tables']['productos']['Insert']>
+        Relationships: []
+      }
+      /**
+       * Pedidos (0013). Sin INSERT desde el navegador: nacen en `crear_pedido`.
+       * Cada cuenta lee los suyos; el personal lee todos y cambia `estado`.
+       */
+      pedidos: {
+        Row: {
+          id: number
+          codigo: string
+          cliente_id: string | null
+          cliente_nombre: string
+          cliente_email: string
+          cliente_telefono: string | null
+          entrega: EntregaPedido
+          direccion: string | null
+          comuna: string | null
+          reserva_id: number | null
+          metodo_pago: MetodoPagoPedido
+          estado: EstadoPedido
+          subtotal: number
+          costo_envio: number
+          descuento: number
+          total: number
+          creado_en: string
+          actualizado_en: string
+        }
+        Insert: never
+        /** 0013 solo concede UPDATE de estas dos columnas. */
+        Update: {
+          estado?: EstadoPedido
+          actualizado_en?: string
+        }
+        Relationships: []
+      }
+      /** Lineas de un pedido (0013). Nombre y precio son una COPIA. */
+      pedido_items: {
+        Row: {
+          id: number
+          pedido_id: number
+          producto_id: number | null
+          nombre: string
+          precio_unitario: number
+          cantidad: number
+          descuento: number
+        }
+        Insert: never
+        Update: never
+        /** Declarada para que `select('*, pedido_items(*)')` quede tipado. */
+        Relationships: [
+          {
+            foreignKeyName: 'pedido_items_pedido_id_fkey'
+            columns: ['pedido_id']
+            isOneToOne: false
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<never, never>
-    Functions: Record<never, never>
+    Functions: {
+      /** Unica via para crear pedidos. Calcula los montos en la base (0013). */
+      crear_pedido: {
+        Args: {
+          p_items: Json
+          p_nombre: string
+          p_email: string
+          p_entrega: EntregaPedido
+          p_metodo_pago: MetodoPagoPedido
+          p_direccion?: string | null
+          p_comuna?: string | null
+          p_reserva_id?: number | null
+          p_telefono?: string | null
+        }
+        Returns: {
+          pedido_id: number
+          codigo: string
+          subtotal: number
+          costo_envio: number
+          descuento: number
+          total: number
+        }[]
+      }
+      /** Idempotente: no revela si el correo ya estaba suscrito (0013). */
+      suscribir_newsletter: {
+        Args: { p_email: string }
+        Returns: undefined
+      }
+    }
     Enums: {
       estado_reserva: EstadoReserva
       usuario_rol: UsuarioRol
+      entrega_pedido: EntregaPedido
+      metodo_pago_pedido: MetodoPagoPedido
+      estado_pedido: EstadoPedido
     }
     CompositeTypes: Record<never, never>
   }

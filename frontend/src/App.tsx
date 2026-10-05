@@ -7,8 +7,10 @@ import {
   Home,
   Image as ImageIcon,
   LayoutDashboard,
+  Package,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   UserCircle,
   Users,
@@ -16,6 +18,9 @@ import {
 import { AppStateProvider } from '@/shared/state/AppState'
 import { AuthProvider } from '@/modules/auth/ui/AuthProvider'
 import { ToastProvider } from '@/shared/state/Toast'
+import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
+import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
+import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
 import { DashboardShell, type NavItem } from '@/shared/components/DashboardChrome'
 import { RequireRole } from '@/shared/components/RequireRole'
@@ -33,6 +38,11 @@ import BookingFlow from '@/pages/BookingFlow'
 import MyBookings from '@/pages/MyBookings'
 import BookingDetail from '@/pages/BookingDetail'
 import AIAnalysis from '@/pages/AIAnalysis'
+import Tienda from '@/modules/tienda/ui/Tienda'
+import DetalleProducto from '@/modules/tienda/ui/DetalleProducto'
+import Checkout from '@/modules/pedidos/ui/Checkout'
+import AdminPedidos from '@/modules/pedidos/ui/AdminPedidos'
+import AdminProductos from '@/modules/tienda/ui/AdminProductos'
 import Profile from '@/pages/Profile'
 
 import { ProShell } from '@/pages/professional/ProShell'
@@ -65,6 +75,8 @@ const PROFESSIONAL_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/reservas', label: 'Reservas', icon: ClipboardList },
+  { to: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag },
+  { to: '/admin/productos', label: 'Productos', icon: Package },
   { to: '/admin/clientes', label: 'Clientes', icon: Users },
   { to: '/admin/usuarios', label: 'Usuarios', icon: ShieldCheck },
   { to: '/admin/profesionales', label: 'Profesionales', icon: UserCircle },
@@ -82,6 +94,12 @@ export default function App() {
     <AuthProvider>
       <AppStateProvider>
         <ToastProvider>
+          {/* El carrito resuelve sus lineas contra el catalogo, asi que va
+              dentro de el. Los dos envuelven al router porque el estado debe
+              sobrevivir a la navegacion. */}
+          <CatalogoProvider>
+          <CarritoProvider>
+          <NuvaProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
@@ -109,6 +127,9 @@ export default function App() {
                 <Route index element={<Landing />} />
                 <Route path="servicios" element={<Services />} />
                 <Route path="servicios/:id" element={<ServiceDetail />} />
+                <Route path="tienda" element={<Tienda />} />
+                <Route path="tienda/:slug" element={<DetalleProducto />} />
+                <Route path="checkout" element={<Checkout />} />
                 <Route path="profesionales" element={<Professionals />} />
                 <Route path="profesionales/:id" element={<ProfessionalDetail />} />
                 <Route path="reservar" element={<BookingFlow />} />
@@ -149,6 +170,8 @@ export default function App() {
                 >
                   <Route path="admin" element={<AdminDashboard />} />
                   <Route path="admin/reservas" element={<AdminReservas />} />
+                  <Route path="admin/pedidos" element={<AdminPedidos />} />
+                  <Route path="admin/productos" element={<AdminProductos />} />
                   <Route path="admin/clientes" element={<AdminClients />} />
                   <Route path="admin/usuarios" element={<AdminUsers />} />
                   <Route path="admin/profesionales" element={<AdminProfessionals />} />
@@ -162,6 +185,9 @@ export default function App() {
               <Route path="*" element={<Landing />} />
             </Routes>
           </BrowserRouter>
+          </NuvaProvider>
+          </CarritoProvider>
+          </CatalogoProvider>
         </ToastProvider>
       </AppStateProvider>
     </AuthProvider>
