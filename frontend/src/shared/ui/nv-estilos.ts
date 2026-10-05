@@ -49,3 +49,11 @@ export const tabla = {
   td: 'px-5 py-4 align-middle',
   fila: 'transition-colors hover:bg-ivory/50',
 } as const
+
+/** Acciones dentro de una fila de tabla: "Editar", "Eliminar". */
+export const botonFila = {
+  normal:
+    'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-muted-light hover:bg-ivory active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40',
+  peligro:
+    'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:border-danger/40 hover:bg-danger-soft active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40',
+} as const
