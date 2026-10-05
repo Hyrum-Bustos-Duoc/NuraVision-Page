@@ -2,6 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { formatPrice } from '@/shared/lib/format'
+import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 import { ESTADOS_PEDIDO, ETIQUETA_ENTREGA, ETIQUETA_ESTADO, ETIQUETA_PAGO } from '../application'
 import type { EstadoPedido } from '../domain/pedido.types'
 import { usePedidosGestion } from './usePedidosGestion'
@@ -49,7 +51,7 @@ export default function AdminPedidos() {
   const porPreparar = gestion.pedidos.filter((p) => p.estado === 'pagado' || p.estado === 'pendiente_pago').length
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Pedidos</h1>
       <p className="mt-2 text-sm text-muted">
         Compras de la tienda, leídas de la base de datos.
@@ -61,34 +63,25 @@ export default function AdminPedidos() {
         )}
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <input
+      <BarraFiltros className="mt-6">
+        <CampoBusqueda
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={setBusqueda}
           placeholder="Buscar por código, nombre o correo…"
-          className="w-full rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink outline-none focus:border-ink sm:w-72"
+          etiqueta="Buscar pedidos"
+          className="sm:w-72"
         />
-        <select
+        <SelectFiltro
           value={estado}
-          onChange={(e) => setEstado(e.target.value as EstadoPedido | typeof TODOS)}
-          aria-label="Filtrar por estado"
-          className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink"
-        >
-          <option value={TODOS}>Todos los estados</option>
-          {ESTADOS_PEDIDO.map((e) => (
-            <option key={e} value={e}>
-              {ETIQUETA_ESTADO[e]}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={gestion.recargar}
-          className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-ivory"
-        >
-          Actualizar
-        </button>
-      </div>
+          onChange={setEstado}
+          etiqueta="Filtrar por estado"
+          opciones={[
+            { value: TODOS, label: 'Todos los estados' },
+            ...ESTADOS_PEDIDO.map((e) => ({ value: e, label: ETIQUETA_ESTADO[e] })),
+          ]}
+        />
+        <BotonActualizar onClick={gestion.recargar} cargando={gestion.cargando} />
+      </BarraFiltros>
 
       {gestion.errorEstado && (
         <p role="alert" className="mt-6 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-ink">
@@ -115,19 +108,13 @@ export default function AdminPedidos() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-serif-display text-2xl text-ink">{formatPrice(p.total)}</span>
-                <select
+                <SelectFiltro
                   value={p.estado}
+                  onChange={(e) => void gestion.cambiarEstado(p.id, e)}
                   disabled={gestion.actualizando === p.id}
-                  onChange={(e) => void gestion.cambiarEstado(p.id, e.target.value as EstadoPedido)}
-                  aria-label={`Estado del pedido ${p.codigo}`}
-                  className="rounded-full border border-line bg-paper px-3 py-1.5 text-sm text-ink disabled:opacity-50"
-                >
-                  {ESTADOS_PEDIDO.map((e) => (
-                    <option key={e} value={e}>
-                      {ETIQUETA_ESTADO[e]}
-                    </option>
-                  ))}
-                </select>
+                  etiqueta={`Estado del pedido ${p.codigo}`}
+                  opciones={ESTADOS_PEDIDO.map((e) => ({ value: e, label: ETIQUETA_ESTADO[e] }))}
+                />
               </div>
             </div>
 
