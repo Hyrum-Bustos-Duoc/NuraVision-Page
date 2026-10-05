@@ -1,0 +1,117 @@
+import type { ContenidoSitio } from './contenido.types'
+
+/** Topes de largo: evitan que un texto pegado por error rompa el diseño. */
+export const MAX_TEXTO_CORTO = 120
+export const MAX_TEXTO_LARGO = 600
+export const MAX_ANUNCIOS = 10
+
+type Plano = Record<string, unknown>
+
+const esObjeto = (v: unknown): v is Plano => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/**
+ * Mezcla lo guardado sobre el valor por defecto, campo por campo.
+ *
+ * La regla: se toma lo guardado solo si tiene el MISMO tipo que el defecto
+ * (texto con texto, lista con lista). Asi una fila vieja, a la que le faltan
+ * campos agregados despues, o un valor mal escrito a mano en la base, no
+ * rompen la pagina: ese campo cae al texto original y el resto se respeta.
+ */
+export function mezclarContenido<T>(defecto: T, guardado: unknown): T {
+  if (guardado === undefined || guardado === null) return defecto
+
+  if (Array.isArray(defecto)) {
+    if (!Array.isArray(guardado)) return defecto
+    // Listas de textos o de objetos: cada elemento se valida contra la forma
+    // del primero del defecto. Una lista vacia guardada es valida (p. ej. sin
+    // anuncios); una lista vacia por defecto acepta lo guardado tal cual.
+    const modelo = defecto[0]
+    if (modelo === undefined) return guardado as T
+    return guardado.map((item) => mezclarContenido(modelo, item)) as T
+  }
+
+  if (esObjeto(defecto)) {
+    if (!esObjeto(guardado)) return defecto
+    const resultado: Plano = { ...defecto }
+    for (const clave of Object.keys(defecto)) {
+      resultado[clave] = mezclarContenido((defecto as Plano)[clave], guardado[clave])
+    }
+    return resultado as T
+  }
+
+  // Hojas: textos y URL. Una imagen por defecto puede ser null y aceptar texto.
+  if (defecto === null) return (typeof guardado === 'string' ? guardado : null) as T
+  return (typeof guardado === typeof defecto ? guardado : defecto) as T
+}
+
+/**
+ * `analisis` es un mapa por id de opcion: no se mezcla con `mezclarContenido`
+ * porque sus claves no estan fijas en el tipo. Solo se aceptan los ids que ya
+ * existen en el defecto; un id desconocido no tiene a donde mostrarse.
+ */
+export function mezclarAnalisis(
+  defecto: ContenidoSitio['analisis'],
+  guardado: unknown,
+): ContenidoSitio['analisis'] {
+  if (!esObjeto(guardado)) return defecto
+  const resultado: ContenidoSitio['analisis'] = {}
+  for (const [id, opcion] of Object.entries(defecto)) {
+    resultado[id] = mezclarContenido(opcion, guardado[id])
+  }
+  return resultado
+}
+
+/** Lo guardado en la base -> contenido completo y seguro de mostrar. */
+export function contenidoDesdeGuardado(defecto: ContenidoSitio, guardado: unknown): ContenidoSitio {
+  const base = mezclarContenido(defecto, guardado)
+  return { ...base, analisis: mezclarAnalisis(defecto.analisis, esObjeto(guardado) ? guardado.analisis : undefined) }
+}
+
+export interface Fragmento {
+  texto: string
+  enfasis: boolean
+  /** Salto de linea antes de este fragmento. */
+  salto: boolean
+}
+
+/**
+ * "Belleza en el estudio, *cuidado* en casa" -> fragmentos con y sin enfasis.
+ * Los saltos de linea se conservan. Un asterisco sin pareja se muestra tal cual.
+ */
+export function fragmentosConEnfasis(texto: string): Fragmento[] {
+  const fragmentos: Fragmento[] = []
+  texto.split('\n').forEach((linea, nLinea) => {
+    const partes = linea.split('*')
+    // Con un numero par de partes hay un asterisco suelto: no hay enfasis.
+    const balanceado = partes.length % 2 === 1
+    let primero = true
+    if (!balanceado) {
+      fragmentos.push({ texto: linea, enfasis: false, salto: nLinea > 0 })
+      return
+    }
+    partes.forEach((parte, i) => {
+      if (!parte) return
+      fragmentos.push({ texto: parte, enfasis: i % 2 === 1, salto: nLinea > 0 && primero })
+      primero = false
+    })
+  })
+  return fragmentos
+}
+
+/** Motivo para no guardar, o `null`. Solo topes de largo y listas no vacias donde importa. */
+export function motivoParaNoGuardarContenido(c: ContenidoSitio): string | null {
+  const textos: [string, string, number][] = [
+    ['El título de la portada', c.portada.titulo, MAX_TEXTO_CORTO],
+    ['La descripción de la portada', c.portada.descripcion, MAX_TEXTO_LARGO],
+    ['La cita del inicio de sesión', c.login.cita, MAX_TEXTO_LARGO],
+  ]
+  for (const [nombre, valor, max] of textos) {
+    if (!valor.trim()) return `${nombre} no puede quedar vacío.`
+    if (valor.length > max) return `${nombre} supera los ${max} caracteres.`
+  }
+  if (c.anuncios.length > MAX_ANUNCIOS) return `La barra admite hasta ${MAX_ANUNCIOS} anuncios.`
+  if (c.anuncios.some((a) => a.length > MAX_TEXTO_CORTO)) {
+    return `Cada anuncio admite hasta ${MAX_TEXTO_CORTO} caracteres.`
+  }
+  return null
+}
