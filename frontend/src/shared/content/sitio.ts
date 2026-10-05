@@ -32,6 +32,8 @@ export const CONTENIDO_SITIO: SiteContent = {
   shopImage: fotoUnsplash('photo-1760862652442-e8ff7ebdd2f8', 700),
   // Mano con manicura nude: la foto de ejemplo de la banda de NuraVision IA.
   aiTeaserImage: fotoUnsplash('photo-1610992015762-45dca7fa3a85', 1000),
+  // Recepcion con flores secas: el panel derecho del login, a media pantalla.
+  loginImage: fotoUnsplash('photo-1695527082039-5f96003b97e4', 1200),
   heroCaption: 'Fotografía · Salón / interior',
   aiTeaserCaption: 'Detalle · Manos y uñas',
   aiFocusOptions: [
