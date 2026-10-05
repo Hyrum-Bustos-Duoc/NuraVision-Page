@@ -5,6 +5,7 @@ import { serviceCategories } from '@/modules/servicios/domain/serviceCategories'
 import { useAppState } from '@/shared/state/AppState'
 import { Card, FilterPills } from '@/shared/ui/ui'
 import { formatLongDate, formatPrice } from '@/shared/lib/format'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 type PresetId = '30d' | '3m' | '6m' | 'anio' | 'personalizado'
 
@@ -98,7 +99,7 @@ export default function AdminAnalytics() {
   const maxPro = Math.max(1, ...topProfessionals.map((p) => p.count))
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Analítica</h1>
       <p className="mt-2 text-sm text-muted">
         Desempeño del estudio a partir de las reservas registradas.

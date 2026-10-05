@@ -6,6 +6,7 @@ import { TODAY_ISO } from '@/shared/data/seed'
 import { BookingsTable } from '@/shared/components/BookingsTable'
 import { Card, StatCard } from '@/shared/ui/ui'
 import type { BookingStatus } from '@/shared/types'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MONTHS_LONG = [
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
   }`
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+    <div className={contenedorPanel}>
       <h1 className="font-serif-display text-4xl text-ink">Dashboard</h1>
       <p className="mt-2 text-sm text-muted">Estudio Nura · 1 de septiembre, 2026</p>
 
