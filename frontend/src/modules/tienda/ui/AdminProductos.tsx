@@ -10,7 +10,7 @@ import { ConfirmDialog, Modal } from '@/shared/ui/Modal'
 import { NumberField, SelectField, TextAreaField, TextField } from '@/shared/ui/form'
 import { Button } from '@/shared/ui/ui'
 import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
-import { contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
+import { botonFila, contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 import {
   CATEGORIAS_PRODUCTO,
   ETIQUETA_INSIGNIA,
@@ -199,7 +199,7 @@ export default function AdminProductos() {
 
       {!gestion.cargando && !gestion.error && visibles.length > 0 && (
         <div className={`mt-6 ${tabla.contenedor}`}>
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className={tabla.cabecera}>
                 <th className={tabla.th}>Producto</th>
@@ -215,7 +215,7 @@ export default function AdminProductos() {
             <tbody className="divide-y divide-line-soft">
               {visibles.map((p) => (
                 <tr key={p.id} className={`transition-colors hover:bg-ivory/70 ${p.activo ? '' : 'opacity-55'}`}>
-                  <td className="max-w-[300px] px-5 py-4">
+                  <td className={`${tabla.td} max-w-[280px]`}>
                     <div className="flex items-center gap-3">
                       <ProductoImagen producto={p} conEtiqueta={false} className="h-11 w-11 shrink-0 rounded-lg" />
                       <div className="min-w-0">
@@ -268,18 +268,18 @@ export default function AdminProductos() {
                       <button
                         onClick={() => setEditando({ producto: p, borrador: aBorrador(p) })}
                         aria-label={`Editar ${p.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-ivory"
+                        className={botonFila.normal}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        <span className="hidden 2xl:inline">Editar</span>
+                        Editar
                       </button>
                       <button
                         onClick={() => setBorrando(p)}
                         aria-label={`Eliminar ${p.nombre}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+                        className={botonFila.peligro}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        <span className="hidden 2xl:inline">Eliminar</span>
+                        Eliminar
                       </button>
                     </div>
                   </td>
