@@ -80,6 +80,18 @@ claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
 > select policyname, cmd from pg_policies
 >  where tablename in ('contenido_sitio', 'objects') and policyname ilike '%contenido%';
 > ```
+>
+> **Antes de aplicarla**, revisa las políticas que ya tenga Storage. Se suman
+> por OR con las de 0014: una creada desde el dashboard que no filtre por
+> `bucket_id` (por ejemplo, con `with check (true)`) dejaría a cualquier cuenta
+> subir fotos al bucket `contenido`.
+>
+> ```sql
+> select policyname, cmd, roles, qual, with_check
+>   from pg_policies
+>  where schemaname = 'storage' and tablename = 'objects'
+>  order by cmd;
+> ```
 
 > **Ojo con 0003 en una base que ya está en uso.** Empieza con
 > `drop table if exists public.reservas cascade`, así que borra las reservas

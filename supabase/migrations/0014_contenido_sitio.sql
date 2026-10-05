@@ -78,8 +78,10 @@ create policy "El personal edita el contenido"
 
 -- Supabase concede ALL por defecto en cada tabla nueva: se parte de cero.
 -- Sin INSERT ni DELETE: la fila ya existe y no se borra.
+-- La lectura es por columnas: `actualizado_por` es el id de una cuenta de
+-- personal y no tiene por que verlo cualquier visitante.
 revoke all on public.contenido_sitio from anon, authenticated;
-grant select on public.contenido_sitio to anon, authenticated;
+grant select (id, datos, actualizado_en) on public.contenido_sitio to anon, authenticated;
 grant update (datos) on public.contenido_sitio to authenticated;
 
 -- ----------------------------------------------------------------------------
@@ -107,6 +109,15 @@ create policy "El personal reemplaza fotos de contenido"
   using (bucket_id = 'contenido' and public.es_staff())
   with check (bucket_id = 'contenido' and public.es_staff());
 
+-- Nota: sin politica SELECT nadie lista el bucket por la API (las fotos se
+-- leen por su URL publica). Por eso tampoco se pueden borrar ni reemplazar
+-- desde el panel: Storage pide SELECT para eso. Cada subida usa un nombre nuevo.
+-- Las politicas de abajo quedan listas para el dia que se agregue ese SELECT.
+--
+-- ⚠ Las politicas de storage.objects se suman por OR. Si el proyecto tiene una
+-- creada desde el dashboard sin filtrar por bucket (p. ej. «Allow
+-- authenticated uploads» con `with check (true)`), cualquier cuenta podria
+-- subir a este bucket. Revisar antes de aplicar (ver supabase/README.md).
 drop policy if exists "El personal borra fotos de contenido" on storage.objects;
 create policy "El personal borra fotos de contenido"
   on storage.objects for delete
