@@ -236,7 +236,8 @@ test.describe('carruseles de la portada', () => {
     await expect(estudio.getByRole('button')).toHaveCount(0)
     // Con una sola foto tampoco hay flechas ni contador.
     const tienda = carrusel(page, /tienda/i).first()
-    await expect(tienda.locator('img')).toHaveCount(1)
+    // Una foto principal (la tienda ademas pinta su copia desenfocada de relleno).
+    await expect(tienda.locator('img:not([aria-hidden="true"])')).toHaveCount(1)
     await expect(tienda.getByRole('button')).toHaveCount(0)
     await estudio.getByRole('link').click()
     await expect(page).toHaveURL(/\/servicios$/)
@@ -266,5 +267,33 @@ test.describe('zoom lento del carrusel', () => {
     await expect(estudio.locator('img:not([aria-hidden="true"])')).toBeVisible()
     await page.waitForTimeout(1500)
     expect(await escala(estudio)).toBe(1)
+  })
+})
+
+test.describe('fotos completas en la tienda', () => {
+  test('una foto subida en vertical se ve entera sobre su copia desenfocada', async ({ page }) => {
+    // Una foto vertical (3:4) en el carrusel de la tienda, como una subida desde el panel.
+    await page.route('**/rest/v1/contenido_sitio*', (route) =>
+      route.fulfill({
+        json: [
+          {
+            datos: { carruseles: { tienda: ['/carrusel/inicio/inicio-01.jpg', '/carrusel/inicio/inicio-02.jpg'] } },
+            actualizado_en: '2026-10-07T12:00:00Z',
+          },
+        ],
+      }),
+    )
+    await page.goto('/')
+    const tienda = carrusel(page, /La tienda/)
+    const foto = tienda.locator('img:not([aria-hidden="true"])')
+    await expect(foto).toHaveAttribute('src', '/carrusel/inicio/inicio-01.jpg')
+    expect(await foto.evaluate((img) => getComputedStyle(img).objectFit)).toBe('contain')
+    // El relleno es la misma foto, decorativa y desenfocada.
+    const fondo = tienda.locator('img[aria-hidden="true"][src="/carrusel/inicio/inicio-01.jpg"]')
+    await expect(fondo).toHaveCount(1)
+    expect(await fondo.evaluate((img) => getComputedStyle(img).filter)).toContain('blur')
+    // El estudio sigue llenando la tarjeta.
+    const estudio = carrusel(page, /El estudio/).locator('img:not([aria-hidden="true"])')
+    expect(await estudio.evaluate((img) => getComputedStyle(img).objectFit)).toBe('cover')
   })
 })

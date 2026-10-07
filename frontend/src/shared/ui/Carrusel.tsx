@@ -25,6 +25,7 @@ export function Carrusel({
   alt,
   etiqueta,
   className = '',
+  completas = false,
   children,
 }: {
   fotos: string[]
@@ -33,6 +34,12 @@ export function Carrusel({
   /** Nombre de la region para lectores de pantalla. */
   etiqueta: string
   className?: string
+  /**
+   * Muestra cada foto entera, sin recortar, sobre una copia desenfocada de
+   * si misma que rellena los lados. Para fotos de producto subidas en
+   * cualquier proporcion (2026-10-07). Es la misma URL: no se descarga dos veces.
+   */
+  completas?: boolean
   children?: ReactNode
 }) {
   const total = fotos.length
@@ -88,7 +95,8 @@ export function Carrusel({
         {fotos.map((src, i) => {
           if (i !== actual && i !== siguiente && i !== posicion.anterior) return null
           const visible = i === actual
-          return (
+          const opacidad = visible ? 'opacity-100' : 'opacity-0'
+          const foto = (
             <img
               key={`${i}-${src}`}
               src={src}
@@ -102,9 +110,24 @@ export function Carrusel({
                 transition: `opacity 700ms ease-out${reducido ? '' : `, transform ${ZOOM_MS}ms linear`}`,
                 transform: visible && !reducido ? 'scale(1.08)' : 'scale(1)',
               }}
-              className={`absolute inset-0 h-full w-full object-cover ${visible ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 h-full w-full ${completas ? 'object-contain' : 'object-cover'} ${opacidad}`}
             />
           )
+          if (!completas) return foto
+          return [
+            <img
+              key={`${i}-${src}-fondo`}
+              src={src}
+              alt=""
+              aria-hidden
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              // Agrandada para que el desenfoque no deje bordes claros.
+              style={{ transform: 'scale(1.2)' }}
+              className={`absolute inset-0 h-full w-full object-cover blur-2xl transition-opacity duration-700 ease-out ${opacidad}`}
+            />,
+            foto,
+          ]
         })}
       </div>
 

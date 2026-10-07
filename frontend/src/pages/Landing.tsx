@@ -107,6 +107,7 @@ export default function Landing() {
           <TileHero
             to="/tienda"
             fotos={c.carruseles.tienda}
+            completas
             etiquetaImagen="Fotografía · Productos"
             eyebrow={c.portada.tarjetaTienda.eyebrow}
             titulo={c.portada.tarjetaTienda.titulo}
@@ -322,6 +323,7 @@ function TileHero({
   eyebrow,
   titulo,
   link,
+  completas = false,
 }: {
   to: string
   fotos: string[]
@@ -329,10 +331,13 @@ function TileHero({
   eyebrow: string
   titulo: string
   link: string
+  /** Fotos enteras sin recortar (las de producto pueden venir en cualquier proporcion). */
+  completas?: boolean
 }) {
   return (
     <Carrusel
       fotos={fotos}
+      completas={completas}
       alt={titulo}
       etiqueta={`Fotos: ${eyebrow}`}
       className="aspect-[16/9] rounded-md transition-transform duration-300 hover:-translate-y-1"
