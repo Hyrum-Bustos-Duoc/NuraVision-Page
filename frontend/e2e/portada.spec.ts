@@ -242,3 +242,29 @@ test.describe('carruseles de la portada', () => {
     await expect(page).toHaveURL(/\/servicios$/)
   })
 })
+
+test.describe('zoom lento del carrusel', () => {
+  /** Escala horizontal real de la foto visible (1 = sin zoom). */
+  const escala = (region: ReturnType<typeof carrusel>) =>
+    region
+      .locator('img:not([aria-hidden="true"])')
+      .evaluate((img) => new DOMMatrix(getComputedStyle(img).transform).a)
+
+  test('la foto visible se acerca poco a poco', async ({ page }) => {
+    await sinContenidoGuardado(page)
+    await page.goto('/')
+    const estudio = carrusel(page, /El estudio/)
+    await expect.poll(() => escala(estudio)).toBeGreaterThan(1.01)
+    expect(await escala(estudio)).toBeLessThanOrEqual(1.08)
+  })
+
+  test('sin zoom con movimiento reducido', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await sinContenidoGuardado(page)
+    await page.goto('/')
+    const estudio = carrusel(page, /El estudio/)
+    await expect(estudio.locator('img:not([aria-hidden="true"])')).toBeVisible()
+    await page.waitForTimeout(1500)
+    expect(await escala(estudio)).toBe(1)
+  })
+})

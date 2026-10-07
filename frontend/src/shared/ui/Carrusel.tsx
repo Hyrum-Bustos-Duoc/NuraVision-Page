@@ -2,6 +2,8 @@ import { useEffect, useState, type FocusEvent, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const INTERVALO_MS = 5000
+/** Algo mas que el turno: el zoom sigue vivo durante el fundido de salida. */
+const ZOOM_MS = INTERVALO_MS + 1500
 
 /**
  * Fotos que se alternan solas con un fundido, una cada 5 s.
@@ -94,9 +96,13 @@ export function Carrusel({
               aria-hidden={!visible}
               loading={i === 0 ? 'eager' : 'lazy'}
               decoding="async"
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out ${
-                visible ? 'opacity-100' : 'opacity-0'
-              }`}
+              // Zoom lento (2026-10-07): la foto visible se acerca un 8 % mientras
+              // dura su turno. Con movimiento reducido no hay zoom.
+              style={{
+                transition: `opacity 700ms ease-out${reducido ? '' : `, transform ${ZOOM_MS}ms linear`}`,
+                transform: visible && !reducido ? 'scale(1.08)' : 'scale(1)',
+              }}
+              className={`absolute inset-0 h-full w-full object-cover ${visible ? 'opacity-100' : 'opacity-0'}`}
             />
           )
         })}
