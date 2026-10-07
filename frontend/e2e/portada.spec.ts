@@ -128,6 +128,9 @@ test.describe('inicio de sesion', () => {
 
 test.describe('carruseles de la portada', () => {
   test('todas las fotos locales existen y son imagenes', async ({ page, request }) => {
+    // Descarga 28 fotos y recorre 22: con varios workers sobre Vite dev
+    // superaba a veces los 30 s por defecto.
+    test.slow()
     const rutas = [
       ...Array.from({ length: 6 }, (_, i) => `/carrusel/inicio/inicio-${String(i + 1).padStart(2, '0')}.jpg`),
       ...Array.from({ length: 22 }, (_, i) => `/carrusel/productos/productos-${String(i + 1).padStart(2, '0')}.jpg`),
@@ -157,12 +160,12 @@ test.describe('carruseles de la portada', () => {
     await sinContenidoGuardado(page)
     await page.goto('/')
     const estudio = carrusel(page, /estudio/i).first()
-    await expect(contador(estudio)).toHaveText('01/06')
+    await expect(contador(estudio)).toHaveText('01 / 06')
     await estudio.getByRole('button', { name: 'Foto siguiente' }).click()
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
     await estudio.getByRole('button', { name: 'Foto anterior' }).click()
     await estudio.getByRole('button', { name: 'Foto anterior' }).click()
-    await expect(contador(estudio)).toHaveText('06/06')
+    await expect(contador(estudio)).toHaveText('06 / 06')
     await expect(page).toHaveURL(/\/$/)
 
     await estudio.getByRole('link').click()
@@ -178,20 +181,20 @@ test.describe('carruseles de la portada', () => {
     await page.goto('/')
     await page.mouse.move(0, 0)
     const estudio = carrusel(page, /estudio/i).first()
-    await expect(contador(estudio)).toHaveText('01/06')
+    await expect(contador(estudio)).toHaveText('01 / 06')
 
     await page.clock.runFor(4_000)
-    await expect(contador(estudio)).toHaveText('01/06')
+    await expect(contador(estudio)).toHaveText('01 / 06')
     await page.clock.runFor(1_100)
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
 
     await estudio.hover()
     await page.clock.runFor(12_000)
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
 
     await page.mouse.move(0, 0)
     await page.clock.runFor(5_100)
-    await expect(contador(estudio)).toHaveText('03/06')
+    await expect(contador(estudio)).toHaveText('03 / 06')
   })
 
   test('con el foco dentro no avanza aunque el puntero salga', async ({ page }) => {
@@ -203,11 +206,11 @@ test.describe('carruseles de la portada', () => {
     const estudio = carrusel(page, /estudio/i).first()
     // Clic con el raton en la flecha: el foco queda en el boton.
     await estudio.getByRole('button', { name: 'Foto siguiente' }).click()
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
     await expect(estudio.getByRole('button', { name: 'Foto siguiente' })).toBeFocused()
     await page.mouse.move(0, 0)
     await page.clock.runFor(6_000)
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
   })
 
   test('sin autoavance con movimiento reducido', async ({ page }) => {
@@ -218,9 +221,9 @@ test.describe('carruseles de la portada', () => {
     await page.mouse.move(0, 0)
     const estudio = carrusel(page, /estudio/i).first()
     await page.clock.runFor(20_000)
-    await expect(contador(estudio)).toHaveText('01/06')
+    await expect(contador(estudio)).toHaveText('01 / 06')
     await estudio.getByRole('button', { name: 'Foto siguiente' }).click()
-    await expect(contador(estudio)).toHaveText('02/06')
+    await expect(contador(estudio)).toHaveText('02 / 06')
   })
 
   test('un carrusel guardado vacio deja la tarjeta a rayas, sin controles', async ({ page }) => {

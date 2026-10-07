@@ -112,7 +112,7 @@ test.describe('panel de contenido · carruseles', () => {
 
     await page.goto('/')
     const estudio = page.getByRole('region', { name: /estudio/i }).first()
-    await expect(estudio.locator('span.tabular-nums')).toHaveText('01/05')
+    await expect(estudio.locator('span.tabular-nums')).toHaveText('01 / 05')
     await expect(estudio.locator('img:not([aria-hidden="true"])')).toHaveAttribute('src', '/carrusel/inicio/inicio-03.jpg')
   })
 

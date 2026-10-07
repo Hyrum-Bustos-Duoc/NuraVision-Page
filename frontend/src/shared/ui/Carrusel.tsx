@@ -104,18 +104,27 @@ export function Carrusel({
 
       {children}
 
+      {/* Opcion 4 elegida (2026-10-07): contador y flechas finas en la esquina
+          inferior derecha, en blanco sobre la foto. La tarjeta de texto ocupa
+          la izquierda; el velo en degrade asegura contraste en fotos claras. */}
       {total > 1 && (
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 sm:right-3 sm:top-3">
-          <BotonCarrusel etiqueta="Foto anterior" onClick={() => ir(actual - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </BotonCarrusel>
-          <span className="min-w-[44px] rounded-full bg-[rgba(255,253,250,0.88)] px-2 py-1.5 text-center font-mono text-[10px] tabular-nums text-nv-ink backdrop-blur">
-            {String(actual + 1).padStart(2, '0')}/{String(total).padStart(2, '0')}
-          </span>
-          <BotonCarrusel etiqueta="Foto siguiente" onClick={() => ir(actual + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </BotonCarrusel>
-        </div>
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 right-0 z-[5] h-20 w-48 bg-[radial-gradient(ellipse_at_bottom_right,rgba(28,30,22,0.55),transparent_70%)] sm:h-24 sm:w-60"
+          />
+          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-0.5 text-[#fffefb] sm:bottom-4 sm:right-4 sm:gap-1">
+            <BotonCarrusel etiqueta="Foto anterior" onClick={() => ir(actual - 1)}>
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.6} />
+            </BotonCarrusel>
+            <span className="px-1 text-center text-[11px] tracking-[0.06em] tabular-nums sm:px-1.5 sm:text-[12px]">
+              {String(actual + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+            </span>
+            <BotonCarrusel etiqueta="Foto siguiente" onClick={() => ir(actual + 1)}>
+              <ChevronRight className="h-4 w-4" strokeWidth={1.6} />
+            </BotonCarrusel>
+          </div>
+        </>
       )}
     </div>
   )
@@ -127,7 +136,7 @@ function BotonCarrusel({ etiqueta, onClick, children }: { etiqueta: string; onCl
       type="button"
       onClick={onClick}
       aria-label={etiqueta}
-      className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,253,250,0.88)] text-nv-ink backdrop-blur transition-colors hover:bg-nv-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nv-accent"
+      className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(255,254,251,0.55)] transition-colors hover:bg-[rgba(255,254,251,0.18)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fffefb] sm:h-[30px] sm:w-[30px]"
     >
       {children}
     </button>

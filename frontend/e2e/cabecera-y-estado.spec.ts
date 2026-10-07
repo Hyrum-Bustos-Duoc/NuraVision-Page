@@ -108,15 +108,15 @@ test.describe('carrusel sin boton de pausa', () => {
     }
     const estudio = page.getByRole('region', { name: /estudio/i }).first()
     const contador = estudio.locator('span.tabular-nums')
-    await expect(contador).toHaveText('01/06')
+    await expect(contador).toHaveText('01 / 06')
     // Foco puesto con teclado (no con clic): el avance no corre.
     await estudio.getByRole('button', { name: 'Foto anterior' }).focus()
     await page.clock.runFor(12_000)
-    await expect(contador).toHaveText('01/06')
+    await expect(contador).toHaveText('01 / 06')
     // Al sacar el foco vuelve a avanzar.
     await page.locator('body').focus()
     await estudio.getByRole('button', { name: 'Foto anterior' }).blur()
     await page.clock.runFor(5_100)
-    await expect(contador).toHaveText('02/06')
+    await expect(contador).toHaveText('02 / 06')
   })
 })
