@@ -1,8 +1,8 @@
-import { PREGUNTAS_AYUDA, PROMPTS_DESTACADOS, normalizar, responder, respuestaUpsell } from './nuva.motor'
-import type { ContextoNuva } from './nuva.types'
+import { PREGUNTAS_AYUDA, PROMPTS_DESTACADOS, normalizar, responder, respuestaUpsell } from './nuria.motor'
+import type { ContextoNuria } from './nuria.types'
 
 // Nombres reales del catalogo de servicios en produccion, no los del prototipo.
-const contexto: ContextoNuva = {
+const contexto: ContextoNuria = {
   productos: [
     { slug: 'aceite-de-cuticula-nura', nombre: 'Aceite de cutícula Nura', servicioId: '6' },
     { slug: 'crema-de-manos-reparadora', nombre: 'Crema de manos reparadora', servicioId: '6' },

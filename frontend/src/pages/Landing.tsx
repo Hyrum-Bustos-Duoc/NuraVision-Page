@@ -11,7 +11,7 @@ import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 import { useIniciarReserva } from '@/modules/reservas/ui/useIniciarReserva'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { ProductGrid, ProductGridSkeleton } from '@/modules/tienda/ui/ProductGrid'
-import { BandaNuva, TarjetaNuvaHero } from '@/modules/nuva/ui/NuvaPortada'
+import { BandaNuria, TarjetaNuriaHero } from '@/modules/nuria/ui/NuriaPortada'
 import { AppImage } from '@/shared/ui/ui'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Reveal } from '@/shared/ui/Reveal'
@@ -77,7 +77,7 @@ export default function Landing() {
             </Link>
           </div>
 
-          <TarjetaNuvaHero />
+          <TarjetaNuriaHero />
 
           <div className="mt-10 flex flex-wrap gap-x-[34px] gap-y-4 border-t border-nv-line1 pt-7">
             {/* Mientras carga se muestra un guion en vez de un 0, que se leeria
@@ -114,9 +114,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------------- Banda Nuva */}
+      {/* ---------------------------------------------------------- Banda Nuria */}
       <div className={`${contenedor} pb-16 lg:pb-[88px]`}>
-        <BandaNuva />
+        <BandaNuria />
       </div>
 
       {/* ----------------------------------------------- Servicios destacados */}

@@ -5,10 +5,10 @@ import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { CartDrawer } from '@/modules/carrito/ui/CartDrawer'
 import { useCarrito } from '@/modules/carrito/ui/useCarrito'
-import { NuvaLauncher } from '@/modules/nuva/ui/NuvaLauncher'
-import { NuvaPanel } from '@/modules/nuva/ui/NuvaPanel'
-import { useNuva } from '@/modules/nuva/ui/useNuva'
-import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
+import { NuriaLauncher } from '@/modules/nuria/ui/NuriaLauncher'
+import { NuriaPanel } from '@/modules/nuria/ui/NuriaPanel'
+import { useNuria } from '@/modules/nuria/ui/useNuria'
+import { PREGUNTAS_AYUDA } from '@/modules/nuria/domain/nuria.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
 import { useContenido } from '@/modules/contenido/ui/useContenido'
@@ -65,20 +65,20 @@ const claseItemMenu = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'font-semibold text-nv-ink' : 'text-nv-muted1'
   }`
 
-function BotonNuva({ compacto = false }: { compacto?: boolean }) {
-  const { alternar, abierto } = useNuva()
+function BotonNuria({ compacto = false }: { compacto?: boolean }) {
+  const { alternar, abierto } = useNuria()
   return (
     <button
       type="button"
       onClick={alternar}
       aria-expanded={abierto}
-      aria-label="Nuva, asistente de compras y reservas"
+      aria-label="Nuria, asistente de compras y reservas"
       className={`flex items-center gap-1.5 rounded-full border border-nv-accent-line text-[12.5px] text-nv-accent transition-colors hover:bg-nv-accent-wash4 ${
         compacto ? 'h-9 w-9 justify-center' : 'px-3.5 py-[7px]'
       }`}
     >
       <span className="font-serif text-[15px] italic leading-none">N</span>
-      {!compacto && 'Nuva'}
+      {!compacto && 'Nuria'}
     </button>
   )
 }
@@ -181,10 +181,10 @@ export function ClientHeader() {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <span className="hidden sm:block">
-            <BotonNuva />
+            <BotonNuria />
           </span>
           <span className="sm:hidden">
-            <BotonNuva compacto />
+            <BotonNuria compacto />
           </span>
           <BotonCarrito />
 
@@ -316,7 +316,7 @@ const claseLinkFooter = 'text-nv-tint3 transition-colors hover:text-nv-accent-mi
 
 /** Footer global oscuro (spec §6.2). */
 export function ClientFooter() {
-  const { enviar } = useNuva()
+  const { enviar } = useNuria()
   const { footer } = useContenido().contenido
   // Un correo con parametros (`?bcc=`) haria que el mensaje de la visitante
   // saliera con copia a un tercero: se usa el original.
@@ -404,7 +404,7 @@ export function ClientFooter() {
             </li>
           </ColumnaFooter>
 
-          {/* Las preguntas de ayuda las responde Nuva: es el mismo texto que da
+          {/* Las preguntas de ayuda las responde Nuria: es el mismo texto que da
               en el chat, asi que no hay dos versiones de la politica. */}
           <ColumnaFooter titulo="Ayuda">
             <li>
@@ -453,8 +453,8 @@ export function ClientLayout() {
       </main>
       <ClientFooter />
       <CartDrawer />
-      <NuvaLauncher />
-      <NuvaPanel />
+      <NuriaLauncher />
+      <NuriaPanel />
     </div>
   )
 }

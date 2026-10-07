@@ -6,7 +6,7 @@ El sitio hoy solo reserva servicios y orienta con el análisis IA. El estudio ve
 los mismos productos que usa en cada ritual, pero no hay forma de comprarlos en
 línea. El Diseño 1 «Tienda» (especificación en PDF, fuera del repositorio) agrega
 la tienda, el carrito, el checkout con tres modos de entrega, los combos servicio +
-producto y la asistente Nuva, y renueva el aspecto global del sitio.
+producto y la asistente Nuria, y renueva el aspecto global del sitio.
 
 ## What Changes
 
@@ -17,10 +17,10 @@ producto y la asistente Nuva, y renueva el aspecto global del sitio.
 - **Checkout** en tres pasos (Entrega → Pago → Confirmación). El pedido se crea en
   Supabase con una función `crear_pedido` que **recalcula precios, despacho y
   descuentos en el servidor**: el navegador nunca fija lo que se cobra.
-- **Nuva**: asistente de compras y reservas por palabras clave. Recomienda
+- **Nuria**: asistente de compras y reservas por palabras clave. Recomienda
   productos, agrega al carrito y deja una hora **lista para confirmar** en el
   flujo de reserva real (no inventa reservas).
-- **Chrome global**: barra de anuncios, navbar con Tienda / Nuva / carrito, footer
+- **Chrome global**: barra de anuncios, navbar con Tienda / Nuria / carrito, footer
   oscuro con newsletter. Paleta Oliva por defecto, tipografías Newsreader y
   Hanken Grotesk.
 - **Landing** renovada y bloque «Y para continuar en casa» en el análisis IA.
@@ -34,7 +34,7 @@ producto y la asistente Nuva, y renueva el aspecto global del sitio.
 - `tienda`: catálogo de productos, filtros y detalle de producto.
 - `carrito`: estado del carrito, reglas de cantidad y despacho gratis.
 - `pedidos`: checkout, creación del pedido en la base y gestión del estudio.
-- `nuva`: asistente de compras y reservas.
+- `nuria`: asistente de compras y reservas.
 - `sitio-global`: barra de anuncios, navbar, footer, newsletter y tema.
 
 ### Modified Capabilities
@@ -45,6 +45,6 @@ producto y la asistente Nuva, y renueva el aspecto global del sitio.
 - Base: migración `0013_tienda.sql` (tablas `productos`, `pedidos`,
   `pedido_items`, `suscripciones_newsletter` y funciones `crear_pedido`,
   `suscribir_newsletter`). Aditiva: no altera tablas existentes.
-- Frontend: módulos nuevos `tienda`, `carrito`, `pedidos`, `nuva`, `newsletter`;
+- Frontend: módulos nuevos `tienda`, `carrito`, `pedidos`, `nuria`, `newsletter`;
   cambios en `ClientChrome`, `Landing`, `AIAnalysis`, `Login`, `index.css`, `App`.
 - Sin dependencias nuevas.

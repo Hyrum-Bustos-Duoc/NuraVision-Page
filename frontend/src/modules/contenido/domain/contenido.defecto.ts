@@ -12,7 +12,7 @@ export const CONTENIDO_POR_DEFECTO: ContenidoSitio = {
     'Retiro en Estudio inmediato',
     'Servicios hechos por Profesionales',
     'Agenda en línea 24/7',
-    'Nuva: Tu asistente IA',
+    'Nuria: Tu asistente IA',
     'Análisis IA para tu comodidad',
   ],
   imagenes: {

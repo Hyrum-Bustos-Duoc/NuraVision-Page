@@ -1,8 +1,8 @@
 /**
- * La "N" en italica de Nuva. `tono="claro"` es el del launcher (circulo blanco,
+ * La "N" en italica de Nuria. `tono="claro"` es el del launcher (circulo blanco,
  * letra acento); el normal, circulo acento y letra clara.
  */
-export function NuvaAvatar({
+export function NuriaAvatar({
   tamano = 24,
   tono = 'acento',
   enLinea = false,

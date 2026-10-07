@@ -21,7 +21,7 @@ import { ToastProvider } from '@/shared/state/Toast'
 import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
 import { ContenidoProvider } from '@/modules/contenido/ui/ContenidoProvider'
 import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
-import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
+import { NuriaProvider } from '@/modules/nuria/ui/NuriaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
 import { DashboardShell, type NavItem } from '@/shared/components/DashboardChrome'
 import { RequireRole } from '@/shared/components/RequireRole'
@@ -101,7 +101,7 @@ export default function App() {
           <ContenidoProvider>
           <CatalogoProvider>
           <CarritoProvider>
-          <NuvaProvider>
+          <NuriaProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
@@ -187,7 +187,7 @@ export default function App() {
               <Route path="*" element={<Landing />} />
             </Routes>
           </BrowserRouter>
-          </NuvaProvider>
+          </NuriaProvider>
           </CarritoProvider>
           </CatalogoProvider>
           </ContenidoProvider>

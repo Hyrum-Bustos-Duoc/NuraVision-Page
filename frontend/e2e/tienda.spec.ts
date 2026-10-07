@@ -62,13 +62,13 @@ test.describe('tienda', () => {
   })
 })
 
-test.describe('nuva', () => {
+test.describe('nuria', () => {
   test('recomienda y agrega todo al carrito', async ({ page }) => {
     await simularTienda(page)
     await page.goto('/')
     await page.getByRole('button', { name: '“Mis uñas se quiebran, ¿qué uso?”' }).first().click()
 
-    const panel = page.getByRole('dialog', { name: /Nuva/ })
+    const panel = page.getByRole('dialog', { name: /Nuria/ })
     await expect(panel.getByText('Aceite de cutícula Nura')).toBeVisible()
     await panel.getByRole('button', { name: 'Agregar todo al carrito' }).click()
     await expect(panel.getByText(/Listo, agregué 3 productos/)).toBeVisible()

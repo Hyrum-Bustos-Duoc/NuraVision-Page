@@ -1,18 +1,18 @@
-import type { ContextoNuva, RespuestaNuva } from './nuva.types'
+import type { ContextoNuria, RespuestaNuria } from './nuria.types'
 
 /**
- * Motor de intenciones de Nuva por palabras clave (spec §12.3).
+ * Motor de intenciones de Nuria por palabras clave (spec §12.3).
  *
  * Es una funcion pura: recibe el texto y el contexto, devuelve la respuesta. No
  * toca el carrito ni la navegacion; eso lo hace la interfaz con `agregar` y las
- * acciones. Asi se prueba sin React, y el dia que Nuva pase a un modelo real
+ * acciones. Asi se prueba sin React, y el dia que Nuria pase a un modelo real
  * (pendiente de la spec §16) solo cambia este archivo: las tarjetas de UI y las
  * herramientas (agregar, reservar) siguen siendo las mismas.
  */
 
-export const MENSAJE_INICIAL: RespuestaNuva['mensaje'] = {
+export const MENSAJE_INICIAL: RespuestaNuria['mensaje'] = {
   texto:
-    'Hola, soy Nuva. Te recomiendo productos, armo tu rutina y te dejo lista tu hora en el estudio, todo desde aquí. ¿Qué buscas hoy?',
+    'Hola, soy Nuria. Te recomiendo productos, armo tu rutina y te dejo lista tu hora en el estudio, todo desde aquí. ¿Qué buscas hoy?',
   chips: ['Mis uñas se quiebran', 'Reservar una manicure', 'Rutina para cabello teñido', 'Busco un regalo'],
 }
 
@@ -120,7 +120,7 @@ function detectarTema(t: string): Tema | null {
   return null
 }
 
-function buscarServicio(contexto: ContextoNuva, patrones: string[]) {
+function buscarServicio(contexto: ContextoNuria, patrones: string[]) {
   for (const patron of patrones) {
     const encontrado = contexto.servicios.find((s) => normalizar(s.nombre).includes(patron))
     if (encontrado) return encontrado
@@ -128,7 +128,7 @@ function buscarServicio(contexto: ContextoNuva, patrones: string[]) {
   return undefined
 }
 
-function servicioPedido(t: string, contexto: ContextoNuva) {
+function servicioPedido(t: string, contexto: ContextoNuria) {
   for (const definicion of SERVICIOS) {
     if (contiene(t, definicion.claves)) return buscarServicio(contexto, definicion.patrones)
   }
@@ -139,11 +139,11 @@ function mencionaServicio(t: string): boolean {
   return SERVICIOS.some((d) => contiene(t, d.claves))
 }
 
-function productosDisponibles(contexto: ContextoNuva, slugs: string[]): string[] {
+function productosDisponibles(contexto: ContextoNuria, slugs: string[]): string[] {
   return slugs.filter((slug) => contexto.productos.some((p) => p.slug === slug))
 }
 
-export function responder(entrada: string, contexto: ContextoNuva): RespuestaNuva {
+export function responder(entrada: string, contexto: ContextoNuria): RespuestaNuria {
   const t = normalizar(entrada)
   const tema = detectarTema(t)
   const quiereReservar = VERBOS_RESERVA.test(t)
@@ -294,7 +294,7 @@ export function responder(entrada: string, contexto: ContextoNuva): RespuestaNuv
 }
 
 /** Upsell tras elegir horario (spec §12.4). */
-export function respuestaUpsell(producto: { slug: string; nombre: string }): RespuestaNuva {
+export function respuestaUpsell(producto: { slug: string; nombre: string }): RespuestaNuria {
   return {
     recomendacion: [producto.slug],
     mensaje: {

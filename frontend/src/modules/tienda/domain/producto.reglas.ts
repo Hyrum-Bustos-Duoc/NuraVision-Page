@@ -28,7 +28,7 @@ export function productosRelacionados(
   return [...cercanos, ...resto].slice(0, maximo)
 }
 
-/** Productos que el estudio usa en un servicio. Alimenta el upsell de Nuva. */
+/** Productos que el estudio usa en un servicio. Alimenta el upsell de Nuria. */
 export function productosDeServicio(catalogo: Producto[], servicioId: string): Producto[] {
   return catalogo.filter((p) => p.servicioId === servicioId)
 }

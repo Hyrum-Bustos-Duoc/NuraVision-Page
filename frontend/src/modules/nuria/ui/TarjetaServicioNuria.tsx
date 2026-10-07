@@ -9,8 +9,8 @@ import { parseISODate, toISODate, WEEKDAYS_SHORT } from '@/shared/lib/format'
 import { useAppState } from '@/shared/state/AppState'
 import type { Professional } from '@/shared/types'
 import { AppImage } from '@/shared/ui/ui'
-import type { MensajeNuva } from '../domain/nuva.types'
-import type { HorarioElegido } from './nuva.context'
+import type { MensajeNuria } from '../domain/nuria.types'
+import type { HorarioElegido } from './nuria.context'
 
 /** "Hoy · 16:30", "Mañana · 10:30", "Jue 3 · 17:00" (spec §12.2). */
 function etiquetaHorario(dateISO: string, time: string, hoy: string): string {
@@ -30,11 +30,11 @@ function etiquetaHorario(dateISO: string, time: string, hoy: string): string {
  * leer reservas ajenas): por eso al elegir no se reserva, se lleva al paso de
  * confirmacion, que es la ultima palabra.
  */
-export function TarjetaServicioNuva({
+export function TarjetaServicioNuria({
   mensaje,
   onElegir,
 }: {
-  mensaje: MensajeNuva
+  mensaje: MensajeNuria
   onElegir: (horario: HorarioElegido) => void
 }) {
   const servicioId = mensaje.servicioId
