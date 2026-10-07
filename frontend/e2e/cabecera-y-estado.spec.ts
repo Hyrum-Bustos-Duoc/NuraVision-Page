@@ -36,6 +36,15 @@ async function grabarScroll(page: Page) {
 }
 const posiciones = (page: Page) => page.evaluate(() => (window as unknown as { __scrolls: number[] }).__scrolls)
 
+/**
+ * Pasos de una animacion: posiciones entre el punto de partida y 0. Un evento
+ * de scroll rezagado de `bajarAlFondo` llega con la posicion del fondo (o mas
+ * abajo si la pagina siguio creciendo) y no es un paso intermedio.
+ */
+async function intermedias(page: Page, desde: number) {
+  return (await posiciones(page)).filter((y) => y > 0 && y < desde)
+}
+
 const inicio = (page: Page) => page.getByRole('link', { name: 'Estudio Nura, ir al inicio' })
 
 test.describe('logo de la cabecera', () => {
@@ -56,11 +65,12 @@ test.describe('logo de la cabecera', () => {
     await sinContenidoGuardado(page)
     await page.goto('/')
     await bajarAlFondo(page)
+    const desde = await page.evaluate(() => window.scrollY)
     await grabarScroll(page)
     await inicio(page).focus()
     await page.keyboard.press('Enter')
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
-    expect((await posiciones(page)).filter((y) => y > 0)).toEqual([])
+    expect(await intermedias(page, desde)).toEqual([])
   })
 
   test('desde otra ruta lleva a la portada arriba sin animar la pagina que se va', async ({ page }) => {
@@ -69,13 +79,13 @@ test.describe('logo de la cabecera', () => {
     await page.goto('/tienda')
     await expect(page.getByRole('button', { name: /^Agregar .* al carrito$/ }).first()).toBeVisible()
     await bajarAlFondo(page)
+    const desde = await page.evaluate(() => window.scrollY)
     await grabarScroll(page)
     await inicio(page).locator('img').click()
     await expect(page).toHaveURL(/\/$/)
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
     // Un solo salto instantaneo a 0: ningun paso intermedio de una animacion.
-    const intermedios = (await posiciones(page)).filter((y) => y > 0)
-    expect(intermedios).toEqual([])
+    expect(await intermedias(page, desde)).toEqual([])
   })
 })
 
