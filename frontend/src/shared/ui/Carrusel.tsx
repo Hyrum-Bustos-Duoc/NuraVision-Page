@@ -1,5 +1,5 @@
 import { useEffect, useState, type FocusEvent, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const INTERVALO_MS = 5000
 
@@ -11,10 +11,12 @@ const INTERVALO_MS = 5000
  * dentro, un clic en una flecha navegaria ademas de cambiar la foto.
  *
  * El avance automatico se detiene con el puntero o el foco encima (para leer
- * la tarjeta sin que cambie), con el boton de pausa (WCAG 2.2.2) y siempre con
- * movimiento reducido. Solo se montan la foto anterior, la actual y la
- * siguiente: la siguiente queda descargada antes de su turno, la anterior
- * termina su fundido, y las otras veinte no se piden hasta que les toque.
+ * la tarjeta sin que cambie) y no existe con movimiento reducido. Sin boton de
+ * pausa por decision de producto (2026-10-07).
+ *
+ * Solo se montan la foto anterior, la actual y la siguiente: la siguiente
+ * queda descargada antes de su turno, la anterior termina su fundido, y las
+ * otras veinte no se piden hasta que les toque.
  */
 export function Carrusel({
   fotos,
@@ -40,14 +42,13 @@ export function Carrusel({
   // avance aunque el foco de teclado siguiera dentro (y al reves).
   const [punteroDentro, setPunteroDentro] = useState(false)
   const [focoDentro, setFocoDentro] = useState(false)
-  const [pausadoPorUsuario, setPausadoPorUsuario] = useState(false)
 
   // Si la lista se acorta (llega el contenido de la base), el indice guardado
   // puede quedar fuera: se acota al pintar en vez de corregir el estado.
   const actual = total > 0 ? posicion.actual % total : 0
   const siguiente = (actual + 1) % total
   const autoavance = !reducido && total > 1
-  const detenido = !autoavance || punteroDentro || focoDentro || pausadoPorUsuario
+  const detenido = !autoavance || punteroDentro || focoDentro
 
   function ir(destino: number) {
     setPosicion({ actual: (destino + total) % total, anterior: actual })
@@ -105,14 +106,6 @@ export function Carrusel({
 
       {total > 1 && (
         <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5 sm:right-3 sm:top-3">
-          {autoavance && (
-            <BotonCarrusel
-              etiqueta={pausadoPorUsuario ? 'Reanudar el carrusel' : 'Pausar el carrusel'}
-              onClick={() => setPausadoPorUsuario((p) => !p)}
-            >
-              {pausadoPorUsuario ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-            </BotonCarrusel>
-          )}
           <BotonCarrusel etiqueta="Foto anterior" onClick={() => ir(actual - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </BotonCarrusel>

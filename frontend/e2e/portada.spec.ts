@@ -164,7 +164,6 @@ test.describe('carruseles de la portada', () => {
     await estudio.getByRole('button', { name: 'Foto anterior' }).click()
     await estudio.getByRole('button', { name: 'Foto anterior' }).click()
     await expect(contador(estudio)).toHaveText('06/06')
-    await estudio.getByRole('button', { name: /Pausar|Reanudar/ }).click()
     await expect(page).toHaveURL(/\/$/)
 
     await estudio.getByRole('link').click()
@@ -174,7 +173,7 @@ test.describe('carruseles de la portada', () => {
     await expect(page).toHaveURL(/\/tienda$/)
   })
 
-  test('avanza solo cada 5 s, se detiene con el puntero y con el boton de pausa', async ({ page }) => {
+  test('avanza solo cada 5 s y se detiene con el puntero encima', async ({ page }) => {
     await page.clock.install()
     await sinContenidoGuardado(page)
     await page.goto('/')
@@ -194,12 +193,6 @@ test.describe('carruseles de la portada', () => {
     await page.mouse.move(0, 0)
     await page.clock.runFor(5_100)
     await expect(contador(estudio)).toHaveText('03/06')
-
-    await estudio.getByRole('button', { name: 'Pausar el carrusel' }).focus()
-    await estudio.getByRole('button', { name: 'Pausar el carrusel' }).press('Enter')
-    await estudio.getByRole('button', { name: 'Reanudar el carrusel' }).blur()
-    await page.clock.runFor(15_000)
-    await expect(contador(estudio)).toHaveText('03/06')
   })
 
   test('con el foco dentro no avanza aunque el puntero salga', async ({ page }) => {
@@ -218,7 +211,7 @@ test.describe('carruseles de la portada', () => {
     await expect(contador(estudio)).toHaveText('02/06')
   })
 
-  test('sin autoavance ni boton de pausa con movimiento reducido', async ({ page }) => {
+  test('sin autoavance con movimiento reducido', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.clock.install()
     await sinContenidoGuardado(page)
@@ -227,7 +220,6 @@ test.describe('carruseles de la portada', () => {
     const estudio = carrusel(page, /estudio/i).first()
     await page.clock.runFor(20_000)
     await expect(contador(estudio)).toHaveText('01/06')
-    await expect(estudio.getByRole('button', { name: /Pausar|Reanudar/ })).toHaveCount(0)
     await estudio.getByRole('button', { name: 'Foto siguiente' }).click()
     await expect(contador(estudio)).toHaveText('02/06')
   })
