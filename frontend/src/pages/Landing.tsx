@@ -343,10 +343,16 @@ function TileHero({
             <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
           </div>
         )}
-        <div className="absolute bottom-2 left-2 w-[56%] max-w-[300px] max-[359px]:w-[50%] sm:w-[62%] rounded-md bg-nv-bg p-3 sm:bottom-4 sm:left-4 sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
-          <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
-          <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
+        {/* Texto directo sobre la foto, sin caja (2026-10-07). El degradado
+            inferior le da contraste aun con fotos claras. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 rounded-b-md bg-gradient-to-t from-[rgba(28,30,22,0.72)] via-[rgba(28,30,22,0.3)] to-transparent"
+        />
+        <div className="absolute bottom-3 left-3 w-[56%] max-w-[300px] text-[#fffefb] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)] max-[359px]:w-[50%] sm:bottom-5 sm:left-5 sm:w-[62%]">
+          <p className="text-[10px] uppercase tracking-[0.15em] opacity-90">{eyebrow}</p>
+          <p className="mt-1.5 font-serif text-[17px] leading-tight sm:text-[21px]">{titulo}</p>
+          <p className="mt-2 text-xs opacity-90 sm:mt-3 sm:text-[13px]">{link}</p>
         </div>
       </Link>
     </Carrusel>
