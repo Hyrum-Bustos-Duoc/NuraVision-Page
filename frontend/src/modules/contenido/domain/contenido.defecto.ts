@@ -75,7 +75,7 @@ export const CONTENIDO_POR_DEFECTO: ContenidoSitio = {
   },
   footer: {
     newsletterTitulo: 'Mantente actualizado y no te pierdas de nada!',
-    newsletterDestacado: 'Nunca spam.',
+    newsletterDestacado: '',
     direccion: 'Estudio Nura · Av. Libertad 1250, Viña del Mar',
     horario: 'Martes a sábado · 10:00–19:00',
     telefono: '+56 9 1234 5678',

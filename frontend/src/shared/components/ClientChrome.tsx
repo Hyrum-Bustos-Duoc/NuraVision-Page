@@ -161,14 +161,21 @@ export function ClientHeader() {
     <header className="sticky top-0 z-40 border-b border-nv-line1 bg-nv-bg/90 backdrop-blur-[14px]">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-10">
         <div className="flex min-w-0 items-center gap-6 xl:gap-10">
-          <Link to="/" className="flex shrink-0 items-center" aria-label="Nuravision, ir al inicio">
+          {/* Bajo 360 px (moviles de 320) el nombre a 19 px pisaba el boton de
+              Nuria: se reduce letra y separacion en vez de ocultarlo o recortarlo. */}
+          <Link to="/" className="flex shrink-0 items-center gap-2.5 max-[359px]:gap-2" aria-label="Estudio Nura, ir al inicio">
+            {/* El logo es un sello circular sobre fondo blanco: el recorte
+                redondo evita que el blanco se vea como un cuadrado sobre el crema. */}
             <img
-              src="/nuravision-logo.png"
-              alt="Nuravision"
-              className="h-9 w-auto sm:h-11"
-              width={800}
-              height={266}
+              src="/estudio-nura-logo.jpg"
+              alt=""
+              className="h-10 w-10 rounded-full sm:h-12 sm:w-12"
+              width={256}
+              height={256}
             />
+            <span className="whitespace-nowrap font-serif text-[19px] leading-none text-nv-ink max-[359px]:text-[15px] sm:text-[22px]">
+              Estudio Nura
+            </span>
           </Link>
           <nav aria-label="Principal" className="hidden items-center gap-0.5 lg:flex">
             {links.map((link) => (
@@ -328,19 +335,25 @@ export function ClientFooter() {
         <div className="grid gap-12 border-b border-nv-ink3 pb-12 sm:grid-cols-3 sm:pb-[60px] lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div className="sm:col-span-3 lg:col-span-1">
             {/* El dorado del logo se oscurece hacia el cafe; sobre el fondo
-                oscuro se aclara para que no se pierda. */}
+                oscuro se aclara para que no se pierda. Un solo alto en todos
+                los anchos: 24px (~72px de ancho) es el minimo en que el
+                nombre se sigue leyendo, asi que en movil no baja mas. */}
             <img
               src="/nuravision-logo.png"
               alt="Nuravision"
-              className="-ml-1.5 mb-8 h-12 w-auto brightness-[1.9] sm:h-14"
+              className="-ml-0.5 mb-8 h-6 w-auto brightness-[1.9]"
               width={800}
               height={266}
               loading="lazy"
             />
             <p className="max-w-[440px] font-serif text-[28px] font-light leading-[1.08] text-nv-bg sm:text-[34px]">
               {footer.newsletterTitulo}
-              <br />
-              <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
+              {footer.newsletterDestacado && (
+                <>
+                  <br />
+                  <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
+                </>
+              )}
             </p>
             <NewsletterForm />
             <address className="mt-[26px] flex flex-col gap-1.5 text-[13px] not-italic leading-[1.5] text-nv-faint2">
