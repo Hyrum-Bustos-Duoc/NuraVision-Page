@@ -13,16 +13,19 @@ import {
   CONTENIDO_POR_DEFECTO,
   MAX_ANUNCIOS,
   motivoParaNoGuardarContenido,
+  type ClaveCarrusel,
   type ClaveImagen,
   type ContenidoSitio,
   type Enlace,
   type Paso,
 } from '../application'
+import { EditorCarrusel } from './EditorCarrusel'
 import { EditorImagen } from './EditorImagen'
 import { useContenido } from './useContenido'
 
 const SECCIONES = [
   { id: 'anuncios', titulo: 'Barra de anuncios' },
+  { id: 'carruseles', titulo: 'Carruseles de la portada' },
   { id: 'fotos', titulo: 'Fotos' },
   { id: 'portada', titulo: 'Portada' },
   { id: 'servicios', titulo: 'Servicios destacados' },
@@ -36,10 +39,13 @@ const SECCIONES = [
 ] as const
 
 const FOTOS: { clave: ClaveImagen; titulo: string; detalle: string; proporcion: string }[] = [
-  { clave: 'portadaEstudio', titulo: 'Portada · El estudio', detalle: 'Tarjeta vertical del hero.', proporcion: 'aspect-[3/5]' },
-  { clave: 'portadaTienda', titulo: 'Portada · La tienda', detalle: 'Segunda tarjeta del hero.', proporcion: 'aspect-[3/5]' },
   { clave: 'bandaIA', titulo: 'Banda NuraVision IA', detalle: 'Foto bajo la línea de escaneo.', proporcion: 'aspect-[3/5]' },
   { clave: 'login', titulo: 'Inicio de sesión', detalle: 'Panel derecho, a todo el alto.', proporcion: 'aspect-[3/5]' },
+]
+
+const CARRUSELES: { clave: ClaveCarrusel; titulo: string; detalle: string }[] = [
+  { clave: 'estudio', titulo: 'Carrusel 1 · El estudio', detalle: 'Tarjeta superior de la portada' },
+  { clave: 'tienda', titulo: 'Carrusel 2 · La tienda', detalle: 'Tarjeta inferior de la portada' },
 ]
 
 const AYUDA_ENFASIS = 'Encierra una palabra entre *asteriscos* para destacarla en cursiva.'
@@ -97,6 +103,7 @@ function Editor({
   const [borrador, setBorrador] = useState<ContenidoSitio>(inicial)
   const [guardando, setGuardando] = useState(false)
   const [restaurando, setRestaurando] = useState(false)
+  const [carruselAbierto, setCarruselAbierto] = useState<ClaveCarrusel | null>(null)
 
   const cambios = useMemo(() => JSON.stringify(borrador) !== JSON.stringify(inicial), [borrador, inicial])
   const motivo = useMemo(() => motivoParaNoGuardarContenido(borrador), [borrador])
@@ -167,14 +174,26 @@ function Editor({
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[200px_1fr]">
-        <nav aria-label="Secciones del contenido" className="hidden lg:block">
-          <ul className="sticky top-8 space-y-1 text-sm">
+      {/* El indice queda a la vista al bajar: en movil como barra horizontal bajo
+          la cabecera del panel (58 px, ver DashboardChrome), en escritorio como
+          columna. Para que `sticky` funcione, ningun ancestro puede crear un
+          contenedor de scroll: por eso DashboardChrome recorta con
+          `overflow-x-clip` y no con `overflow-x-hidden`. */}
+      {/* `grid-cols-1` = `minmax(0,1fr)`: sin columnas declaradas, la implicita
+          es `auto` y crece hasta el ancho minimo de la fila de enlaces del
+          indice (~1400 px), y todo el formulario queda recortado. Por la misma
+          razon nav y contenido llevan `min-w-0`. */}
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8">
+        <nav
+          aria-label="Secciones del contenido"
+          className="min-w-0 sticky top-[58px] z-10 -mx-5 border-b border-line-soft bg-ivory/95 backdrop-blur sm:-mx-8 lg:top-8 lg:mx-0 lg:self-start lg:border-0 lg:bg-transparent lg:backdrop-blur-none"
+        >
+          <ul className="flex gap-1 overflow-x-auto px-5 py-2 text-sm sm:px-8 lg:block lg:space-y-1 lg:overflow-visible lg:p-0">
             {SECCIONES.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="shrink-0">
                 <a
                   href={`#${s.id}`}
-                  className="block rounded-lg px-3 py-2 text-muted transition-colors hover:bg-paper hover:text-ink"
+                  className="block whitespace-nowrap rounded-lg px-3 py-2 text-muted transition-colors hover:bg-paper hover:text-ink"
                 >
                   {s.titulo}
                 </a>
@@ -193,8 +212,33 @@ function Editor({
             />
           </Seccion>
 
+          <Seccion
+            id="carruseles"
+            titulo="Carruseles de la portada"
+            detalle="Las fotos que rotan en las dos tarjetas junto al título, en este orden. JPG, PNG o WebP; se comprimen antes de subir y se publican al guardar."
+          >
+            <div className="space-y-3">
+              {CARRUSELES.map((k) => (
+                <EditorCarrusel
+                  key={k.clave}
+                  id={`carrusel-${k.clave}`}
+                  titulo={k.titulo}
+                  detalle={k.detalle}
+                  fotos={c.carruseles[k.clave]}
+                  original={CONTENIDO_POR_DEFECTO.carruseles[k.clave]}
+                  abierto={carruselAbierto === k.clave}
+                  deshabilitado={!editable}
+                  onAlternar={() => setCarruselAbierto((a) => (a === k.clave ? null : k.clave))}
+                  onSubir={(archivo) => subirImagen(`carrusel-${k.clave}`, archivo)}
+                  onAgregar={(nuevas) => editar((b) => void b.carruseles[k.clave].push(...nuevas))}
+                  onChange={(fotos) => editar((b) => void (b.carruseles[k.clave] = fotos))}
+                />
+              ))}
+            </div>
+          </Seccion>
+
           <Seccion id="fotos" titulo="Fotos" detalle="JPG, PNG o WebP. Se comprimen antes de subir. Se publican al guardar.">
-            <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
+            <div className="grid max-w-xl grid-cols-2 gap-5">
               {FOTOS.map((f) => (
                 <EditorImagen
                   key={f.clave}
@@ -382,7 +426,7 @@ function Editor({
 
 function Seccion({ id, titulo, detalle, children }: { id: string; titulo: string; detalle: string; children: ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-8 rounded-2xl border border-line-soft bg-paper p-5 sm:p-6">
+    <section id={id} className="scroll-mt-32 rounded-2xl lg:scroll-mt-8 border border-line-soft bg-paper p-5 sm:p-6">
       <h2 className="font-serif-display text-2xl text-ink">{titulo}</h2>
       <p className="mt-1 text-sm text-muted">{detalle}</p>
       <div className="mt-5 space-y-5">{children}</div>

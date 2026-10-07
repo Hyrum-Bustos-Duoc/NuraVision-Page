@@ -7,9 +7,10 @@ export {
   fragmentosConEnfasis,
   motivoParaNoGuardarContenido,
   MAX_ANUNCIOS,
+  MAX_FOTOS_CARRUSEL,
   MAX_TEXTO_CORTO,
   MAX_TEXTO_LARGO,
 } from '../domain/contenido.reglas'
 export type { Fragmento } from '../domain/contenido.reglas'
-export type { ClaveImagen, ContenidoSitio, Enlace, Paso } from '../domain/contenido.types'
+export type { ClaveCarrusel, ClaveImagen, ContenidoSitio, DestinoFoto, Enlace, Paso } from '../domain/contenido.types'
 export type { ContenidoRepository, ContenidoGuardado } from '../domain/contenido.repository'

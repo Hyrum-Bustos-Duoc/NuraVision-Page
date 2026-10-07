@@ -219,7 +219,9 @@ export function DashboardShell({
           )}
         </div>
 
-        <div key={pathname} className="animate-fade-up flex-1 overflow-x-hidden">
+        {/* `clip` y no `hidden`: recorta igual, pero no crea un contenedor de
+            scroll, y asi los `sticky` de las paginas se pegan a la ventana. */}
+        <div key={pathname} className="animate-fade-up flex-1 overflow-x-clip">
           <Outlet />
         </div>
       </div>

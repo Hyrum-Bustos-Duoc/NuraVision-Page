@@ -13,6 +13,7 @@ import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { ProductGrid, ProductGridSkeleton } from '@/modules/tienda/ui/ProductGrid'
 import { BandaNuria, TarjetaNuriaHero } from '@/modules/nuria/ui/NuriaPortada'
 import { AppImage } from '@/shared/ui/ui'
+import { Carrusel } from '@/shared/ui/Carrusel'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Reveal } from '@/shared/ui/Reveal'
 import { boton, contenedor, linkSubrayado } from '@/shared/ui/nv-estilos'
@@ -97,7 +98,7 @@ export default function Landing() {
         <div className="grid gap-3 sm:gap-5">
           <TileHero
             to="/servicios"
-            imagen={c.imagenes.portadaEstudio ?? undefined}
+            fotos={c.carruseles.estudio}
             etiquetaImagen="Fotografía · Estudio"
             eyebrow={c.portada.tarjetaEstudio.eyebrow}
             titulo={c.portada.tarjetaEstudio.titulo}
@@ -105,7 +106,7 @@ export default function Landing() {
           />
           <TileHero
             to="/tienda"
-            imagen={c.imagenes.portadaTienda ?? undefined}
+            fotos={c.carruseles.tienda}
             etiquetaImagen="Fotografía · Productos"
             eyebrow={c.portada.tarjetaTienda.eyebrow}
             titulo={c.portada.tarjetaTienda.titulo}
@@ -309,42 +310,46 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 /**
- * Foto de la portada en formato apaisado: las dos van una sobre la otra, con
- * el mismo ancho y alto, y la tarjeta anclada a la esquina inferior izquierda.
+ * Tarjeta apaisada de la portada con sus fotos en carrusel: las dos van una
+ * sobre la otra, con el mismo ancho y alto, y el texto anclado a la esquina
+ * inferior izquierda. El enlace cubre toda la tarjeta; los controles del
+ * carrusel quedan por encima y fuera de el (ver `Carrusel`).
  */
 function TileHero({
   to,
-  imagen,
+  fotos,
   etiquetaImagen,
   eyebrow,
   titulo,
   link,
 }: {
   to: string
-  imagen?: string
+  fotos: string[]
   etiquetaImagen: string
   eyebrow: string
   titulo: string
   link: string
 }) {
   return (
-    <Link
-      to={to}
-      className="group relative block aspect-[16/9] overflow-hidden rounded-md transition-transform duration-300 hover:-translate-y-1"
+    <Carrusel
+      fotos={fotos}
+      alt={titulo}
+      etiqueta={`Fotos: ${eyebrow}`}
+      className="aspect-[16/9] rounded-md transition-transform duration-300 hover:-translate-y-1"
     >
-      {imagen ? (
-        <AppImage src={imagen} alt={titulo} className="absolute inset-0 h-full w-full" />
-      ) : (
-        <div className="placeholder-stripes absolute inset-0 flex justify-end p-4">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+      <Link to={to} className="absolute inset-0 block rounded-md">
+        {fotos.length === 0 && (
+          <div className="placeholder-stripes absolute inset-0 flex justify-end p-4">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+          </div>
+        )}
+        <div className="absolute bottom-2 left-2 w-[62%] max-w-[300px] rounded-md bg-nv-bg p-3 sm:bottom-4 sm:left-4 sm:p-5">
+          <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
+          <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
+          <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
         </div>
-      )}
-      <div className="absolute bottom-2 left-2 w-[62%] max-w-[300px] rounded-md bg-nv-bg p-3 sm:bottom-4 sm:left-4 sm:p-5">
-        <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
-        <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
-        <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
-      </div>
-    </Link>
+      </Link>
+    </Carrusel>
   )
 }
 

@@ -18,10 +18,6 @@ export interface Paso {
 }
 
 export interface ImagenesSitio {
-  /** Portada: tarjeta "El estudio". */
-  portadaEstudio: string | null
-  /** Portada: tarjeta "La tienda". */
-  portadaTienda: string | null
   /** Banda NuraVision IA. */
   bandaIA: string | null
   /** Panel derecho del inicio de sesion. */
@@ -29,6 +25,22 @@ export interface ImagenesSitio {
 }
 
 export type ClaveImagen = keyof ImagenesSitio
+
+/**
+ * Fotos que rotan en las dos tarjetas de la portada, en el orden en que se
+ * muestran. Una lista vacia es valida: la tarjeta queda sin foto, a rayas.
+ */
+export interface CarruselesSitio {
+  /** Tarjeta "El estudio". */
+  estudio: string[]
+  /** Tarjeta "La tienda". */
+  tienda: string[]
+}
+
+export type ClaveCarrusel = keyof CarruselesSitio
+
+/** Prefijo del nombre de archivo en el bucket: dice a que hueco pertenece cada foto. */
+export type DestinoFoto = ClaveImagen | `carrusel-${ClaveCarrusel}`
 
 /** Consejos de una opcion del analisis IA. El id no se edita: lo usa el codigo. */
 export interface OpcionAnalisisEditable {
@@ -39,6 +51,7 @@ export interface OpcionAnalisisEditable {
 export interface ContenidoSitio {
   anuncios: string[]
   imagenes: ImagenesSitio
+  carruseles: CarruselesSitio
   portada: {
     etiqueta: string
     titulo: string

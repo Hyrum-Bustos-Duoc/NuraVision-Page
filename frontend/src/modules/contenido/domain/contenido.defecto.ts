@@ -1,6 +1,11 @@
 import { CONTENIDO_SITIO } from '@/shared/content/sitio'
 import type { ContenidoSitio } from './contenido.types'
 
+/** `/carrusel/inicio/inicio-01.jpg` … : los archivos van numerados desde 01. */
+function fotosLocales(carpeta: string, cantidad: number): string[] {
+  return Array.from({ length: cantidad }, (_, i) => `/carrusel/${carpeta}/${carpeta}-${String(i + 1).padStart(2, '0')}.jpg`)
+}
+
 /**
  * El contenido tal como estaba escrito en el codigo antes de volverse editable.
  *
@@ -16,10 +21,13 @@ export const CONTENIDO_POR_DEFECTO: ContenidoSitio = {
     'Análisis IA para tu comodidad',
   ],
   imagenes: {
-    portadaEstudio: CONTENIDO_SITIO.heroImage ?? null,
-    portadaTienda: CONTENIDO_SITIO.shopImage ?? null,
     bandaIA: CONTENIDO_SITIO.aiTeaserImage ?? null,
     login: CONTENIDO_SITIO.loginImage ?? null,
+  },
+  // Fotos propias del estudio, servidas desde `public/carrusel/`.
+  carruseles: {
+    estudio: fotosLocales('inicio', 6),
+    tienda: fotosLocales('productos', 22),
   },
   portada: {
     etiqueta: 'Estudio de belleza · Tienda de cuidado',

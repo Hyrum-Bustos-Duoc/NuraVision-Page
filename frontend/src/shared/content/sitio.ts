@@ -26,10 +26,6 @@ function fotoUnsplash(id: string, ancho: number): string {
 }
 
 export const CONTENIDO_SITIO: SiteContent = {
-  // Salon en tonos beige con espejos en arco.
-  heroImage: fotoUnsplash('photo-1706629505300-168aa1604912', 700),
-  // Repisas minimalistas con productos de cuidado.
-  shopImage: fotoUnsplash('photo-1760862652442-e8ff7ebdd2f8', 700),
   // Mano con manicura nude: la foto de ejemplo de la banda de NuraVision IA.
   aiTeaserImage: fotoUnsplash('photo-1610992015762-45dca7fa3a85', 1000),
   // Recepcion con flores secas: el panel derecho del login, a media pantalla y
