@@ -141,6 +141,15 @@ export function ClientHeader() {
     navigate('/')
   }
 
+  // En "/" el Link no cambia la ruta y `ScrollToTop` no se dispara: la subida
+  // se hace aqui. Desde otra ruta no se toca: `ScrollToTop` ya deja la portada
+  // arriba, y animar antes la pagina que se va solo daria un doble salto.
+  function subirSiEsInicio() {
+    if (pathname !== '/') return
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' })
+  }
+
   const links = authed
     ? [
         { to: '/', label: 'Inicio', end: true },
@@ -163,7 +172,12 @@ export function ClientHeader() {
         <div className="flex min-w-0 items-center gap-6 xl:gap-10">
           {/* Bajo 360 px (moviles de 320) el nombre a 19 px pisaba el boton de
               Nuria: se reduce letra y separacion en vez de ocultarlo o recortarlo. */}
-          <Link to="/" className="flex shrink-0 items-center gap-2.5 max-[359px]:gap-2" aria-label="Estudio Nura, ir al inicio">
+          <Link
+            to="/"
+            onClick={subirSiEsInicio}
+            className="flex shrink-0 items-center gap-2.5 max-[359px]:gap-2"
+            aria-label="Estudio Nura, ir al inicio"
+          >
             {/* El logo es un sello circular sobre fondo blanco: el recorte
                 redondo evita que el blanco se vea como un cuadrado sobre el crema. */}
             <img
