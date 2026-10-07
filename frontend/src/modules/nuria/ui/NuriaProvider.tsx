@@ -7,26 +7,26 @@ import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { formatPrice } from '@/shared/lib/format'
 import { useAppState } from '@/shared/state/AppState'
-import { MENSAJE_INICIAL, responder, respuestaUpsell } from '../domain/nuva.motor'
-import type { ContextoNuva, Mensaje, MensajeNuva, RespuestaNuva } from '../domain/nuva.types'
-import { NuvaContext, type HorarioElegido, type NuvaValue } from './nuva.context'
+import { MENSAJE_INICIAL, responder, respuestaUpsell } from '../domain/nuria.motor'
+import type { ContextoNuria, Mensaje, MensajeNuria, RespuestaNuria } from '../domain/nuria.types'
+import { NuriaContext, type HorarioElegido, type NuriaValue } from './nuria.context'
 
 /** Pausa de "escribiendo…" antes de cada respuesta (spec §12.2). */
 const DEMORA_RESPUESTA = 800
 const DEMORA_TRAS_RESERVAR = 900
 
 function mensajeInicial(): Mensaje[] {
-  return [{ id: 0, de: 'nuva', ...MENSAJE_INICIAL }]
+  return [{ id: 0, de: 'nuria', ...MENSAJE_INICIAL }]
 }
 
 /**
- * Estado de la conversacion con Nuva, compartido por el launcher, el panel, el
+ * Estado de la conversacion con Nuria, compartido por el launcher, el panel, el
  * hero, la banda de la portada y los links de Ayuda del footer.
  *
  * Los servicios se cargan la primera vez que se abre el panel, no al entrar al
- * sitio: la mayoria de las visitas nunca habla con Nuva.
+ * sitio: la mayoria de las visitas nunca habla con Nuria.
  */
-export function NuvaProvider({ children }: { children: ReactNode }) {
+export function NuriaProvider({ children }: { children: ReactNode }) {
   const catalogo = useCatalogo()
   const carrito = useCarrito()
   const { setBookingDraft } = useAppState()
@@ -44,14 +44,14 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => window.clearTimeout(temporizador.current), [])
 
   const cargarServicios = useCallback(() => {
-    // Si falla, Nuva sigue respondiendo lo que no depende de servicios.
+    // Si falla, Nuria sigue respondiendo lo que no depende de servicios.
     servicios.current ??= obtenerServicios(servicioRepository).catch(() => [])
     return servicios.current
   }, [])
 
-  const publicar = useCallback((mensaje: Omit<MensajeNuva, 'id' | 'de'> | Omit<Mensaje, 'id'>) => {
+  const publicar = useCallback((mensaje: Omit<MensajeNuria, 'id' | 'de'> | Omit<Mensaje, 'id'>) => {
     const id = siguienteId.current++
-    const completo = ('de' in mensaje ? { ...mensaje, id } : { ...mensaje, id, de: 'nuva' }) as Mensaje
+    const completo = ('de' in mensaje ? { ...mensaje, id } : { ...mensaje, id, de: 'nuria' }) as Mensaje
     setMensajes((prev) => [...prev, completo])
   }, [])
 
@@ -60,14 +60,14 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // El contexto se lee en el momento de responder, no al enviar: asi "agregar
-  // todo" ve el carrito tal como esta cuando Nuva contesta.
+  // todo" ve el carrito tal como esta cuando Nuria contesta.
   const estado = useRef({ catalogo, carrito })
   useEffect(() => {
     estado.current = { catalogo, carrito }
   }, [catalogo, carrito])
 
   const aplicar = useCallback(
-    (respuesta: RespuestaNuva) => {
+    (respuesta: RespuestaNuria) => {
       if (respuesta.recomendacion) ultimaRecomendacion.current = respuesta.recomendacion
       if (respuesta.agregar) {
         for (const slug of respuesta.agregar) estado.current.carrito.agregar(slug, 1, { abrir: false })
@@ -91,7 +91,7 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
       temporizador.current = window.setTimeout(() => {
         void pendientes.then((lista) => {
           const { catalogo: cat, carrito: car } = estado.current
-          const contexto: ContextoNuva = {
+          const contexto: ContextoNuria = {
             productos: cat.productos,
             servicios: lista.map((s) => ({
               id: s.id,
@@ -118,7 +118,7 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
   )
 
   const agregarProducto = useCallback(
-    (mensaje: MensajeNuva, slug: string) => {
+    (mensaje: MensajeNuria, slug: string) => {
       // No abre el drawer: la conversacion sigue en foco (spec §12.2).
       estado.current.carrito.agregar(slug, 1, { abrir: false })
       if (mensaje.paraLaCita) estado.current.carrito.preferirEntregaEnCita(true)
@@ -128,7 +128,7 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
   )
 
   const elegirHorario = useCallback(
-    (mensaje: MensajeNuva, horario: HorarioElegido) => {
+    (mensaje: MensajeNuria, horario: HorarioElegido) => {
       const servicioId = mensaje.servicioId
       if (!servicioId) return
       setMensajes((prev) => prev.map((m) => (m.id === mensaje.id ? { ...m, horarioElegido: horario.etiqueta } : m)))
@@ -136,7 +136,7 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
       setEscribiendo(true)
 
       // Se deja todo listo en el asistente de reserva real. La reserva se crea
-      // ahi, con contacto o sesion: Nuva no afirma haber reservado algo que
+      // ahi, con contacto o sesion: Nuria no afirma haber reservado algo que
       // todavia no existe en la base.
       setBookingDraft(() => ({
         serviceId: servicioId,
@@ -185,7 +185,7 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
     setAbierto((v) => !v)
   }, [cargarServicios])
 
-  const value = useMemo<NuvaValue>(
+  const value = useMemo<NuriaValue>(
     () => ({
       abierto,
       abrir,
@@ -203,5 +203,5 @@ export function NuvaProvider({ children }: { children: ReactNode }) {
     [abierto, abrir, cerrar, alternar, mensajes, escribiendo, agregados, enviar, agregarProducto, elegirHorario, declinar, reiniciar],
   )
 
-  return <NuvaContext.Provider value={value}>{children}</NuvaContext.Provider>
+  return <NuriaContext.Provider value={value}>{children}</NuriaContext.Provider>
 }

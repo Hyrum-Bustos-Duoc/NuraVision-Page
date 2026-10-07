@@ -13,7 +13,7 @@ Las pantallas con navbar SHALL mostrar sobre él una franja oscura con los mensa
 - **THEN** la franja no se desplaza
 
 ### Requirement: Navbar y footer globales
-Toda pantalla pública con navbar SHALL mostrar el footer oscuro. Login, registro y paneles internos SHALL seguir sin navbar ni footer. El navbar SHALL incluir Tienda, el botón de Nuva y el carrito con contador, y en móvil SHALL mantener visibles el carrito y Nuva.
+Toda pantalla pública con navbar SHALL mostrar el footer oscuro. Login, registro y paneles internos SHALL seguir sin navbar ni footer. El navbar SHALL incluir Tienda, el botón de Nuria y el carrito con contador, y en móvil SHALL mantener visibles el carrito y Nuria.
 
 #### Scenario: Sesión iniciada
 - **WHEN** hay sesión de clienta

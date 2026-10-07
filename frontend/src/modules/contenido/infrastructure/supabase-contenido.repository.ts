@@ -2,7 +2,7 @@ import type { Json } from '@/shared/types/supabase'
 import { supabase } from '@/shared/infrastructure/supabase/client'
 import { fileToStorableDataUrl } from '@/shared/lib/image'
 import type { ContenidoGuardado, ContenidoRepository } from '../domain/contenido.repository'
-import type { ClaveImagen, ContenidoSitio } from '../domain/contenido.types'
+import type { ContenidoSitio, DestinoFoto } from '../domain/contenido.types'
 
 /** "Esa tabla no existe": 42P01 de Postgres, PGRST205 del cache de PostgREST. */
 const SIN_TABLA = new Set(['42P01', 'PGRST205'])
@@ -51,14 +51,16 @@ export class SupabaseContenidoRepository implements ContenidoRepository {
     return { datos: data[0].datos, actualizadoEn: data[0].actualizado_en }
   }
 
-  async subirImagen(clave: ClaveImagen, archivo: File): Promise<string> {
+  async subirImagen(destino: DestinoFoto, archivo: File): Promise<string> {
     // Se comprime antes de subir: una foto de camara pesa varios MB y la
     // portada la descarga cada visitante.
     const comprimida = await aBlob(await fileToStorableDataUrl(archivo, { maxDimension: 2000, quality: 0.82 }))
     const extension = comprimida.type === 'image/png' ? 'png' : comprimida.type === 'image/webp' ? 'webp' : 'jpg'
     // Nombre nuevo en cada subida: una URL que no cambia quedaria en la cache
-    // del navegador y del CDN mostrando la foto anterior.
-    const ruta = `${clave}-${Date.now()}.${extension}`
+    // del navegador y del CDN mostrando la foto anterior. El sufijo aleatorio
+    // cubre dos subidas en el mismo milisegundo (varias fotos de un carrusel):
+    // con el mismo nombre, la segunda fallaria o pisaria a la primera.
+    const ruta = `${destino}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`
 
     const { error } = await supabase.storage.from(BUCKET).upload(ruta, comprimida, {
       contentType: comprimida.type,

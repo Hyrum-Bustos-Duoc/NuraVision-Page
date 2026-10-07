@@ -5,10 +5,10 @@ import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { CartDrawer } from '@/modules/carrito/ui/CartDrawer'
 import { useCarrito } from '@/modules/carrito/ui/useCarrito'
-import { NuvaLauncher } from '@/modules/nuva/ui/NuvaLauncher'
-import { NuvaPanel } from '@/modules/nuva/ui/NuvaPanel'
-import { useNuva } from '@/modules/nuva/ui/useNuva'
-import { PREGUNTAS_AYUDA } from '@/modules/nuva/domain/nuva.motor'
+import { NuriaLauncher } from '@/modules/nuria/ui/NuriaLauncher'
+import { NuriaPanel } from '@/modules/nuria/ui/NuriaPanel'
+import { useNuria } from '@/modules/nuria/ui/useNuria'
+import { PREGUNTAS_AYUDA } from '@/modules/nuria/domain/nuria.motor'
 import { NewsletterForm } from '@/modules/newsletter/ui/NewsletterForm'
 import { boton } from '@/shared/ui/nv-estilos'
 import { useContenido } from '@/modules/contenido/ui/useContenido'
@@ -65,20 +65,20 @@ const claseItemMenu = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'font-semibold text-nv-ink' : 'text-nv-muted1'
   }`
 
-function BotonNuva({ compacto = false }: { compacto?: boolean }) {
-  const { alternar, abierto } = useNuva()
+function BotonNuria({ compacto = false }: { compacto?: boolean }) {
+  const { alternar, abierto } = useNuria()
   return (
     <button
       type="button"
       onClick={alternar}
       aria-expanded={abierto}
-      aria-label="Nuva, asistente de compras y reservas"
+      aria-label="Nuria, asistente de compras y reservas"
       className={`flex items-center gap-1.5 rounded-full border border-nv-accent-line text-[12.5px] text-nv-accent transition-colors hover:bg-nv-accent-wash4 ${
         compacto ? 'h-9 w-9 justify-center' : 'px-3.5 py-[7px]'
       }`}
     >
       <span className="font-serif text-[15px] italic leading-none">N</span>
-      {!compacto && 'Nuva'}
+      {!compacto && 'Nuria'}
     </button>
   )
 }
@@ -141,6 +141,15 @@ export function ClientHeader() {
     navigate('/')
   }
 
+  // En "/" el Link no cambia la ruta y `ScrollToTop` no se dispara: la subida
+  // se hace aqui. Desde otra ruta no se toca: `ScrollToTop` ya deja la portada
+  // arriba, y animar antes la pagina que se va solo daria un doble salto.
+  function subirSiEsInicio() {
+    if (pathname !== '/') return
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' })
+  }
+
   const links = authed
     ? [
         { to: '/', label: 'Inicio', end: true },
@@ -161,14 +170,26 @@ export function ClientHeader() {
     <header className="sticky top-0 z-40 border-b border-nv-line1 bg-nv-bg/90 backdrop-blur-[14px]">
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 px-4 sm:h-[72px] sm:px-6 lg:px-10">
         <div className="flex min-w-0 items-center gap-6 xl:gap-10">
-          <Link to="/" className="flex shrink-0 items-center" aria-label="Nuravision, ir al inicio">
+          {/* Bajo 360 px (moviles de 320) el nombre a 19 px pisaba el boton de
+              Nuria: se reduce letra y separacion en vez de ocultarlo o recortarlo. */}
+          <Link
+            to="/"
+            onClick={subirSiEsInicio}
+            className="flex shrink-0 items-center gap-2.5 max-[359px]:gap-2"
+            aria-label="Estudio Nura, ir al inicio"
+          >
+            {/* El logo es un sello circular sobre fondo blanco: el recorte
+                redondo evita que el blanco se vea como un cuadrado sobre el crema. */}
             <img
-              src="/nuravision-logo.png"
-              alt="Nuravision"
-              className="h-9 w-auto sm:h-11"
-              width={800}
-              height={266}
+              src="/estudio-nura-logo.jpg"
+              alt=""
+              className="h-10 w-10 rounded-full sm:h-12 sm:w-12"
+              width={256}
+              height={256}
             />
+            <span className="whitespace-nowrap font-serif text-[19px] leading-none text-nv-ink max-[359px]:text-[15px] sm:text-[22px]">
+              Estudio Nura
+            </span>
           </Link>
           <nav aria-label="Principal" className="hidden items-center gap-0.5 lg:flex">
             {links.map((link) => (
@@ -181,10 +202,10 @@ export function ClientHeader() {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <span className="hidden sm:block">
-            <BotonNuva />
+            <BotonNuria />
           </span>
           <span className="sm:hidden">
-            <BotonNuva compacto />
+            <BotonNuria compacto />
           </span>
           <BotonCarrito />
 
@@ -316,7 +337,7 @@ const claseLinkFooter = 'text-nv-tint3 transition-colors hover:text-nv-accent-mi
 
 /** Footer global oscuro (spec §6.2). */
 export function ClientFooter() {
-  const { enviar } = useNuva()
+  const { enviar } = useNuria()
   const { footer } = useContenido().contenido
   // Un correo con parametros (`?bcc=`) haria que el mensaje de la visitante
   // saliera con copia a un tercero: se usa el original.
@@ -328,19 +349,25 @@ export function ClientFooter() {
         <div className="grid gap-12 border-b border-nv-ink3 pb-12 sm:grid-cols-3 sm:pb-[60px] lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
           <div className="sm:col-span-3 lg:col-span-1">
             {/* El dorado del logo se oscurece hacia el cafe; sobre el fondo
-                oscuro se aclara para que no se pierda. */}
+                oscuro se aclara para que no se pierda. Un solo alto en todos
+                los anchos: 24px (~72px de ancho) es el minimo en que el
+                nombre se sigue leyendo, asi que en movil no baja mas. */}
             <img
               src="/nuravision-logo.png"
               alt="Nuravision"
-              className="-ml-1.5 mb-8 h-12 w-auto brightness-[1.9] sm:h-14"
+              className="-ml-0.5 mb-8 h-6 w-auto brightness-[1.9]"
               width={800}
               height={266}
               loading="lazy"
             />
             <p className="max-w-[440px] font-serif text-[28px] font-light leading-[1.08] text-nv-bg sm:text-[34px]">
               {footer.newsletterTitulo}
-              <br />
-              <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
+              {footer.newsletterDestacado && (
+                <>
+                  <br />
+                  <em className="text-nv-accent-mid">{footer.newsletterDestacado}</em>
+                </>
+              )}
             </p>
             <NewsletterForm />
             <address className="mt-[26px] flex flex-col gap-1.5 text-[13px] not-italic leading-[1.5] text-nv-faint2">
@@ -404,7 +431,7 @@ export function ClientFooter() {
             </li>
           </ColumnaFooter>
 
-          {/* Las preguntas de ayuda las responde Nuva: es el mismo texto que da
+          {/* Las preguntas de ayuda las responde Nuria: es el mismo texto que da
               en el chat, asi que no hay dos versiones de la politica. */}
           <ColumnaFooter titulo="Ayuda">
             <li>
@@ -453,8 +480,8 @@ export function ClientLayout() {
       </main>
       <ClientFooter />
       <CartDrawer />
-      <NuvaLauncher />
-      <NuvaPanel />
+      <NuriaLauncher />
+      <NuriaPanel />
     </div>
   )
 }

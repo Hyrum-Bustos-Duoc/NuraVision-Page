@@ -18,7 +18,7 @@ export interface CarritoValue {
   subtotal: number
   /**
    * Agrega unidades. Abre el drawer salvo que se pida lo contrario: el combo y
-   * Nuva agregan sin sacar a la persona de lo que esta haciendo.
+   * Nuria agregan sin sacar a la persona de lo que esta haciendo.
    */
   agregar: (slug: string, cantidad?: number, opciones?: { abrir?: boolean }) => void
   cambiarCantidad: (slug: string, cantidad: number) => void
@@ -30,7 +30,7 @@ export interface CarritoValue {
   cerrar: () => void
 
   /**
-   * El combo y el upsell de Nuva piden entregar en la cita. El checkout lo usa
+   * El combo y el upsell de Nuria piden entregar en la cita. El checkout lo usa
    * como opcion por defecto si la persona tiene una reserva vigente.
    */
   prefiereEntregaEnCita: boolean

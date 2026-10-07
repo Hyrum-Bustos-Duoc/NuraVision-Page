@@ -100,11 +100,7 @@ export interface AiFocusOption {
 }
 
 export interface SiteContent {
-  /** Portada: tarjeta "El estudio". */
-  heroImage?: string
   heroCaption: string
-  /** Portada: tarjeta "La tienda". */
-  shopImage?: string
   aiTeaserImage?: string
   aiTeaserCaption: string
   loginImage?: string

@@ -11,8 +11,9 @@ import { etiquetaDePrecio } from '@/modules/servicios/ui/precio'
 import { useIniciarReserva } from '@/modules/reservas/ui/useIniciarReserva'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { ProductGrid, ProductGridSkeleton } from '@/modules/tienda/ui/ProductGrid'
-import { BandaNuva, TarjetaNuvaHero } from '@/modules/nuva/ui/NuvaPortada'
+import { BandaNuria, TarjetaNuriaHero } from '@/modules/nuria/ui/NuriaPortada'
 import { AppImage } from '@/shared/ui/ui'
+import { Carrusel } from '@/shared/ui/Carrusel'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Reveal } from '@/shared/ui/Reveal'
 import { boton, contenedor, linkSubrayado } from '@/shared/ui/nv-estilos'
@@ -77,7 +78,7 @@ export default function Landing() {
             </Link>
           </div>
 
-          <TarjetaNuvaHero />
+          <TarjetaNuriaHero />
 
           <div className="mt-10 flex flex-wrap gap-x-[34px] gap-y-4 border-t border-nv-line1 pt-7">
             {/* Mientras carga se muestra un guion en vez de un 0, que se leeria
@@ -97,7 +98,7 @@ export default function Landing() {
         <div className="grid gap-3 sm:gap-5">
           <TileHero
             to="/servicios"
-            imagen={c.imagenes.portadaEstudio ?? undefined}
+            fotos={c.carruseles.estudio}
             etiquetaImagen="Fotografía · Estudio"
             eyebrow={c.portada.tarjetaEstudio.eyebrow}
             titulo={c.portada.tarjetaEstudio.titulo}
@@ -105,7 +106,8 @@ export default function Landing() {
           />
           <TileHero
             to="/tienda"
-            imagen={c.imagenes.portadaTienda ?? undefined}
+            fotos={c.carruseles.tienda}
+            completas
             etiquetaImagen="Fotografía · Productos"
             eyebrow={c.portada.tarjetaTienda.eyebrow}
             titulo={c.portada.tarjetaTienda.titulo}
@@ -114,9 +116,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------------- Banda Nuva */}
+      {/* ---------------------------------------------------------- Banda Nuria */}
       <div className={`${contenedor} pb-16 lg:pb-[88px]`}>
-        <BandaNuva />
+        <BandaNuria />
       </div>
 
       {/* ----------------------------------------------- Servicios destacados */}
@@ -309,42 +311,57 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 /**
- * Foto de la portada en formato apaisado: las dos van una sobre la otra, con
- * el mismo ancho y alto, y la tarjeta anclada a la esquina inferior izquierda.
+ * Tarjeta apaisada de la portada con sus fotos en carrusel: las dos van una
+ * sobre la otra, con el mismo ancho y alto, y el texto anclado a la esquina
+ * inferior izquierda. El enlace cubre toda la tarjeta; los controles del
+ * carrusel quedan por encima y fuera de el (ver `Carrusel`).
  */
 function TileHero({
   to,
-  imagen,
+  fotos,
   etiquetaImagen,
   eyebrow,
   titulo,
   link,
+  completas = false,
 }: {
   to: string
-  imagen?: string
+  fotos: string[]
   etiquetaImagen: string
   eyebrow: string
   titulo: string
   link: string
+  /** Fotos enteras sin recortar (las de producto pueden venir en cualquier proporcion). */
+  completas?: boolean
 }) {
   return (
-    <Link
-      to={to}
-      className="group relative block aspect-[16/9] overflow-hidden rounded-md transition-transform duration-300 hover:-translate-y-1"
+    <Carrusel
+      fotos={fotos}
+      completas={completas}
+      alt={titulo}
+      etiqueta={`Fotos: ${eyebrow}`}
+      className="aspect-[16/9] rounded-md transition-transform duration-300 hover:-translate-y-1"
     >
-      {imagen ? (
-        <AppImage src={imagen} alt={titulo} className="absolute inset-0 h-full w-full" />
-      ) : (
-        <div className="placeholder-stripes absolute inset-0 flex justify-end p-4">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+      <Link to={to} className="absolute inset-0 block rounded-md">
+        {fotos.length === 0 && (
+          <div className="placeholder-stripes absolute inset-0 flex justify-end p-4">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
+          </div>
+        )}
+        {/* Texto directo sobre la foto, sin caja (2026-10-07). El velo solo
+            oscurece la esquina del texto: las fotos de productos dejan el
+            producto a la derecha y debe verse limpio. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-md bg-[radial-gradient(ellipse_75%_70%_at_0%_100%,rgba(28,30,22,0.72),rgba(28,30,22,0.25)_55%,transparent_80%)]"
+        />
+        <div className="absolute bottom-3 left-3 w-[56%] max-w-[300px] text-[#fffefb] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)] max-[359px]:w-[50%] sm:bottom-5 sm:left-5 sm:w-[62%]">
+          <p className="text-[10px] uppercase tracking-[0.15em] opacity-90">{eyebrow}</p>
+          <p className="mt-1.5 font-serif text-[17px] leading-tight sm:text-[21px]">{titulo}</p>
+          <p className="mt-2 text-xs opacity-90 sm:mt-3 sm:text-[13px]">{link}</p>
         </div>
-      )}
-      <div className="absolute bottom-2 left-2 w-[62%] max-w-[300px] rounded-md bg-nv-bg p-3 sm:bottom-4 sm:left-4 sm:p-5">
-        <p className="text-[10px] uppercase tracking-[0.15em] text-nv-accent">{eyebrow}</p>
-        <p className="mt-1.5 font-serif text-[17px] leading-tight text-nv-ink sm:text-[21px]">{titulo}</p>
-        <p className="mt-2 text-xs text-nv-ink sm:mt-3 sm:text-[13px]">{link}</p>
-      </div>
-    </Link>
+      </Link>
+    </Carrusel>
   )
 }
 

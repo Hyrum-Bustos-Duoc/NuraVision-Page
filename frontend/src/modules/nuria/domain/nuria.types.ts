@@ -1,5 +1,5 @@
-/** Accion que Nuva ofrece como pildora bajo su mensaje. */
-export type AccionNuva = 'ver-carrito' | 'ir-a-pagar' | 'ver-reservas' | 'confirmar-reserva' | 'ver-servicios'
+/** Accion que Nuria ofrece como pildora bajo su mensaje. */
+export type AccionNuria = 'ver-carrito' | 'ir-a-pagar' | 'ver-reservas' | 'confirmar-reserva' | 'ver-servicios'
 
 export interface MensajeUsuaria {
   id: number
@@ -7,9 +7,9 @@ export interface MensajeUsuaria {
   texto: string
 }
 
-export interface MensajeNuva {
+export interface MensajeNuria {
   id: number
-  de: 'nuva'
+  de: 'nuria'
   texto: string
   /** Slugs del carrusel de productos. */
   productos?: string[]
@@ -19,14 +19,14 @@ export interface MensajeNuva {
   servicioId?: string
   /** Horario ya elegido en la tarjeta: bloquea las demas pildoras. */
   horarioElegido?: string
-  acciones?: AccionNuva[]
+  acciones?: AccionNuria[]
   chips?: string[]
 }
 
-export type Mensaje = MensajeUsuaria | MensajeNuva
+export type Mensaje = MensajeUsuaria | MensajeNuria
 
 /** Lo que el motor necesita saber del mundo para responder. */
-export interface ContextoNuva {
+export interface ContextoNuria {
   productos: { slug: string; nombre: string; servicioId: string | null }[]
   servicios: { id: string; nombre: string; duracionMinutos: number; precioTexto: string }[]
   carrito: { unidades: number; totalTexto: string }
@@ -38,8 +38,8 @@ export interface ContextoNuva {
  * Respuesta del motor. `agregar` es un efecto que la interfaz ejecuta (el motor
  * es puro y no toca el carrito).
  */
-export interface RespuestaNuva {
-  mensaje: Omit<MensajeNuva, 'id' | 'de'>
+export interface RespuestaNuria {
+  mensaje: Omit<MensajeNuria, 'id' | 'de'>
   agregar?: string[]
   /** Nueva "ultima recomendacion", si esta respuesta recomienda productos. */
   recomendacion?: string[]

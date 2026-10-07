@@ -6,12 +6,12 @@ import { ProductoImagen } from '@/modules/tienda/ui/ProductoImagen'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { formatPrice } from '@/shared/lib/format'
 import { useCapaFlotante } from '@/shared/ui/useCapaFlotante'
-import type { AccionNuva, Mensaje, MensajeNuva } from '../domain/nuva.types'
-import { NuvaAvatar } from './NuvaAvatar'
-import { TarjetaServicioNuva } from './TarjetaServicioNuva'
-import { useNuva } from './useNuva'
+import type { AccionNuria, Mensaje, MensajeNuria } from '../domain/nuria.types'
+import { NuriaAvatar } from './NuriaAvatar'
+import { TarjetaServicioNuria } from './TarjetaServicioNuria'
+import { useNuria } from './useNuria'
 
-const ETIQUETA_ACCION: Record<AccionNuva, string> = {
+const ETIQUETA_ACCION: Record<AccionNuria, string> = {
   'ver-carrito': 'Ver carrito →',
   'ir-a-pagar': 'Ir a pagar →',
   'ver-reservas': 'Ver mis reservas →',
@@ -19,33 +19,33 @@ const ETIQUETA_ACCION: Record<AccionNuva, string> = {
   'ver-servicios': 'Ver servicios →',
 }
 
-/** Panel de chat de Nuva (spec §12.2). En movil ocupa la pantalla completa. */
-export function NuvaPanel() {
-  const nuva = useNuva()
+/** Panel de chat de Nuria (spec §12.2). En movil ocupa la pantalla completa. */
+export function NuriaPanel() {
+  const nuria = useNuria()
   const { abrir: abrirCarrito } = useCarrito()
   const navigate = useNavigate()
   const [texto, setTexto] = useState('')
   const lista = useRef<HTMLDivElement>(null)
-  const entrada = useCapaFlotante<HTMLInputElement>(nuva.abierto, nuva.cerrar)
+  const entrada = useCapaFlotante<HTMLInputElement>(nuria.abierto, nuria.cerrar)
 
   // Auto-scroll al final con cada mensaje, con "escribiendo" y al abrir.
   useEffect(() => {
     const el = lista.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [nuva.mensajes.length, nuva.escribiendo, nuva.abierto])
+  }, [nuria.mensajes.length, nuria.escribiendo, nuria.abierto])
 
-  if (!nuva.abierto) return null
+  if (!nuria.abierto) return null
 
-  const ultimo = nuva.mensajes[nuva.mensajes.length - 1]
-  const chips = !nuva.escribiendo && ultimo?.de === 'nuva' ? (ultimo.chips ?? []) : []
+  const ultimo = nuria.mensajes[nuria.mensajes.length - 1]
+  const chips = !nuria.escribiendo && ultimo?.de === 'nuria' ? (ultimo.chips ?? []) : []
 
   function enviar() {
-    nuva.enviar(texto)
+    nuria.enviar(texto)
     setTexto('')
   }
 
-  function ejecutar(accion: AccionNuva) {
-    nuva.cerrar()
+  function ejecutar(accion: AccionNuria) {
+    nuria.cerrar()
     if (accion === 'ver-carrito') abrirCarrito()
     if (accion === 'ir-a-pagar') navigate('/checkout')
     if (accion === 'ver-reservas') navigate('/mis-reservas')
@@ -54,33 +54,33 @@ export function NuvaPanel() {
   }
 
   function elegirChip(chip: string) {
-    if (chip === 'No, gracias') nuva.declinar()
-    else nuva.enviar(chip)
+    if (chip === 'No, gracias') nuria.declinar()
+    else nuria.enviar(chip)
   }
 
   return (
     <section
       role="dialog"
-      aria-label="Nuva, asistente de compras y reservas"
+      aria-label="Nuria, asistente de compras y reservas"
       className="animate-nv-pop fixed inset-0 z-[97] flex flex-col overflow-hidden bg-nv-bg sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[min(660px,calc(100dvh-40px))] sm:w-[410px] sm:rounded-[18px] sm:border sm:border-nv-line2 sm:shadow-panel"
     >
       <header className="flex items-center gap-3 bg-nv-ink px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-nv-bg">
-        <NuvaAvatar tamano={38} enLinea />
+        <NuriaAvatar tamano={38} enLinea />
         <div className="min-w-0 flex-1">
-          <p className="font-serif text-[21px] leading-none">Nuva</p>
+          <p className="font-serif text-[21px] leading-none">Nuria</p>
           <p className="mt-1 text-[11.5px] leading-snug text-nv-soft2">Asistente de compras y reservas · en línea</p>
         </div>
         <button
           type="button"
-          onClick={nuva.reiniciar}
+          onClick={nuria.reiniciar}
           className="rounded-full px-2.5 py-1.5 text-xs text-nv-faint2 transition-colors hover:bg-nv-ink2 hover:text-nv-bg"
         >
           Reiniciar
         </button>
         <button
           type="button"
-          onClick={nuva.cerrar}
-          aria-label="Cerrar Nuva"
+          onClick={nuria.cerrar}
+          aria-label="Cerrar Nuria"
           className="flex h-[30px] w-[30px] items-center justify-center rounded-full transition-colors hover:bg-nv-ink2"
         >
           <X className="h-4 w-4" strokeWidth={1.5} />
@@ -88,12 +88,12 @@ export function NuvaPanel() {
       </header>
 
       <div ref={lista} className="flex-1 space-y-3 overflow-y-auto px-4 py-[18px]" aria-live="polite">
-        {nuva.mensajes.map((m) => (
+        {nuria.mensajes.map((m) => (
           <Burbuja key={m.id} mensaje={m} onAccion={ejecutar} />
         ))}
-        {nuva.escribiendo && (
+        {nuria.escribiendo && (
           <div className="animate-nv-rise inline-flex gap-1.5 rounded-[16px_16px_16px_4px] border border-nv-line1 bg-nv-paper2 px-4 py-3.5">
-            <span className="sr-only">Nuva está escribiendo…</span>
+            <span className="sr-only">Nuria está escribiendo…</span>
             {[0, 150, 300].map((delay) => (
               <span
                 key={delay}
@@ -133,7 +133,7 @@ export function NuvaPanel() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Escribe: “quiero una manicure el jueves”"
-            aria-label="Mensaje para Nuva"
+            aria-label="Mensaje para Nuria"
             // 16px en movil: con menos, iOS hace zoom al enfocar.
             className="min-w-0 flex-1 bg-transparent py-2 text-base text-nv-ink outline-none placeholder:text-nv-faint1 sm:text-[13.5px]"
           />
@@ -147,14 +147,14 @@ export function NuvaPanel() {
           </button>
         </form>
         <p className="mt-2 text-center text-[10.5px] text-nv-faint1">
-          Nuva puede equivocarse. Confirmas precio y hora antes de pagar.
+          Nuria puede equivocarse. Confirmas precio y hora antes de pagar.
         </p>
       </footer>
     </section>
   )
 }
 
-function Burbuja({ mensaje, onAccion }: { mensaje: Mensaje; onAccion: (a: AccionNuva) => void }) {
+function Burbuja({ mensaje, onAccion }: { mensaje: Mensaje; onAccion: (a: AccionNuria) => void }) {
   if (mensaje.de === 'usuaria') {
     return (
       <div className="animate-nv-rise flex justify-end [animation-duration:0.25s]">
@@ -190,14 +190,14 @@ function Burbuja({ mensaje, onAccion }: { mensaje: Mensaje; onAccion: (a: Accion
   )
 }
 
-function TarjetaDeHorarios({ mensaje }: { mensaje: MensajeNuva }) {
-  const { elegirHorario } = useNuva()
-  return <TarjetaServicioNuva mensaje={mensaje} onElegir={(h) => elegirHorario(mensaje, h)} />
+function TarjetaDeHorarios({ mensaje }: { mensaje: MensajeNuria }) {
+  const { elegirHorario } = useNuria()
+  return <TarjetaServicioNuria mensaje={mensaje} onElegir={(h) => elegirHorario(mensaje, h)} />
 }
 
-function Carrusel({ mensaje }: { mensaje: MensajeNuva }) {
+function Carrusel({ mensaje }: { mensaje: MensajeNuria }) {
   const { porSlug } = useCatalogo()
-  const { agregados, agregarProducto, cerrar } = useNuva()
+  const { agregados, agregarProducto, cerrar } = useNuria()
   const navigate = useNavigate()
 
   return (

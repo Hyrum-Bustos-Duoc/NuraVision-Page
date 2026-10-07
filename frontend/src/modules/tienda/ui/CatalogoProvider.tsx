@@ -8,7 +8,7 @@ import { CatalogoContext, type CatalogoValue } from './catalogo.context'
  * Catalogo de la tienda, cargado una sola vez para toda la app.
  *
  * Va en un contexto y no en un hook suelto porque lo leen a la vez la portada,
- * la tienda, el detalle, el carrito (que necesita los precios) y Nuva: con un
+ * la tienda, el detalle, el carrito (que necesita los precios) y Nuria: con un
  * hook por pantalla serian cinco consultas iguales por visita.
  */
 export function CatalogoProvider({ children }: { children: ReactNode }) {

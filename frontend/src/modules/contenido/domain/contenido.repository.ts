@@ -1,4 +1,4 @@
-import type { ClaveImagen, ContenidoSitio } from './contenido.types'
+import type { ContenidoSitio, DestinoFoto } from './contenido.types'
 
 /** Lo guardado tal como viene de la base, sin validar: lo valida `contenidoDesdeGuardado`. */
 export interface ContenidoGuardado {
@@ -11,5 +11,5 @@ export interface ContenidoRepository {
   obtener(): Promise<ContenidoGuardado | null>
   guardar(contenido: ContenidoSitio): Promise<ContenidoGuardado>
   /** Sube una foto y devuelve su URL publica. */
-  subirImagen(clave: ClaveImagen, archivo: File): Promise<string>
+  subirImagen(destino: DestinoFoto, archivo: File): Promise<string>
 }

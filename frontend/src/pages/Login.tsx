@@ -1,14 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAppState } from '@/shared/state/AppState'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { rutaDeRetorno, rutaTrasIniciarSesion } from '@/modules/auth/ui/ruta-inicial'
-import { AppImage, Button, Kicker } from '@/shared/ui/ui'
-import type { Role } from '@/shared/types'
+import { AppImage, Button } from '@/shared/ui/ui'
 import { useContenido } from '@/modules/contenido/ui/useContenido'
 
 export default function Login() {
-  const { login, realDataOnly, setRealDataOnly } = useAppState()
   const { contenido } = useContenido()
   const { signInWithPassword } = useAuth()
   const navigate = useNavigate()
@@ -23,15 +20,6 @@ export default function Login() {
   const [remember, setRemember] = useState(false)
   const [entrando, setEntrando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  function enterAs(role: Role) {
-    login(role)
-    // Administracion entra directo al listado de reservas: es lo unico del
-    // panel que lee datos reales, y el resto sigue con los de ejemplo.
-    if (role === 'profesional') navigate('/profesional')
-    else if (role === 'administrador') navigate('/admin/reservas')
-    else navigate('/')
-  }
 
   async function iniciarSesion() {
     setEntrando(true)
@@ -127,80 +115,6 @@ export default function Login() {
             </Link>
           </p>
         </form>
-
-        <div className="mt-10 max-w-sm border-t border-line-soft pt-6">
-          <Kicker>Prototipo · Entrar como</Kicker>
-          {/* Estos atajos siguen siendo del prototipo: cambian el rol en el
-              estado local pero NO crean una sesión de Supabase. Una reserva
-              hecha así se guarda como invitada y no aparece en "mis
-              reservas", porque no queda asociada a ninguna cuenta. */}
-          <p className="mt-2 text-xs text-muted">
-            Atajos del prototipo. No crean una sesión real: para ver tus reservas guardadas, entra
-            con tu correo y contraseña.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => enterAs('cliente')}
-              className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-white"
-            >
-              Cliente
-            </button>
-            <button
-              onClick={() => enterAs('profesional')}
-              className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-white"
-            >
-              Profesional
-            </button>
-            <button
-              onClick={() => enterAs('administrador')}
-              className="rounded-full border border-line px-4 py-2 text-sm text-ink hover:bg-white"
-            >
-              Administrador
-            </button>
-            <button
-              disabled
-              className="rounded-full border border-dashed border-line px-4 py-2 text-sm text-muted-light"
-            >
-              Estado de error
-            </button>
-          </div>
-
-          {/* La migración a Supabase está a medias: reservas, usuarios y
-              contenido del sitio siguen siendo datos de muestra. Este
-              interruptor los oculta para poder ver el avance real. */}
-          <div className="mt-6 rounded-xl border border-line-soft bg-white/60 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-ink">Solo datos de Supabase</p>
-                <p className="mt-1 text-xs text-muted">
-                  Oculta toda la información de muestra. Queda únicamente lo que existe en la base
-                  de datos.
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={realDataOnly}
-                aria-label="Mostrar solo datos de Supabase"
-                onClick={() => setRealDataOnly(!realDataOnly)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                  realDataOnly ? 'bg-olive-600' : 'bg-line'
-                }`}
-              >
-                <span
-                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                    realDataOnly ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-            {realDataOnly && (
-              <p className="mt-3 border-t border-line-soft pt-3 text-xs text-olive-700">
-                Activo. Las secciones que todavía no están migradas se verán vacías.
-              </p>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Fijo al alto de la pantalla: la columna del formulario es mas alta que

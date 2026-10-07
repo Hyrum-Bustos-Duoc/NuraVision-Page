@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { Mensaje, MensajeNuva } from '../domain/nuva.types'
+import type { Mensaje, MensajeNuria } from '../domain/nuria.types'
 
 /** Horario elegido en la tarjeta de servicio, ya resuelto contra la agenda. */
 export interface HorarioElegido {
@@ -10,7 +10,7 @@ export interface HorarioElegido {
   profesionalNombre: string
 }
 
-export interface NuvaValue {
+export interface NuriaValue {
   abierto: boolean
   abrir: () => void
   cerrar: () => void
@@ -21,11 +21,11 @@ export interface NuvaValue {
   agregados: ReadonlySet<string>
   /** Abre el panel y envia el texto como si lo hubiera escrito la persona. */
   enviar: (texto: string) => void
-  agregarProducto: (mensaje: MensajeNuva, slug: string) => void
-  elegirHorario: (mensaje: MensajeNuva, horario: HorarioElegido) => void
+  agregarProducto: (mensaje: MensajeNuria, slug: string) => void
+  elegirHorario: (mensaje: MensajeNuria, horario: HorarioElegido) => void
   /** Respuesta local al chip "No, gracias" (no pasa por el motor). */
   declinar: () => void
   reiniciar: () => void
 }
 
-export const NuvaContext = createContext<NuvaValue | null>(null)
+export const NuriaContext = createContext<NuriaValue | null>(null)
