@@ -111,7 +111,7 @@ export function Carrusel({
         <>
           <div
             aria-hidden
-            className="pointer-events-none absolute bottom-0 right-0 z-[5] h-20 w-48 bg-[radial-gradient(ellipse_at_bottom_right,rgba(28,30,22,0.55),transparent_70%)] sm:h-24 sm:w-60"
+            className="pointer-events-none absolute bottom-0 right-0 z-[5] h-24 w-56 bg-[radial-gradient(ellipse_at_bottom_right,rgba(28,30,22,0.7),rgba(28,30,22,0.3)_45%,transparent_75%)] sm:h-28 sm:w-72"
           />
           <div className="absolute bottom-2 right-2 z-10 flex items-center gap-0.5 text-[#fffefb] sm:bottom-4 sm:right-4 sm:gap-1">
             <BotonCarrusel etiqueta="Foto anterior" onClick={() => ir(actual - 1)}>

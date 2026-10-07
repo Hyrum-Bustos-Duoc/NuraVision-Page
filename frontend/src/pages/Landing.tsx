@@ -343,11 +343,12 @@ function TileHero({
             <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-nv-soft3">{etiquetaImagen}</span>
           </div>
         )}
-        {/* Texto directo sobre la foto, sin caja (2026-10-07). El degradado
-            inferior le da contraste aun con fotos claras. */}
+        {/* Texto directo sobre la foto, sin caja (2026-10-07). El velo solo
+            oscurece la esquina del texto: las fotos de productos dejan el
+            producto a la derecha y debe verse limpio. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 rounded-b-md bg-gradient-to-t from-[rgba(28,30,22,0.72)] via-[rgba(28,30,22,0.3)] to-transparent"
+          className="pointer-events-none absolute inset-0 rounded-md bg-[radial-gradient(ellipse_75%_70%_at_0%_100%,rgba(28,30,22,0.72),rgba(28,30,22,0.25)_55%,transparent_80%)]"
         />
         <div className="absolute bottom-3 left-3 w-[56%] max-w-[300px] text-[#fffefb] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)] max-[359px]:w-[50%] sm:bottom-5 sm:left-5 sm:w-[62%]">
           <p className="text-[10px] uppercase tracking-[0.15em] opacity-90">{eyebrow}</p>
