@@ -6,9 +6,8 @@ import { AppImage, Button, Kicker } from '@/shared/ui/ui'
 
 export default function Professionals() {
   // El equipo sale de la base. Antes venia de `useAppState`, que solo conoce
-  // los datos de ejemplo: con el modo "solo Supabase" activo la lista salia
-  // vacia, y sin el mostraba personas que no trabajan en el estudio y cuyos
-  // ids no existen en la base, asi que el perfil daba "no encontrado".
+  // los datos de ejemplo: mostraba personas que no trabajan en el estudio y
+  // cuyos ids no existen en la base, asi que el perfil daba "no encontrado".
   const { equipo, cargando, error } = useEquipoConAgenda()
 
   // Las reservas siguen siendo locales: es lo que hay para marcar las horas ya

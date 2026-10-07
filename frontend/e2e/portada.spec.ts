@@ -83,7 +83,6 @@ test.describe('inicio de sesion', () => {
     await page.goto('/login')
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.getByText(/Prototipo/)).toHaveCount(0)
-    await expect(page.getByText('Solo datos de Supabase')).toHaveCount(0)
     await expect(page.getByRole('switch')).toHaveCount(0)
   })
 

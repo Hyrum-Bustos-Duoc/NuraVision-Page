@@ -8,11 +8,6 @@ import type { SiteContent } from '@/shared/types'
  * otro. Una tabla de una sola fila para esto habria pedido migracion, RLS y un
  * modulo entero a cambio de nada.
  *
- * Antes salia de `seed.ts` a traves de `useAppState`, lo que tenia un efecto
- * que no se buscaba: en modo "solo Supabase" el estado se vaciaba entero y con
- * el se iban tambien estos textos, asi que la portada perdia el pie de la foto
- * y el analisis de IA se quedaba sin sus opciones de enfoque.
- *
  * Las imagenes son opcionales: un hueco sin imagen muestra su marcador a
  * rayas. Las de la portada son fotos de Unsplash (licencia libre, uso
  * comercial sin atribucion) mientras el estudio no tenga fotos propias;
