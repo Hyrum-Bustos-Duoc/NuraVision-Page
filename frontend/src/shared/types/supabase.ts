@@ -137,6 +137,13 @@ export interface Database {
           profesional_id: number | null
           /** timestamptz */
           creado_en: string
+          /**
+           * date, nullable (0016). PostgREST la entrega como 'YYYY-MM-DD', sin
+           * hora ni zona. Replica VALIDADA de
+           * auth.users.raw_user_meta_data.fecha_nacimiento: null = no la declaro
+           * o era invalida. Check: entre 1920-01-01 y current_date.
+           */
+          fecha_nacimiento: string | null
         }
         Insert: {
           id: string
@@ -146,6 +153,7 @@ export interface Database {
           rol?: UsuarioRol
           profesional_id?: number | null
           creado_en?: string
+          fecha_nacimiento?: string | null
         }
         Update: {
           id?: string
@@ -155,6 +163,7 @@ export interface Database {
           rol?: UsuarioRol
           profesional_id?: number | null
           creado_en?: string
+          fecha_nacimiento?: string | null
         }
         Relationships: []
       }

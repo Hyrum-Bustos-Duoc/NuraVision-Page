@@ -1,4 +1,5 @@
 import {
+  diasEntre,
   esFechaISO,
   fechaDesdePartes,
   fechaLegible,
@@ -115,4 +116,14 @@ describe('limitarFecha', () => {
 it('fechaLegible da el dia de la semana y el año en español', () => {
   expect(fechaLegible('2026-10-08')).toBe('jueves 8 de octubre de 2026')
   expect(fechaLegible('1990-03-04')).toBe('domingo 4 de marzo de 1990')
+})
+
+describe('diasEntre', () => {
+  it('cuenta dias de calendario, incluido el cambio de horario y el de año', () => {
+    expect(diasEntre('2026-10-08', '2026-10-08')).toBe(0)
+    expect(diasEntre('2026-09-01', '2026-09-15')).toBe(14)
+    expect(diasEntre('2026-12-20', '2027-01-05')).toBe(16)
+    expect(diasEntre('2028-02-28', '2028-03-01')).toBe(2)
+    expect(diasEntre('2026-10-08', '2026-10-07')).toBe(-1)
+  })
 })

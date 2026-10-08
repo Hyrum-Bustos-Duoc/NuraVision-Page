@@ -1,0 +1,73 @@
+-- ============================================================================
+-- NuraVision · 0017 · Una clienta ya no reescribe su propia fila de perfiles
+-- ============================================================================
+-- Hallazgo de nv-rls-auditor (2026-10-08, severidad media, heredado de 0010).
+--
+-- 0010 creo la politica «Correccion del perfil propio» (UPDATE con
+-- `id = auth.uid()`) y concedio `update` de tabla entera a `authenticated`.
+-- Juntas dejan que cualquier cuenta reescriba TODA su fila: `rol`, `email`,
+-- `profesional_id`, `nombre`, `telefono`, `fecha_nacimiento`.
+--
+-- No escala permisos: `es_staff()` y `mi_profesional_id()` leen el JWT
+-- (`app_metadata`), no esta tabla. Pero falsea lo que el personal ve en el
+-- panel de usuarios: una clienta puede figurar como `admin`, con otro correo o
+-- atada a la ficha de una profesional.
+--
+-- Nadie la usa: ningun codigo del front actualiza `perfiles` con sesion de
+-- clienta. El unico que escribe es el panel de administracion, y lo hace con la
+-- politica «El personal gestiona los perfiles», que esta migracion no toca.
+--
+-- Por que se borra la politica y NO se restringe el grant por columnas:
+-- clientela y personal son el mismo rol `authenticated`. Un
+-- `revoke update ... ; grant update (nombre, telefono)` tambien le quitaria al
+-- panel la capacidad de cambiar `rol` (el panel escribe `nombre`, `telefono` y
+-- `rol`). Sin politica de UPDATE propia,
+-- el grant de tabla sigue ahi para el personal y a la clienta la RLS le filtra
+-- el UPDATE a cero filas (no da error: PostgREST responde 200/204 sin cambios).
+--
+-- Lo que NO cambia:
+--   - «Lectura del perfil propio»: la clienta sigue leyendo su fila.
+--   - El alta y la sincronizacion desde `auth.users` (`sincronizar_perfil`,
+--     0010/0016) son `security definer`: escriben como dueno de la tabla y no
+--     pasan por esta politica.
+--
+-- `if exists` a proposito: es un borrado, no una creacion. Si alguien ya la
+-- quito a mano, el estado final es el mismo y no hay esquema a medias.
+-- ============================================================================
+
+drop policy if exists "Correccion del perfil propio" on public.perfiles;
+
+-- ----------------------------------------------------------------------------
+-- Si un dia la clienta edita su perfil desde la app
+-- ----------------------------------------------------------------------------
+-- No recrees la politica de 0010 tal cual. Una version limitada congela las
+-- columnas que no le corresponden comparandolas con la fila guardada (el
+-- `with check` no ve OLD; la subconsulta lee la fila actual, permitida por
+-- «Lectura del perfil propio»):
+--
+--   create policy "Correccion del perfil propio"
+--     on public.perfiles for update to authenticated
+--     using (id = auth.uid())
+--     with check (
+--       id = auth.uid()
+--       and (rol, email, profesional_id, creado_en) is not distinct from
+--           (select row(p.rol, p.email, p.profesional_id, p.creado_en)
+--            from public.perfiles p where p.id = auth.uid())
+--     );
+--
+-- El `row(...)` dentro de la subconsulta no es decorativo: sin el, Postgres
+-- rechaza `is not distinct from` con "subquery must return only one column".
+--
+-- La lista congelada es una lista negra: cada columna nueva de `perfiles`
+-- obliga a revisarla, o quedara editable por la clienta sin que nadie lo note.
+--
+-- Va en su propia migracion, con el cambio del front que la use, y pasa por
+-- nv-rls-auditor.
+
+-- ----------------------------------------------------------------------------
+-- Rollback (recrea exactamente la politica de 0010; reabre el hallazgo)
+-- ----------------------------------------------------------------------------
+--   create policy "Correccion del perfil propio"
+--     on public.perfiles for update to authenticated
+--     using (id = auth.uid())
+--     with check (id = auth.uid());

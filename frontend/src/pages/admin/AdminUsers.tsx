@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { Cake, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { useToast } from '@/shared/state/Toast'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useUsuarios } from '@/modules/usuarios/ui/useUsuarios'
@@ -7,6 +7,10 @@ import { useEquipoGestion } from '@/modules/profesionales/ui/useEquipoGestion'
 import {
   ETIQUETA_ROL,
   ROLES,
+  VENTANA_CUMPLEANOS_DIAS,
+  diasHastaCumpleanos,
+  etiquetaDiasRestantes,
+  proximosCumpleanos,
   type DatosPerfil,
   type NuevaCuenta,
   type Usuario,
@@ -15,7 +19,8 @@ import {
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { Button, FilterPills } from '@/shared/ui/ui'
 import { SelectField, TextField } from '@/shared/ui/form'
-import { formatLongDate, initialsFromName } from '@/shared/lib/format'
+import { fechaLocalDeInstante, formatDiaMes, formatLongDate, initialsFromName } from '@/shared/lib/format'
+import { hoyISO } from '@/shared/lib/calendario'
 import { CampoBusqueda } from '@/shared/ui/controles'
 import { botonFila, contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
 
@@ -64,7 +69,10 @@ export default function AdminUsers() {
   const [borrando, setBorrando] = useState<Usuario | null>(null)
 
   const [busqueda, setBusqueda] = useState('')
-  const visibles = useMemo(() => {
+  const [soloCumpleanos, setSoloCumpleanos] = useState(false)
+  // Fecha local del navegador, no UTC: a las 22:30 en Chile ya es mañana en UTC.
+  const hoy = hoyISO()
+  const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase()
     return gestion.usuarios.filter(
       (u) =>
@@ -74,6 +82,11 @@ export default function AdminUsers() {
           (u.email ?? '').toLowerCase().includes(termino)),
     )
   }, [gestion.usuarios, filtro, busqueda])
+  // El contador cuenta sobre lo ya filtrado por rol y busqueda: asi el boton
+  // nunca anuncia (3) encima de «Nadie cumple años…».
+  const proximos = proximosCumpleanos(filtrados, hoy)
+  // Las tres condiciones a la vez; inactivo, se conserva el orden de la lista.
+  const visibles = soloCumpleanos ? proximos.map((x) => x.cuenta) : filtrados
 
   const cuentas = useMemo(() => {
     const porRol = Object.fromEntries(
@@ -141,14 +154,31 @@ export default function AdminUsers() {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <FilterPills
-          options={[
-            { value: 'todos', label: `Todos (${cuentas.todos})` },
-            ...ROLES.map((r) => ({ value: r, label: `${ETIQUETA_ROL[r]} (${cuentas[r]})` })),
-          ]}
-          value={filtro}
-          onChange={(v) => setFiltro(v as UsuarioRol | 'todos')}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterPills
+            options={[
+              { value: 'todos', label: `Todos (${cuentas.todos})` },
+              ...ROLES.map((r) => ({ value: r, label: `${ETIQUETA_ROL[r]} (${cuentas[r]})` })),
+            ]}
+            value={filtro}
+            onChange={(v) => setFiltro(v as UsuarioRol | 'todos')}
+          />
+          {/* Interruptor aparte y no una pildora mas del rol: se combina con
+              el rol elegido en vez de reemplazarlo. */}
+          <button
+            type="button"
+            aria-pressed={soloCumpleanos}
+            onClick={() => setSoloCumpleanos((v) => !v)}
+            className={`inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
+              soloCumpleanos
+                ? 'border-nv-accent bg-nv-accent text-nv-bg'
+                : 'border-line bg-paper text-ink hover:bg-ivory'
+            }`}
+          >
+            <Cake aria-hidden="true" className="h-4 w-4" />
+            Próximos cumpleaños ({proximos.length})
+          </button>
+        </div>
         <CampoBusqueda
           value={busqueda}
           onChange={setBusqueda}
@@ -171,10 +201,15 @@ export default function AdminUsers() {
 
       {!gestion.cargando && !gestion.error && (
         <div className={`mt-6 ${tabla.contenedor}`}>
-          <table className="w-full min-w-[820px] text-sm">
+          {/* Cabe a 1280 px con nombre y correo largos: el ancho minimo solo
+              impide que en movil se aplaste, y los textos largos hacen salto
+              (nombre) o se truncan con su `title` (correo). Cumpleaños va justo
+              despues del nombre para que en movil se vea sin desplazar. */}
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className={tabla.cabecera}>
                 <th className={tabla.th}>Usuario</th>
+                <th className={tabla.th}>Cumpleaños</th>
                 <th className={tabla.th}>Contacto</th>
                 <th className={tabla.th}>Rol</th>
                 <th className={tabla.th}>Registro</th>
@@ -192,7 +227,7 @@ export default function AdminUsers() {
                         {initialsFromName(u.nombre)}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-medium text-ink">{u.nombre}</p>
+                        <p className="break-words font-medium text-ink">{u.nombre}</p>
                         {u.profesionalId && (
                           <p className="text-xs text-muted">
                             Ficha: {nombrePorFicha[u.profesionalId] ?? `#${u.profesionalId}`}
@@ -202,7 +237,12 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className={tabla.td}>
-                    <p className="text-ink">{u.email ?? '—'}</p>
+                    <CeldaCumpleanos fechaNacimiento={u.fechaNacimiento} hoy={hoy} />
+                  </td>
+                  <td className={tabla.td}>
+                    <p className="max-w-[12rem] truncate text-ink" title={u.email ?? undefined}>
+                      {u.email ?? '—'}
+                    </p>
                     <p className="text-xs text-muted">{u.telefono ?? '—'}</p>
                   </td>
                   <td className={tabla.td}>
@@ -213,8 +253,10 @@ export default function AdminUsers() {
                       {ETIQUETA_ROL[u.rol]}
                     </span>
                   </td>
-                  <td className={`${tabla.td} whitespace-nowrap text-muted first-letter:uppercase`}>
-                    {formatLongDate(u.creadoEn.slice(0, 10))}
+                  <td className={`${tabla.td} min-w-[6.5rem] text-muted first-letter:uppercase`}>
+                    {/* `creado_en` es un instante UTC: cortarlo en la "T" daria el
+                        dia siguiente a una cuenta creada de noche en Chile. */}
+                    {formatLongDate(fechaLocalDeInstante(u.creadoEn))}
                   </td>
                   <td className={tabla.td}>
                     <div className="flex justify-end gap-2">
@@ -249,8 +291,12 @@ export default function AdminUsers() {
               ))}
               {visibles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-muted">
-                    {busqueda ? `Ningún usuario coincide con «${busqueda}».` : 'No hay usuarios con este rol.'}
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted">
+                    {soloCumpleanos
+                      ? `Nadie cumple años en los próximos ${VENTANA_CUMPLEANOS_DIAS} días.`
+                      : busqueda
+                        ? `Ningún usuario coincide con «${busqueda}».`
+                        : 'No hay usuarios con este rol.'}
                   </td>
                 </tr>
               )}
@@ -318,6 +364,34 @@ export default function AdminUsers() {
           </div>
         }
       />
+    </div>
+  )
+}
+
+/**
+ * Dia y mes del cumpleaños, sin año ni edad. Si cae dentro de la ventana, una
+ * marca con los dias que faltan; el de hoy va en el acento, sin mas ruido.
+ */
+function CeldaCumpleanos({ fechaNacimiento, hoy }: { fechaNacimiento: string | null; hoy: string }) {
+  if (fechaNacimiento === null) return <span className="text-muted">—</span>
+  const dias = diasHastaCumpleanos(fechaNacimiento, hoy)
+  return (
+    <div className="flex flex-col items-start gap-1 whitespace-nowrap">
+      <span className={dias === 0 ? 'font-medium text-ink' : 'text-ink'}>
+        {formatDiaMes(fechaNacimiento)}
+      </span>
+      {dias <= VENTANA_CUMPLEANOS_DIAS && (
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+            dias === 0
+              ? 'border-nv-accent-line2 bg-nv-accent-wash4 text-nv-accent'
+              : 'border-line-soft text-nv-muted1'
+          }`}
+        >
+          {dias === 0 && <Cake aria-hidden="true" className="h-3 w-3" />}
+          {etiquetaDiasRestantes(dias)}
+        </span>
+      )}
     </div>
   )
 }

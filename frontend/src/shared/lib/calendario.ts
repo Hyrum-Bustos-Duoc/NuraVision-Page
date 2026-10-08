@@ -54,6 +54,20 @@ export function sumarMeses(iso: string, meses: number): string {
   return fechaDesdePartes(anio, mes + meses, dia)
 }
 
+/**
+ * Dias de calendario de `desde` a `hasta` (negativo si `hasta` es anterior).
+ *
+ * Se cuentan sobre `Date.UTC` de las partes, no sobre la hora local: en Chile
+ * el dia del cambio de horario dura 23 o 25 horas, y dividir milisegundos
+ * locales por 86 400 000 daria un dia de mas o de menos. En UTC todos los dias
+ * duran lo mismo, y aqui solo representan fechas, no instantes.
+ */
+export function diasEntre(desde: string, hasta: string): number {
+  const a = partesISO(desde)
+  const b = partesISO(hasta)
+  return Math.round((Date.UTC(b.anio, b.mes, b.dia) - Date.UTC(a.anio, a.mes, a.dia)) / 86_400_000)
+}
+
 /** Los textos ISO ordenan igual que las fechas, por eso se comparan tal cual. */
 export function limitarFecha(iso: string, minimo: string, maximo: string): string {
   if (iso < minimo) return minimo
