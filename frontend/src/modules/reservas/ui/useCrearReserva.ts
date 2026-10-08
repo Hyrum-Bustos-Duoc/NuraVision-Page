@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { crearReserva, enviarConfirmacion } from '../application'
 import type { NuevaReserva } from '../domain/reserva.types'
 import { reservaRepository } from '../infrastructure/supabase-reserva.repository'
@@ -19,6 +19,8 @@ interface EstadoCrearReserva {
    * bandeja donde no hay nada.
    */
   correoEnviado: boolean | null
+  /** Olvida el error del ultimo intento, al salir o reentrar al paso que lo mostro. */
+  limpiarError: () => void
 }
 
 /**
@@ -32,8 +34,19 @@ export function useCrearReserva(): EstadoCrearReserva {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [correoEnviado, setCorreoEnviado] = useState<boolean | null>(null)
+  /**
+   * Cerrojo contra el doble envio («Pagar abono y reservar» dos veces seguidas).
+   *
+   * El boton se deshabilita con `guardando`, pero eso es estado y llega en el
+   * siguiente render: un segundo clic que entre antes crearia otra reserva con
+   * otro codigo. La ref cambia en el acto. El segundo intento resuelve `false`
+   * sin tocar `error`, porque no fallo nada: el primero sigue en curso.
+   */
+  const enCurso = useRef(false)
 
   const crear = useCallback(async (nueva: NuevaReserva): Promise<boolean> => {
+    if (enCurso.current) return false
+    enCurso.current = true
     setGuardando(true)
     setError(null)
     setCorreoEnviado(null)
@@ -62,9 +75,12 @@ export function useCrearReserva(): EstadoCrearReserva {
       setError(e instanceof Error ? e.message : 'No se pudo guardar la reserva.')
       return false
     } finally {
+      enCurso.current = false
       setGuardando(false)
     }
   }, [])
 
-  return { crear, guardando, error, correoEnviado }
+  const limpiarError = useCallback(() => setError(null), [])
+
+  return { crear, guardando, error, correoEnviado, limpiarError }
 }

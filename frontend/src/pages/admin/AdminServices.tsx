@@ -5,7 +5,10 @@ import { categoryLabel, serviceCategories } from '@/modules/servicios/domain/ser
 import { useServiciosGestion } from '@/modules/servicios/ui/useServiciosGestion'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { EditorVariantes } from '@/modules/servicios/ui/EditorVariantes'
-import { motivoParaNoGuardarVariantes } from '@/modules/servicios/domain/servicio.reglas'
+import {
+  motivoParaNoGuardarAbono,
+  motivoParaNoGuardarVariantes,
+} from '@/modules/servicios/domain/servicio.reglas'
 import type { DatosServicio, Servicio } from '@/modules/servicios/application'
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { ImageUploader } from '@/shared/components/ImageUploader'
@@ -34,6 +37,9 @@ const BORRADOR_VACIO: DatosServicio = {
   // El editor de variantes llega en el siguiente paso. Hasta entonces un
   // servicio nuevo nace sin pregunta, que es como se comportan los 17 actuales.
   variantes: null,
+  // En 0 a proposito, aunque la categoria por defecto sea Uñas: el monto lo
+  // decide el estudio, y el formulario avisa al guardar si falta.
+  abono: 0,
 }
 
 /** Entidad -> borrador del formulario. Solo quita el `id`. */
@@ -51,6 +57,7 @@ function aBorrador(servicio: Servicio): DatosServicio {
     // Se arrastran tal cual: el formulario todavia no las muestra, y perderlas
     // al guardar otro campo seria borrar la configuracion sin avisar.
     variantes: servicio.variantes,
+    abono: servicio.abono,
   }
 }
 
@@ -175,7 +182,12 @@ export default function AdminServices() {
                     </td>
                     <td className={`${tabla.td} whitespace-nowrap text-ink`}>{categoryLabel(s.categoria)}</td>
                     <td className={`${tabla.td} whitespace-nowrap text-ink`}>{s.duracionMinutos} min</td>
-                    <td className={`${tabla.td} whitespace-nowrap text-ink`}>{formatPrice(s.precioBase)}</td>
+                    <td className={`${tabla.td} whitespace-nowrap text-ink`}>
+                      {formatPrice(s.precioBase)}
+                      {s.abono > 0 && (
+                        <p className="text-xs text-muted">Abono {formatPrice(s.abono)}</p>
+                      )}
+                    </td>
                     <td className={`${tabla.td} whitespace-nowrap text-muted`}>
                       {/* Un servicio que nadie realiza aparece en el catalogo y no
                           se puede reservar, porque no hay con quien. */}
@@ -334,6 +346,9 @@ function ModalServicio({
     // aplica el caso de uso al guardar, asi que no pueden discrepar.
     const motivoVariantes = motivoParaNoGuardarVariantes(borrador.variantes)
     if (motivoVariantes !== null) siguiente.variantes = motivoVariantes
+    // Igual que las variantes: la regla es la del dominio, sin copia aqui.
+    const motivoAbono = motivoParaNoGuardarAbono(borrador)
+    if (motivoAbono !== null) siguiente.abono = motivoAbono
     return siguiente
   }, [borrador])
 
@@ -411,6 +426,20 @@ function ModalServicio({
             error={mostrarErrores ? errores.precioBase : undefined}
           />
         </div>
+
+        <NumberField
+          label="Abono (CLP)"
+          value={borrador.abono}
+          onChange={(v) => set('abono', v)}
+          step={1000}
+          suffix="CLP"
+          hint={
+            borrador.categoria === 'unas'
+              ? 'Obligatorio en Uñas. Se paga al reservar y se descuenta del total.'
+              : '0 = sin abono. Si es mayor, se paga al reservar y se descuenta del total.'
+          }
+          error={mostrarErrores ? errores.abono : undefined}
+        />
 
         <TextField
           label="Descripción breve"

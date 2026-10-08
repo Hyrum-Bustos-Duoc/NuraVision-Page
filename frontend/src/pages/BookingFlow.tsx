@@ -11,6 +11,8 @@ import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfe
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
 import { useCrearReserva } from '@/modules/reservas/ui/useCrearReserva'
+import { PasoAbono } from '@/modules/reservas/ui/PasoAbono'
+import { saldoTrasAbono } from '@/shared/lib/abono'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -50,6 +52,8 @@ interface ServicioReservaVista {
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
+  /** CLP; > 0 agrega el paso «Abono» tras «Confirmar». Ver `Servicio.abono`. */
+  abono: number
 }
 
 function toVista(servicio: Servicio): ServicioReservaVista {
@@ -61,6 +65,7 @@ function toVista(servicio: Servicio): ServicioReservaVista {
     precioBase: servicio.precioBase,
     variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
+    abono: servicio.abono,
   }
 }
 
@@ -123,6 +128,29 @@ export default function BookingFlow() {
     servicioNombre: string
     profesionalNombre: string
   } | null>(null)
+  /**
+   * Para que borrador se pulso «Continuar al abono», o `null` si no se pulso.
+   *
+   * Se guarda la clave del borrador y no un booleano para que el paso de pago
+   * se cierre solo si el borrador cambia por otra via (Nuria lo reemplaza, o se
+   * vuelve a un paso anterior): un booleano dejaria a la persona pagando una
+   * reserva distinta de la que reviso.
+   */
+  const [pagoPara, setPagoPara] = useState<string | null>(null)
+  /**
+   * Contacto escrito en «Confirmar». Vive aqui y no en `ConfirmStep` porque ese
+   * paso se desmonta al pasar al abono, y volver desde el pago no debe obligar a
+   * escribirlo otra vez.
+   */
+  const [contactoEscrito, setContactoEscrito] = useState<Contact | null>(null)
+  /**
+   * Clave del borrador cuyo intento de reserva fallo. El error de
+   * `useCrearReserva` solo se muestra mientras el borrador sea ese: si cambia
+   * por cualquier via (Nuria lo reemplaza, se elige otro servicio u otra hora),
+   * el aviso del intento anterior no corresponde a lo que se ve. Derivarlo asi
+   * evita tener que limpiar el error en cada camino que cambia el borrador.
+   */
+  const [fallidoPara, setFallidoPara] = useState<string | null>(null)
 
   // Servicio, profesionales y horario salen de la base, no de los seeds.
   const servicioState = useServicioDetalle(bookingDraft.serviceId)
@@ -197,8 +225,23 @@ export default function BookingFlow() {
    */
   const precioTotal = opcionElegida ? opcionElegida.precio : (service?.precioBase ?? 0)
 
+  /**
+   * La regla unica de abono-servicios-unas: `abono > 0` agrega el paso de pago;
+   * con 0 el flujo es exactamente el de antes. No se mira la categoria.
+   */
+  const conAbono = (service?.abono ?? 0) > 0
+  const claveBorrador = [
+    bookingDraft.serviceId,
+    bookingDraft.varianteOpcionId,
+    bookingDraft.professionalId,
+    bookingDraft.dateISO,
+    bookingDraft.time,
+  ].join('|')
+  const enPagoAbono = step === 'confirm' && conAbono && pagoPara === claveBorrador
+  const errorVigente = fallidoPara === claveBorrador ? reserva.error : null
+
   // Cada paso del asistente vuelve al inicio de la pantalla.
-  useScrollToTopOnChange(confirmado ? 'success' : step)
+  useScrollToTopOnChange(confirmado ? 'success' : enPagoAbono ? 'abono' : step)
 
   if (confirmado) {
     return (
@@ -214,13 +257,18 @@ export default function BookingFlow() {
 
   // Las etiquetas del indicador se arman segun haya o no pregunta, de modo que
   // el numero resaltado corresponda con lo que se esta viendo.
-  const etiquetasPasos = preguntaAlgo
-    ? ['Servicio', 'Opción', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
-    : ['Servicio', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
+  const etiquetasPasos = [
+    ...(preguntaAlgo
+      ? ['Servicio', 'Opción', 'Profesional', 'Fecha', 'Hora', 'Confirmación']
+      : ['Servicio', 'Profesional', 'Fecha', 'Hora', 'Confirmación']),
+    ...(conAbono ? ['Abono'] : []),
+  ]
 
-  const stepIndex = preguntaAlgo
-    ? { service: 0, variant: 1, professional: 2, date: 3, time: 4, confirm: 5 }[step]
-    : { service: 0, variant: 1, professional: 1, date: 2, time: 3, confirm: 4 }[step]
+  const stepIndex =
+    (preguntaAlgo
+      ? { service: 0, variant: 1, professional: 2, date: 3, time: 4, confirm: 5 }[step]
+      : { service: 0, variant: 1, professional: 1, date: 2, time: 3, confirm: 4 }[step]) +
+    (enPagoAbono ? 1 : 0)
 
   function clearFrom(field: 'service' | 'variant' | 'professional' | 'date' | 'time') {
     setBookingDraft((d) => {
@@ -263,12 +311,113 @@ export default function BookingFlow() {
     pasosConAgenda &&
     (disponibilidad.cargando || disponibilidad.error !== null || disponibilidad.sinHorario)
 
+  /**
+   * Crea la reserva con el mecanismo de siempre. Lo llama «Confirmar» si el
+   * servicio no tiene abono, y «Pagar abono y reservar» si lo tiene.
+   */
+  function reservar(contact: Contact) {
+    const fecha = bookingDraft.dateISO
+    const horaInicio = bookingDraft.time
+    if (!service || !professional || !fecha || !horaInicio) return
+
+    const codigo = generateCode(fecha)
+    // La del momento de pedirla: si el borrador cambia mientras viaja, el
+    // error no se le atribuye al nuevo.
+    const clave = claveBorrador
+    // La hora de término se calcula al reservar y se guarda: si mañana
+    // cambia la duración del servicio, esta reserva conserva el bloque
+    // que realmente se tomó.
+    const horaFin = minutesToTime(timeToMinutes(horaInicio) + service.duracionMinutos)
+
+    void (async () => {
+      const guardada = await reserva.crear({
+        servicioId: service.id,
+        profesionalId: professional.id,
+        fecha,
+        horaInicio,
+        horaFin,
+        clienteNombre: contact.name,
+        clienteEmail: contact.email,
+        clienteTelefono: contact.phone,
+        codigo,
+        // Con sesión la reserva queda asociada a la cuenta, y es lo
+        // único que después permite leerla: la política de RLS
+        // entrega las filas cuyo cliente_id coincide con auth.uid().
+        // Sin sesión va NULL, que es lo que la política de inserción
+        // exige del rol anónimo.
+        clienteId: usuario?.id ?? null,
+        /**
+         * COPIA de lo elegido, no su id. El estudio va a editar estas
+         * opciones: guardar solo el id dejaria que un cambio de precio
+         * reescribiera lo cobrado en reservas ya hechas. Y pesa mas
+         * porque `reservas` no tiene columna de precio.
+         *
+         * `null` cuando el servicio no pregunta nada, que es el caso de
+         * los 17 actuales.
+         */
+        varianteElegida: opcionElegida
+          ? {
+              pregunta: service.variantes?.pregunta ?? '',
+              opcionId: opcionElegida.id,
+              etiqueta: opcionElegida.etiqueta,
+              precio: opcionElegida.precio,
+            }
+          : null,
+      })
+
+      // Si la base la rechazó no se avanza: el paso que la pidió
+      // —confirmación o abono— muestra el error y conserva lo elegido
+      // (y la tarjeta) para reintentar.
+      if (!guardada) {
+        setFallidoPara(clave)
+        return
+      }
+
+      const booking: Booking = {
+        id: `b-${Date.now()}`,
+        code: codigo,
+        serviceId: service.id,
+        professionalId: professional.id,
+        clientName: contact.name,
+        clientEmail: contact.email,
+        clientPhone: contact.phone,
+        // Invitada es quien reserva sin cuenta de Supabase: solo esa
+        // sesión deja la reserva asociada a un perfil. El usuario de
+        // demostración no crea ninguna.
+        guest: usuario === null,
+        dateISO: fecha,
+        time: horaInicio,
+        durationMin: service.duracionMinutos,
+        price: precioTotal,
+        // El que se mostró al pagar. La invitada no puede leer su fila para
+        // conocer el que fijó la base (ver riesgos en design.md).
+        abono: service.abono,
+        // La base la guarda como 'pendiente': confirmarla es decisión
+        // del estudio, no de quien reserva.
+        status: 'confirmada',
+      }
+
+      // El estado local sigue siendo el modelo de LECTURA: las
+      // políticas no otorgan SELECT sobre `reservas`, así que
+      // "mis reservas" no puede leerlas de la base todavía.
+      addBooking(booking)
+      setBookingDraft(() => ({}))
+      setConfirmado({
+        booking,
+        servicioNombre: service.nombre,
+        profesionalNombre: professional.name,
+      })
+    })()
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
-      <div className="mb-10 overflow-x-auto">
-        <div className="min-w-[560px]">
-          <Stepper currentIndex={stepIndex} labels={etiquetasPasos} />
-        </div>
+    // pb-28: deja libre la franja del boton flotante de Nuria (fixed, abajo a
+    // la derecha), que si no tapa el final del resumen lateral.
+    <div className="mx-auto max-w-5xl px-6 pb-28 pt-12">
+      {/* Sin scroll horizontal: el Stepper pasa solo a la linea compacta si la
+          fila no cabe. */}
+      <div className="mb-10">
+        <Stepper currentIndex={stepIndex} labels={etiquetasPasos} />
       </div>
 
       {esperandoServicio && servicioState.estado === 'cargando' && (
@@ -370,7 +519,7 @@ export default function BookingFlow() {
         />
       )}
 
-      {step === 'confirm' && !esperandoHorario && service && professional && bookingDraft.dateISO && bookingDraft.time && (
+      {step === 'confirm' && !enPagoAbono && !esperandoHorario && service && professional && bookingDraft.dateISO && bookingDraft.time && (
         <ConfirmStep
           service={service}
           precio={precioTotal}
@@ -387,91 +536,42 @@ export default function BookingFlow() {
           dateISO={bookingDraft.dateISO}
           time={bookingDraft.time}
           cuenta={cuenta}
+          contactoEscrito={contactoEscrito}
           conSesion={usuario !== null}
           onBack={() => clearFrom('time')}
           guardando={reserva.guardando}
-          errorAlGuardar={reserva.error}
+          // Con abono este paso no crea nada: un fallo del pago se vio en el
+          // paso «Abono» y repetirlo aqui al volver confundiria.
+          errorAlGuardar={conAbono ? null : errorVigente}
           onConfirm={(contact) => {
-            const codigo = generateCode(bookingDraft.dateISO!)
-            const horaInicio = bookingDraft.time!
-            // La hora de término se calcula al reservar y se guarda: si mañana
-            // cambia la duración del servicio, esta reserva conserva el bloque
-            // que realmente se tomó.
-            const horaFin = minutesToTime(timeToMinutes(horaInicio) + service.duracionMinutos)
-
-            void (async () => {
-              const guardada = await reserva.crear({
-                servicioId: service.id,
-                profesionalId: professional.id,
-                fecha: bookingDraft.dateISO!,
-                horaInicio,
-                horaFin,
-                clienteNombre: contact.name,
-                clienteEmail: contact.email,
-                clienteTelefono: contact.phone,
-                codigo,
-                // Con sesión la reserva queda asociada a la cuenta, y es lo
-                // único que después permite leerla: la política de RLS
-                // entrega las filas cuyo cliente_id coincide con auth.uid().
-                // Sin sesión va NULL, que es lo que la política de inserción
-                // exige del rol anónimo.
-                clienteId: usuario?.id ?? null,
-                /**
-                 * COPIA de lo elegido, no su id. El estudio va a editar estas
-                 * opciones: guardar solo el id dejaria que un cambio de precio
-                 * reescribiera lo cobrado en reservas ya hechas. Y pesa mas
-                 * porque `reservas` no tiene columna de precio.
-                 *
-                 * `null` cuando el servicio no pregunta nada, que es el caso de
-                 * los 17 actuales.
-                 */
-                varianteElegida: opcionElegida
-                  ? {
-                      pregunta: service.variantes?.pregunta ?? '',
-                      opcionId: opcionElegida.id,
-                      etiqueta: opcionElegida.etiqueta,
-                      precio: opcionElegida.precio,
-                    }
-                  : null,
-              })
-
-              // Si la base la rechazó no se avanza: el paso de confirmación
-              // muestra el error y conserva lo elegido para reintentar.
-              if (!guardada) return
-
-              const booking: Booking = {
-                id: `b-${Date.now()}`,
-                code: codigo,
-                serviceId: service.id,
-                professionalId: professional.id,
-                clientName: contact.name,
-                clientEmail: contact.email,
-                clientPhone: contact.phone,
-                // Invitada es quien reserva sin cuenta de Supabase: solo esa
-                // sesión deja la reserva asociada a un perfil. El usuario de
-                // demostración no crea ninguna.
-                guest: usuario === null,
-                dateISO: bookingDraft.dateISO!,
-                time: horaInicio,
-                durationMin: service.duracionMinutos,
-                price: precioTotal,
-                // La base la guarda como 'pendiente': confirmarla es decisión
-                // del estudio, no de quien reserva.
-                status: 'confirmada',
-              }
-
-              // El estado local sigue siendo el modelo de LECTURA: las
-              // políticas no otorgan SELECT sobre `reservas`, así que
-              // "mis reservas" no puede leerlas de la base todavía.
-              addBooking(booking)
-              setBookingDraft(() => ({}))
-              setConfirmado({
-                booking,
-                servicioNombre: service.nombre,
-                profesionalNombre: professional.name,
-              })
-            })()
+            setContactoEscrito(contact)
+            // Con abono, «Continuar al abono» no crea nada: la reserva nace al
+            // aprobar el pago (decision 7). El error de un intento anterior se
+            // limpia: el paso vuelve a montarse con la tarjeta vacia, y avisar
+            // de un fallo que no corresponde a lo que se ve confunde.
+            if (conAbono) {
+              reserva.limpiarError()
+              setPagoPara(claveBorrador)
+            } else reservar(contact)
           }}
+        />
+      )}
+
+      {enPagoAbono && !esperandoHorario && service && professional && bookingDraft.dateISO && bookingDraft.time && contactoEscrito && (
+        <PasoAbono
+          servicioNombre={service.nombre}
+          profesionalNombre={professional.name}
+          dateISO={bookingDraft.dateISO}
+          time={bookingDraft.time}
+          precio={precioTotal}
+          abono={service.abono}
+          guardando={reserva.guardando}
+          errorAlGuardar={errorVigente}
+          onBack={() => {
+            reserva.limpiarError()
+            setPagoPara(null)
+          }}
+          onPagar={() => reservar(contactoEscrito)}
         />
       )}
     </div>
@@ -786,6 +886,7 @@ function ConfirmStep({
   dateISO,
   time,
   cuenta,
+  contactoEscrito,
   conSesion,
   onBack,
   onConfirm,
@@ -809,6 +910,8 @@ function ConfirmStep({
   time: string
   /** Datos de la cuenta con sesión, si los hay, para rellenar el formulario. */
   cuenta: Contact | null
+  /** Lo escrito antes de pasar al abono, para no pedirlo de nuevo al volver. */
+  contactoEscrito: Contact | null
   /** Sesión real de Supabase: es lo que decide si la reserva queda asociada. */
   conSesion: boolean
   onBack: () => void
@@ -817,7 +920,7 @@ function ConfirmStep({
   errorAlGuardar: string | null
 }) {
   const [contact, setContact] = useState<Contact>(
-    () => cuenta ?? { name: '', email: '', phone: '' },
+    () => contactoEscrito ?? cuenta ?? { name: '', email: '', phone: '' },
   )
   const [showErrors, setShowErrors] = useState(false)
 
@@ -905,10 +1008,25 @@ function ConfirmStep({
         </div>
 
         <div className="h-fit rounded-2xl bg-line-soft/60 p-6">
-          <p className="text-sm text-muted">Total a pagar en el salón</p>
+          <p className="text-sm text-muted">
+            {service.abono > 0 ? 'Total del servicio' : 'Total a pagar en el salón'}
+          </p>
           <p className="mt-1 font-serif-display text-4xl text-ink">
             {formatPrice(precio)}
           </p>
+
+          {service.abono > 0 && (
+            <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Abono al reservar</dt>
+                <dd className="text-ink">{formatPrice(service.abono)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Saldo en el estudio</dt>
+                <dd className="text-ink">{formatPrice(saldoTrasAbono(precio, service.abono))}</dd>
+              </div>
+            </dl>
+          )}
 
           {eleccion && (
             <div className="mt-4 border-t border-line pt-4 text-sm">
@@ -938,7 +1056,11 @@ function ConfirmStep({
               })
             }}
           >
-            {guardando ? 'Guardando…' : 'Confirmar reserva'}
+            {service.abono > 0
+              ? 'Continuar al abono'
+              : guardando
+                ? 'Guardando…'
+                : 'Confirmar reserva'}
           </Button>
 
           {/* La reserva no quedó guardada: se informa aquí y el botón sigue
@@ -949,7 +1071,7 @@ function ConfirmStep({
             </p>
           )}
           <p className="mt-3 text-center text-xs text-muted">
-            Puedes cancelar sin costo hasta 12 h antes de tu hora.
+            Puedes cancelar sin costo hasta 24 h antes de tu hora.
           </p>
 
           {!conSesion && (
@@ -1037,6 +1159,15 @@ function SuccessScreen({
           <Row label="Hora" value={`${booking.time} h`} />
           <Row label="Duración" value={`${booking.durationMin} min`} />
           <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
+          {booking.abono > 0 && (
+            <>
+              <Row label="Abono pagado" value={formatPrice(booking.abono)} />
+              <Row
+                label="Saldo en el estudio"
+                value={formatPrice(saldoTrasAbono(booking.price, booking.abono))}
+              />
+            </>
+          )}
         </div>
       </div>
 
