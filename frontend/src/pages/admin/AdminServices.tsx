@@ -5,7 +5,11 @@ import { categoryLabel, serviceCategories } from '@/modules/servicios/domain/ser
 import { useServiciosGestion } from '@/modules/servicios/ui/useServiciosGestion'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { EditorVariantes } from '@/modules/servicios/ui/EditorVariantes'
-import { motivoParaNoGuardarVariantes } from '@/modules/servicios/domain/servicio.reglas'
+import {
+  motivoParaNoGuardarAbono,
+  motivoParaNoGuardarVariantes,
+} from '@/modules/servicios/domain/servicio.reglas'
+import { desglosarPago } from '@/modules/servicios/domain/abono'
 import type { DatosServicio, Servicio } from '@/modules/servicios/application'
 import { Modal, ConfirmDialog } from '@/shared/ui/Modal'
 import { ImageUploader } from '@/shared/components/ImageUploader'
@@ -34,6 +38,11 @@ const BORRADOR_VACIO: DatosServicio = {
   // El editor de variantes llega en el siguiente paso. Hasta entonces un
   // servicio nuevo nace sin pregunta, que es como se comportan los 17 actuales.
   variantes: null,
+  // Apagado: un servicio nuevo cobra el total, como todos los que ya existen.
+  // El monto queda cargado con los $5.000 que pidio el estudio para que activar
+  // la casilla no obligue a escribir nada.
+  cobrarAbono: false,
+  montoAbono: 5000,
 }
 
 /** Entidad -> borrador del formulario. Solo quita el `id`. */
@@ -51,6 +60,10 @@ function aBorrador(servicio: Servicio): DatosServicio {
     // Se arrastran tal cual: el formulario todavia no las muestra, y perderlas
     // al guardar otro campo seria borrar la configuracion sin avisar.
     variantes: servicio.variantes,
+    cobrarAbono: servicio.cobrarAbono,
+    // Si nunca se configuro, el formulario parte de los $5.000 del estudio en
+    // vez de un campo vacio que habria que rellenar para poder guardar.
+    montoAbono: servicio.montoAbono ?? 5000,
   }
 }
 
@@ -334,6 +347,10 @@ function ModalServicio({
     // aplica el caso de uso al guardar, asi que no pueden discrepar.
     const motivoVariantes = motivoParaNoGuardarVariantes(borrador.variantes)
     if (motivoVariantes !== null) siguiente.variantes = motivoVariantes
+    // Misma regla que aplica el caso de uso al guardar, para que el formulario
+    // no deje pasar algo que la base o el dominio van a rechazar despues.
+    const motivoAbono = motivoParaNoGuardarAbono(borrador)
+    if (motivoAbono !== null) siguiente.montoAbono = motivoAbono
     return siguiente
   }, [borrador])
 
@@ -410,6 +427,46 @@ function ModalServicio({
             suffix="CLP"
             error={mostrarErrores ? errores.precioBase : undefined}
           />
+        </div>
+
+        {/* Abono de reserva (0016). Va junto al precio porque es una decision
+            sobre el dinero y no sobre el contenido del servicio. */}
+        <div className="rounded-xl border border-line-soft p-4">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={borrador.cobrarAbono}
+              onChange={(e) => set('cobrarAbono', e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-ink">
+                Cobrar solo la reserva
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Al reservar en línea se cobra un abono y el resto se paga en el local.
+              </span>
+            </span>
+          </label>
+
+          {/* El monto solo se pide si la casilla esta marcada: un campo que no
+              se usa invita a escribir una cifra que nadie va a cobrar. */}
+          {borrador.cobrarAbono && (
+            <div className="mt-4">
+              <div className="max-w-[240px]">
+                <NumberField
+                  label="Monto del abono"
+                  value={borrador.montoAbono ?? 0}
+                  onChange={(v) => set('montoAbono', v)}
+                  min={0}
+                  step={1000}
+                  suffix="CLP"
+                  error={mostrarErrores ? errores.montoAbono : undefined}
+                />
+              </div>
+              <VistaPreviaAbono borrador={borrador} />
+            </div>
+          )}
         </div>
 
         <TextField
@@ -500,5 +557,40 @@ function DialogoBorrarServicio({
         </div>
       }
     />
+  )
+}
+
+/**
+ * Lo que se cobrara con la configuracion actual.
+ *
+ * Es la misma funcion que usa el flujo de reserva y que replica la Edge
+ * Function, no una cuenta aparte: asi quien configura el abono ve exactamente
+ * las cifras que vera la clienta, incluido el tope —el abono nunca pasa del
+ * total— que de otro modo solo se descubriria cobrando.
+ */
+function VistaPreviaAbono({ borrador }: { borrador: DatosServicio }) {
+  // Con variantes el total no es uno: se muestra sobre la opcion mas barata,
+  // que es el caso en el que el tope del abono puede llegar a aplicarse.
+  const total = borrador.variantes
+    ? Math.min(...borrador.variantes.opciones.map((o) => o.precio))
+    : borrador.precioBase
+
+  const d = desglosarPago(total, borrador)
+  if (d.total <= 0) return null
+
+  return (
+    <p className="mt-3 text-xs leading-relaxed text-muted">
+      {borrador.variantes && <>Sobre la opción más económica ({formatPrice(d.total)}): </>}
+      hoy se cobra <span className="font-medium text-ink">{formatPrice(d.aPagarAhora)}</span>
+      {d.esAbono ? (
+        <>
+          {' '}
+          y quedan <span className="font-medium text-ink">{formatPrice(d.saldo)}</span> por pagar
+          en el local.
+        </>
+      ) : (
+        <> — el abono cubre el total, así que no queda saldo.</>
+      )}
+    </p>
   )
 }

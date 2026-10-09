@@ -27,7 +27,41 @@ export function motivoParaNoGuardarServicio(datos: DatosServicio): string | null
     return 'El precio no puede ser negativo.'
   }
 
+  const motivoAbono = motivoParaNoGuardarAbono(datos)
+  if (motivoAbono !== null) return motivoAbono
+
   return motivoParaNoGuardarVariantes(datos.variantes)
+}
+
+/**
+ * Valida el abono de reserva (0016).
+ *
+ * El check `servicios_abono_necesita_monto` rechaza lo mismo en la base, pero su
+ * mensaje nombra la restriccion. Y hay un caso que la base NO puede juzgar: que
+ * el abono sea mayor o igual que el precio. No es ilegal —la funcion de cobro
+ * toma el menor de los dos y cobraria el total—, pero es casi seguro un error de
+ * tipeo al configurarlo, y conviene avisar antes de guardarlo que despues de
+ * cobrarle de mas a alguien.
+ *
+ * Con variantes no se compara contra `precioBase`: ahi el precio real es el de
+ * la opcion elegida y un abono por encima del base puede ser correcto.
+ */
+export function motivoParaNoGuardarAbono(
+  datos: Pick<DatosServicio, 'cobrarAbono' | 'montoAbono' | 'precioBase' | 'variantes'>,
+): string | null {
+  if (!datos.cobrarAbono) return null
+
+  if (datos.montoAbono === null || !Number.isFinite(datos.montoAbono)) {
+    return 'Indica el monto del abono o desactiva el cobro de reserva.'
+  }
+  if (datos.montoAbono <= 0) {
+    return 'El abono debe ser mayor que cero.'
+  }
+  if (datos.variantes === null && datos.montoAbono >= datos.precioBase) {
+    return 'El abono tiene que ser menor que el precio del servicio.'
+  }
+
+  return null
 }
 
 /**

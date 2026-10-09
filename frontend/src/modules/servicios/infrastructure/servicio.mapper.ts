@@ -76,6 +76,11 @@ export function toServicio(row: ServicioRow): Servicio {
     descripcionLarga: row.descripcion_larga ?? '',
     incluye: aListaDeTextos(row.incluye),
     variantes: aVariante(row.variantes),
+    cobrarAbono: row.cobrar_abono === true,
+    // La base impide que sea null con el abono activo, pero el tipo lo admite
+    // y se respeta: inventar aqui un 5000 por defecto ocultaria el problema si
+    // alguna fila lo tuviera.
+    montoAbono: typeof row.monto_abono === 'number' ? row.monto_abono : null,
   }
 }
 
@@ -185,6 +190,15 @@ export function fromDatosServicio(datos: DatosServicio): ServicioInsert {
      * una variante que desaparece sola tras recargar.
      */
     variantes: aFilaVariante(datos.variantes),
+    cobrar_abono: datos.cobrarAbono,
+    /**
+     * Con el abono apagado se envia `null` y no el monto escrito.
+     *
+     * Guardar un monto que no se usa dejaria una cifra en la base que nadie
+     * revisa y que reaparece si alguien activa la casilla meses despues, con
+     * un valor que ya nadie recuerda haber puesto.
+     */
+    monto_abono: datos.cobrarAbono ? datos.montoAbono : null,
   }
 }
 

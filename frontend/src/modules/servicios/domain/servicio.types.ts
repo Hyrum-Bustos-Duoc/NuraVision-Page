@@ -27,6 +27,22 @@ export interface Servicio {
   incluye: string[]
   /** Pregunta que altera el precio, o `null` si el servicio no pregunta nada. */
   variantes: VarianteServicio | null
+  /**
+   * Si al reservar se cobra solo un abono en vez del precio completo (0016).
+   *
+   * Lo decide el estudio servicio por servicio: una hora cara que no se cumple
+   * es una perdida de agenda, y una sena pequena compromete sin obligar a pagar
+   * todo por adelantado.
+   */
+  cobrarAbono: boolean
+  /**
+   * El abono, en pesos. `null` cuando no esta configurado.
+   *
+   * La base garantiza —check `servicios_abono_necesita_monto`— que no es null
+   * si `cobrarAbono` es true, asi que el caso "cobra abono pero no se sabe
+   * cuanto" no puede llegar desde la base.
+   */
+  montoAbono: number | null
 }
 
 /**
@@ -47,6 +63,22 @@ export interface DatosServicio {
   descripcionLarga: string
   incluye: string[]
   variantes: VarianteServicio | null
+  /**
+   * Si al reservar se cobra solo un abono en vez del precio completo (0016).
+   *
+   * Lo decide el estudio servicio por servicio: una hora cara que no se cumple
+   * es una perdida de agenda, y una sena pequena compromete sin obligar a pagar
+   * todo por adelantado.
+   */
+  cobrarAbono: boolean
+  /**
+   * El abono, en pesos. `null` cuando no esta configurado.
+   *
+   * La base garantiza —check `servicios_abono_necesita_monto`— que no es null
+   * si `cobrarAbono` es true, asi que el caso "cobra abono pero no se sabe
+   * cuanto" no puede llegar desde la base.
+   */
+  montoAbono: number | null
 }
 
 /**

@@ -7,10 +7,12 @@ import { useServicioDetalle } from '@/modules/servicios/ui/useServicioDetalle'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { ServiceVariantStep } from '@/modules/servicios/ui/ServiceVariantStep'
+import { desglosarPago } from '@/modules/servicios/domain/abono'
 import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfesionalesPorServicio'
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
 import { useCrearReserva } from '@/modules/reservas/ui/useCrearReserva'
+import { usePagoWebpay } from '@/modules/pagos/ui/usePagoWebpay'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -50,6 +52,9 @@ interface ServicioReservaVista {
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
+  /** Si al reservar se cobra solo un abono (0016). */
+  cobrarAbono: boolean
+  montoAbono: number | null
 }
 
 function toVista(servicio: Servicio): ServicioReservaVista {
@@ -61,6 +66,8 @@ function toVista(servicio: Servicio): ServicioReservaVista {
     precioBase: servicio.precioBase,
     variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
+    cobrarAbono: servicio.cobrarAbono,
+    montoAbono: servicio.montoAbono,
   }
 }
 
@@ -114,6 +121,28 @@ export default function BookingFlow() {
       ? { name: currentUser.name, email: currentUser.email, phone: currentUser.phone }
       : null
   const reserva = useCrearReserva()
+  const webpay = usePagoWebpay()
+  /**
+   * El codigo de la reserva si ya se guardo.
+   *
+   * Hace falta porque el cobro puede fallar DESPUES de haberla creado: sin
+   * esto, el segundo clic en el boton crearia una reserva duplicada por una
+   * sola hora.
+   */
+  const [codigoGuardado, setCodigoGuardado] = useState<string | null>(null)
+  /**
+   * Si se paga ahora con Webpay o en el estudio.
+   *
+   * VIVE AQUI Y NO EN `ConfirmStep` a proposito. Ese paso solo se renderiza
+   * mientras `!esperandoHorario`, asi que una recarga de la disponibilidad lo
+   * desmonta y lo vuelve a montar: con el estado dentro, la eleccion se
+   * perdia en silencio y al confirmar se tomaba la rama de "pagar en el
+   * estudio" aunque la clienta hubiera elegido Webpay.
+   *
+   * Por defecto NO: pagar en el estudio es como funciona hoy el salon, y
+   * preseleccionar el cobro empujaria a pagar a quien solo queria la hora.
+   */
+  const [pagarAhora, setPagarAhora] = useState(false)
   const [calendarView, setCalendarView] = useState({ year: 2026, month: 8 })
   // Los nombres se guardan junto a la reserva porque la pantalla final ya no
   // puede resolverlos: la reserva referencia ids de la base y los datos de
@@ -391,8 +420,14 @@ export default function BookingFlow() {
           onBack={() => clearFrom('time')}
           guardando={reserva.guardando}
           errorAlGuardar={reserva.error}
+          abriendoPago={webpay.enviando}
+          errorDePago={webpay.error}
+          pagarAhora={pagarAhora}
+          onPagarAhora={setPagarAhora}
           onConfirm={(contact) => {
-            const codigo = generateCode(bookingDraft.dateISO!)
+            // Si un intento anterior ya guardo la reserva, se conserva su codigo
+            // en vez de generar otro: es la misma hora.
+            const codigo = codigoGuardado ?? generateCode(bookingDraft.dateISO!)
             const horaInicio = bookingDraft.time!
             // La hora de término se calcula al reservar y se guarda: si mañana
             // cambia la duración del servicio, esta reserva conserva el bloque
@@ -400,7 +435,8 @@ export default function BookingFlow() {
             const horaFin = minutesToTime(timeToMinutes(horaInicio) + service.duracionMinutos)
 
             void (async () => {
-              const guardada = await reserva.crear({
+              if (codigoGuardado === null) {
+                const guardada = await reserva.crear({
                 servicioId: service.id,
                 profesionalId: professional.id,
                 fecha: bookingDraft.dateISO!,
@@ -435,9 +471,24 @@ export default function BookingFlow() {
                   : null,
               })
 
-              // Si la base la rechazó no se avanza: el paso de confirmación
-              // muestra el error y conserva lo elegido para reintentar.
-              if (!guardada) return
+                // Si la base la rechazó no se avanza: el paso de confirmación
+                // muestra el error y conserva lo elegido para reintentar.
+                if (!guardada) return
+                setCodigoGuardado(codigo)
+              }
+
+              if (pagarAhora) {
+                /**
+                 * La reserva ya existe; ahora se cobra.
+                 *
+                 * No se limpia el borrador ni se pinta la pantalla de exito: de
+                 * eso se encarga /confirmacion-pago cuando la clienta vuelva de
+                 * Webpay. Si el cobro no llega a abrirse, este paso sigue en
+                 * pantalla con el aviso y el boton reintenta solo el pago.
+                 */
+                await webpay.pagar({ tipo: 'reserva', codigo })
+                return
+              }
 
               const booking: Booking = {
                 id: `b-${Date.now()}`,
@@ -791,6 +842,10 @@ function ConfirmStep({
   onConfirm,
   guardando,
   errorAlGuardar,
+  abriendoPago,
+  errorDePago,
+  pagarAhora,
+  onPagarAhora,
 }: {
   service: ServicioReservaVista
   /** Precio ya resuelto. Ver la nota en `DateStep`. */
@@ -815,11 +870,24 @@ function ConfirmStep({
   onConfirm: (contact: Contact) => void
   guardando: boolean
   errorAlGuardar: string | null
+  /** Se esta abriendo la pasarela: la pagina esta a punto de cambiar sola. */
+  abriendoPago: boolean
+  /** El cobro no se pudo iniciar. La reserva SI quedo guardada. */
+  errorDePago: string | null
+  /**
+   * Si se paga ahora con Webpay. Lo guarda `BookingFlow`, no este paso: aqui
+   * se perderia cada vez que el componente se remonte.
+   */
+  pagarAhora: boolean
+  onPagarAhora: (valor: boolean) => void
 }) {
   const [contact, setContact] = useState<Contact>(
     () => cuenta ?? { name: '', email: '', phone: '' },
   )
   const [showErrors, setShowErrors] = useState(false)
+  // La misma funcion que replica la Edge Function: lo que se anuncia aqui es
+  // exactamente lo que se va a cobrar.
+  const desglose = desglosarPago(precio, service)
 
   // Una cuenta de Supabase puede no tener nombre ni teléfono: al registrarse
   // solo el correo es obligatorio. Si falta algo se piden los datos igual, ya
@@ -905,10 +973,27 @@ function ConfirmStep({
         </div>
 
         <div className="h-fit rounded-2xl bg-line-soft/60 p-6">
-          <p className="text-sm text-muted">Total a pagar en el salón</p>
-          <p className="mt-1 font-serif-display text-4xl text-ink">
-            {formatPrice(precio)}
+          <p className="text-sm text-muted">
+            {desglose.esAbono && pagarAhora ? 'Total del servicio' : 'Total a pagar en el salón'}
           </p>
+          <p className="mt-1 font-serif-display text-4xl text-ink">
+            {formatPrice(desglose.total)}
+          </p>
+
+          {/* El desglose solo aparece si se va a abonar AHORA: eligiendo pagar
+              en el estudio no hay abono ni saldo, se paga todo alli. */}
+          {desglose.esAbono && pagarAhora && (
+            <dl className="mt-4 space-y-1.5 border-t border-line pt-4 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted">Abonas hoy con Webpay</dt>
+                <dd className="font-medium text-ink">{formatPrice(desglose.aPagarAhora)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted">Saldo en el local</dt>
+                <dd className="font-medium text-ink">{formatPrice(desglose.saldo)}</dd>
+              </div>
+            </dl>
+          )}
 
           {eleccion && (
             <div className="mt-4 border-t border-line pt-4 text-sm">
@@ -924,10 +1009,34 @@ function ConfirmStep({
               </div>
             </div>
           )}
+          <fieldset className="mt-6 border-t border-line pt-5">
+            <legend className="text-xs uppercase tracking-[0.12em] text-muted">
+              Cómo quieres pagar
+            </legend>
+            <div className="mt-3 space-y-2">
+              <OpcionPago
+                activa={!pagarAhora}
+                onElegir={() => onPagarAhora(false)}
+                titulo="Pagar en el estudio"
+                detalle="El día de tu hora, en efectivo o tarjeta"
+              />
+              <OpcionPago
+                activa={pagarAhora}
+                onElegir={() => onPagarAhora(true)}
+                titulo={desglose.esAbono ? 'Abonar ahora con Webpay' : 'Pagar ahora con Webpay'}
+                detalle={
+                  desglose.esAbono
+                    ? `${formatPrice(desglose.aPagarAhora)} ahora y ${formatPrice(desglose.saldo)} en el local`
+                    : `${formatPrice(desglose.total)} con tarjeta. Tu hora queda confirmada al pagar`
+                }
+              />
+            </div>
+          </fieldset>
+
           <Button
             full
-            className="mt-6"
-            disabled={guardando}
+            className="mt-5"
+            disabled={guardando || abriendoPago}
             onClick={() => {
               setShowErrors(true)
               if (Object.keys(errors).length > 0) return
@@ -938,8 +1047,25 @@ function ConfirmStep({
               })
             }}
           >
-            {guardando ? 'Guardando…' : 'Confirmar reserva'}
+            {abriendoPago
+              ? 'Redirigiendo a Webpay…'
+              : guardando
+                ? 'Guardando…'
+                : pagarAhora
+                  ? `${desglose.esAbono ? 'Abonar' : 'Pagar'} ${formatPrice(desglose.aPagarAhora)}`
+                  : 'Confirmar reserva'}
           </Button>
+
+          {/* La reserva YA quedo guardada: si no se dice, parecera que se
+              perdio y se intentara reservar otra vez. */}
+          {errorDePago && (
+            <p className="mt-3 rounded-xl border border-line px-4 py-3 text-sm text-ink">
+              {errorDePago}
+              <span className="mt-1 block text-xs text-muted">
+                Tu hora quedó reservada. Puedes pagarla en el estudio o reintentar ahora.
+              </span>
+            </p>
+          )}
 
           {/* La reserva no quedó guardada: se informa aquí y el botón sigue
               disponible para reintentar, sin perder lo que ya se eligió. */}
@@ -973,6 +1099,50 @@ function ConfirmStep({
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Una opcion de pago.
+ *
+ * Es un RADIO NATIVO envuelto en una etiqueta, no un `button` con
+ * `aria-pressed`. La etiqueta hace que toda la tarjeta sea zona pulsable igual
+ * que antes, pero ademas el navegador se encarga de la exclusion mutua, del
+ * foco y de las flechas del teclado, y un lector de pantalla anuncia "opcion 1
+ * de 2" en vez de un boton presionado.
+ *
+ * Importa que sea nativo: de esta eleccion depende que se cobre o no, asi que
+ * cuanto menos comportamiento propio tenga, menos puede fallar.
+ */
+function OpcionPago({
+  activa,
+  onElegir,
+  titulo,
+  detalle,
+}: {
+  activa: boolean
+  onElegir: () => void
+  titulo: string
+  detalle: string
+}) {
+  return (
+    <label
+      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
+        activa ? 'border-ink bg-ink/[0.03]' : 'border-line-soft hover:border-line'
+      }`}
+    >
+      <input
+        type="radio"
+        name="pago-reserva"
+        checked={activa}
+        onChange={onElegir}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-ink">{titulo}</span>
+        <span className="mt-0.5 block text-xs text-muted">{detalle}</span>
+      </span>
+    </label>
   )
 }
 
