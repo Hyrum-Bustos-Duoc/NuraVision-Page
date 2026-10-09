@@ -39,6 +39,9 @@ export type EstadoPedido =
   | 'entregado'
   | 'cancelado'
 
+/** Estado de un intento de cobro con Webpay (0015). */
+export type EstadoPago = 'iniciado' | 'autorizado' | 'rechazado' | 'anulado' | 'error'
+
 export interface Database {
   public: {
     Tables: {
@@ -452,6 +455,55 @@ export interface Database {
         }
         Relationships: []
       }
+      /**
+       * Intentos de cobro con Webpay Plus (0015).
+       *
+       * `Insert` y `Update` son `never` a proposito: la tabla solo la escriben
+       * las Edge Functions con la service_role key. Si apareciera aqui un tipo
+       * de escritura, el compilador dejaria de avisar del error justo en el
+       * punto donde mas importa.
+       *
+       * El panel del estudio la lee; la clienta no (su comprobante viene en la
+       * respuesta de `webpay-confirmar-transaccion`).
+       */
+      pagos: {
+        Row: {
+          id: number
+          buy_order: string
+          session_id: string
+          token_ws: string | null
+          monto: number
+          estado: EstadoPago
+          pedido_id: number | null
+          reserva_id: number | null
+          response_code: number | null
+          authorization_code: string | null
+          payment_type_code: string | null
+          cuotas: number | null
+          tarjeta_final: string | null
+          respuesta: Json | null
+          creado_en: string
+          confirmado_en: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: [
+          {
+            foreignKeyName: 'pagos_pedido_id_fkey'
+            columns: ['pedido_id']
+            isOneToOne: false
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pagos_reserva_id_fkey'
+            columns: ['reserva_id']
+            isOneToOne: false
+            referencedRelation: 'reservas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<never, never>
     Functions: {
@@ -489,6 +541,7 @@ export interface Database {
       entrega_pedido: EntregaPedido
       metodo_pago_pedido: MetodoPagoPedido
       estado_pedido: EstadoPedido
+      estado_pago: EstadoPago
     }
     CompositeTypes: Record<never, never>
   }
