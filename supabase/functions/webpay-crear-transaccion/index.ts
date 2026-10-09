@@ -96,7 +96,50 @@ interface Cobrable {
   id: string
   codigo: string
   clienteId: string | null
+  /** Lo que se cobra AHORA. Con abono, no es el precio del servicio. */
   monto: number
+  /**
+   * El total del servicio cuando solo se cobra un abono, o `null` cuando se
+   * cobra todo.
+   *
+   * Se guarda en `pagos.monto_total` (0016) para que el comprobante pueda decir
+   * el saldo pendiente sin recalcularlo: el estudio edita sus precios, y un
+   * comprobante de hace dos meses mostraria una deuda que nadie acordo.
+   */
+  montoTotal: number | null
+}
+
+/**
+ * Reparte el precio entre lo que se cobra ahora y lo que queda para el local.
+ *
+ * Es la copia en Deno de `desglosarPago` del frontend, y la regla esta escrita
+ * igual en los dos lados a proposito: la pantalla tiene que anunciar lo mismo
+ * que se va a cobrar. ESTA es la version que manda, porque es la unica que el
+ * navegador no puede alterar.
+ *
+ * El abono NUNCA supera el total: el estudio configura una cifra fija por
+ * servicio, pero con variantes el total varia, y un abono de $15.000 sobre una
+ * opcion de $10.000 cobraria mas que el servicio. En ese caso se cobra el total.
+ */
+function repartir(
+  total: number,
+  cobrarAbono: boolean,
+  montoAbono: number | null,
+): { aCobrar: number; montoTotal: number | null } {
+  const totalEntero = Math.round(total)
+
+  const abonoValido =
+    cobrarAbono &&
+    typeof montoAbono === 'number' &&
+    Number.isFinite(montoAbono) &&
+    montoAbono > 0
+
+  if (!abonoValido) return { aCobrar: totalEntero, montoTotal: null }
+
+  const aCobrar = Math.min(Math.round(montoAbono as number), totalEntero)
+  // Sin saldo no hay abono que explicar: se deja `montoTotal` en null para que
+  // el comprobante no muestre un desglose de cero.
+  return { aCobrar, montoTotal: aCobrar < totalEntero ? totalEntero : null }
 }
 
 Deno.serve(async (req: Request) => {
@@ -201,11 +244,17 @@ Deno.serve(async (req: Request) => {
       codigo: pedido.codigo as string,
       clienteId: (pedido.cliente_id as string | null) ?? null,
       monto: Number(pedido.total),
+      // El abono es una regla de los SERVICIOS. Un pedido de la tienda se paga
+      // completo: no hay nada que ir a terminar de pagar al local.
+      montoTotal: null,
     }
   } else {
     const lectura = admin
       .from('reservas')
-      .select('id, codigo, cliente_id, estado, detalles_extra, servicios ( precio_base )')
+      .select(
+        'id, codigo, cliente_id, estado, detalles_extra, ' +
+          'servicios ( precio_base, cobrar_abono, monto_abono )',
+      )
     const { data: reserva, error } =
       await (reservaId !== null
         ? lectura.eq('id', reservaId)
@@ -232,20 +281,39 @@ Deno.serve(async (req: Request) => {
      * correo de confirmacion, para que el monto cobrado y el anunciado no puedan
      * discrepar.
      */
-    const servicio = unoDe(reserva.servicios as { precio_base: number } | null)
+    const servicio = unoDe(
+      reserva.servicios as
+        | { precio_base: number; cobrar_abono: boolean; monto_abono: number | null }
+        | null,
+    )
     const variante = (reserva.detalles_extra as
       | { variante?: { precio?: number } }
       | null)?.variante
 
-    const monto =
+    const total =
       typeof variante?.precio === 'number' ? variante.precio : (servicio?.precio_base ?? 0)
+
+    /**
+     * Si se cobra todo o solo el abono lo dice EL SERVICIO (0016), no la
+     * peticion.
+     *
+     * Es el mismo principio que el monto: el navegador manda un identificador y
+     * el servidor decide cuanto se cobra. Si el cuerpo pudiera pedir "cobrame
+     * solo el abono", cualquiera reservaria cualquier servicio por $5.000.
+     */
+    const { aCobrar, montoTotal } = repartir(
+      Number(total),
+      servicio?.cobrar_abono === true,
+      typeof servicio?.monto_abono === 'number' ? servicio.monto_abono : null,
+    )
 
     cobrable = {
       tipo: 'reserva',
       id: String(reserva.id),
       codigo: reserva.codigo as string,
       clienteId: (reserva.cliente_id as string | null) ?? null,
-      monto: Number(monto),
+      monto: aCobrar,
+      montoTotal,
     }
   }
 
@@ -297,6 +365,7 @@ Deno.serve(async (req: Request) => {
       buy_order: buyOrder,
       session_id: sessionId,
       monto: Math.round(cobrable.monto),
+      monto_total: cobrable.montoTotal,
       estado: 'iniciado',
       [columna]: Number(cobrable.id),
     })
@@ -358,6 +427,7 @@ Deno.serve(async (req: Request) => {
         url,
         buyOrder,
         monto: Math.round(cobrable.monto),
+        montoTotal: cobrable.montoTotal,
         retornoUrl,
         destinoFinal: `${sitioUrl}/confirmacion-pago`,
       },

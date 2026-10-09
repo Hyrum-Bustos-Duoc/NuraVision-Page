@@ -150,6 +150,18 @@ export default function ConfirmacionPago() {
 function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
   const esReserva = c.tipo === 'reserva'
 
+  /**
+   * Si hay un desglose de abono que mostrar.
+   *
+   * Se exigen las dos cifras y que el saldo sea positivo: un "saldo $0" no
+   * aporta nada y tres filas para decir una sola cifra solo confunden.
+   */
+  const hayAbono =
+    c.aprobado &&
+    typeof c.montoTotal === 'number' &&
+    typeof c.saldo === 'number' &&
+    c.saldo > 0
+
   const titulo = c.aprobado
     ? '¡Pago aprobado!'
     : c.estado === 'anulado'
@@ -157,9 +169,13 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
       : 'Pago rechazado'
 
   const bajada = c.aprobado
-    ? esReserva
-      ? 'Tu hora quedó confirmada. Te enviamos el detalle a tu correo.'
-      : 'Recibimos tu pago. Estamos preparando tu pedido.'
+    ? hayAbono
+      ? // Con abono, lo primero que hay que decir es que queda algo por pagar:
+        // enterarse en el local de que se debe el resto seria una sorpresa.
+        'Tu hora quedó confirmada con el abono. El saldo se paga en el estudio el día de tu cita.'
+      : esReserva
+        ? 'Tu hora quedó confirmada. Te enviamos el detalle a tu correo.'
+        : 'Recibimos tu pago. Estamos preparando tu pedido.'
     : c.estado === 'anulado'
       ? 'No se completó el pago, así que no te cobramos nada. Puedes intentarlo otra vez.'
       : (c.motivo ?? 'El medio de pago rechazó la transacción. No se te cobró.')
@@ -177,8 +193,24 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
         {/* Se comprueba el tipo antes de formatear: `formatPrice` de un valor
             ausente pinta "NaN", y un comprobante que dice NaN en el monto es
             peor que uno que no lo muestra. */}
-        {typeof c.monto === 'number' && Number.isFinite(c.monto) && (
-          <Dato etiqueta="Monto" valor={formatPrice(c.monto)} destacado />
+        {hayAbono ? (
+          <>
+            {/* Las tres cifras del abono (0016). Van en este orden —total,
+                pagado, saldo— porque es como se lee una cuenta: cuanto cuesta,
+                cuanto llevas, cuanto falta. */}
+            <Dato etiqueta="Total del servicio" valor={formatPrice(c.montoTotal!)} />
+            <Dato etiqueta="Abonado hoy con Webpay" valor={formatPrice(c.monto)} destacado />
+            <Dato
+              etiqueta="Saldo a pagar en el local"
+              valor={formatPrice(c.saldo!)}
+              destacado
+            />
+          </>
+        ) : (
+          typeof c.monto === 'number' &&
+          Number.isFinite(c.monto) && (
+            <Dato etiqueta="Monto" valor={formatPrice(c.monto)} destacado />
+          )
         )}
         {/* Solo lo que tiene sentido cuando hubo cobro: en un rechazo no hay
             codigo de autorizacion ni tarjeta que mostrar. */}

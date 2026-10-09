@@ -89,6 +89,8 @@ interface FilaPago {
   id: number
   buy_order: string
   monto: number
+  /** Total del servicio cuando solo se cobro un abono (0016). */
+  monto_total: number | null
   estado: string
   pedido_id: number | null
   reserva_id: number | null
@@ -114,6 +116,19 @@ function comprobante(pago: FilaPago, estado: string, codigo: string | null) {
     ordenCompra: pago.buy_order,
     codigo,
     monto: pago.monto,
+    /**
+     * El desglose del abono (0016).
+     *
+     * `montoTotal` es lo que costaba el servicio el dia del cobro, guardado
+     * entonces y no recalculado: el estudio edita sus precios y un comprobante
+     * viejo mostraria un saldo que nadie acordo.
+     *
+     * Los dos van en null cuando se cobro el total, que es el caso de los
+     * pedidos de la tienda y de los servicios sin abono: ahi no hay nada que
+     * desglosar y la pantalla muestra una sola cifra.
+     */
+    montoTotal: pago.monto_total,
+    saldo: pago.monto_total === null ? null : pago.monto_total - pago.monto,
     codigoAutorizacion: pago.authorization_code,
     tipoPago: pago.payment_type_code,
     cuotas: pago.cuotas,
@@ -151,8 +166,9 @@ Deno.serve(async (req: Request) => {
   })
 
   const COLUMNAS =
-    'id, buy_order, monto, estado, pedido_id, reserva_id, confirmado_en, ' +
-    'response_code, authorization_code, payment_type_code, cuotas, tarjeta_final'
+    'id, buy_order, monto, monto_total, estado, pedido_id, reserva_id, ' +
+    'confirmado_en, response_code, authorization_code, payment_type_code, ' +
+    'cuotas, tarjeta_final'
 
   /**
    * El codigo del pedido o de la reserva a la que pertenece el intento.

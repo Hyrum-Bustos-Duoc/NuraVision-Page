@@ -45,7 +45,19 @@ export interface Comprobante {
    * que nos escribe, asi que es el que va mas visible en el comprobante.
    */
   codigo: string | null
+  /** Lo que se cobro ahora. Con abono, no es el precio del servicio. */
   monto: number
+  /**
+   * Total del servicio cuando solo se cobro un abono (0016), o `null` cuando se
+   * cobro todo.
+   *
+   * Lo guardo el servidor el dia del cobro y no se recalcula: el estudio edita
+   * sus precios, y un comprobante de hace dos meses mostraria un saldo que
+   * nadie acordo.
+   */
+  montoTotal: number | null
+  /** Lo que queda por pagar en el local. `null` si no hubo abono. */
+  saldo: number | null
   codigoAutorizacion: string | null
   tipoPago: string | null
   cuotas: number | null

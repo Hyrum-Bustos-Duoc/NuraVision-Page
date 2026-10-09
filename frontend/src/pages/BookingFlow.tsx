@@ -7,6 +7,7 @@ import { useServicioDetalle } from '@/modules/servicios/ui/useServicioDetalle'
 import { useServicios } from '@/modules/servicios/ui/useServicios'
 import { fotoDeServicio } from '@/modules/servicios/ui/servicio.imagenes'
 import { ServiceVariantStep } from '@/modules/servicios/ui/ServiceVariantStep'
+import { desglosarPago } from '@/modules/servicios/domain/abono'
 import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfesionalesPorServicio'
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
@@ -51,6 +52,9 @@ interface ServicioReservaVista {
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
+  /** Si al reservar se cobra solo un abono (0016). */
+  cobrarAbono: boolean
+  montoAbono: number | null
 }
 
 function toVista(servicio: Servicio): ServicioReservaVista {
@@ -62,6 +66,8 @@ function toVista(servicio: Servicio): ServicioReservaVista {
     precioBase: servicio.precioBase,
     variantes: servicio.variantes,
     imagenUrl: fotoDeServicio(servicio),
+    cobrarAbono: servicio.cobrarAbono,
+    montoAbono: servicio.montoAbono,
   }
 }
 
@@ -879,6 +885,9 @@ function ConfirmStep({
     () => cuenta ?? { name: '', email: '', phone: '' },
   )
   const [showErrors, setShowErrors] = useState(false)
+  // La misma funcion que replica la Edge Function: lo que se anuncia aqui es
+  // exactamente lo que se va a cobrar.
+  const desglose = desglosarPago(precio, service)
 
   // Una cuenta de Supabase puede no tener nombre ni teléfono: al registrarse
   // solo el correo es obligatorio. Si falta algo se piden los datos igual, ya
@@ -964,10 +973,27 @@ function ConfirmStep({
         </div>
 
         <div className="h-fit rounded-2xl bg-line-soft/60 p-6">
-          <p className="text-sm text-muted">Total a pagar en el salón</p>
-          <p className="mt-1 font-serif-display text-4xl text-ink">
-            {formatPrice(precio)}
+          <p className="text-sm text-muted">
+            {desglose.esAbono && pagarAhora ? 'Total del servicio' : 'Total a pagar en el salón'}
           </p>
+          <p className="mt-1 font-serif-display text-4xl text-ink">
+            {formatPrice(desglose.total)}
+          </p>
+
+          {/* El desglose solo aparece si se va a abonar AHORA: eligiendo pagar
+              en el estudio no hay abono ni saldo, se paga todo alli. */}
+          {desglose.esAbono && pagarAhora && (
+            <dl className="mt-4 space-y-1.5 border-t border-line pt-4 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted">Abonas hoy con Webpay</dt>
+                <dd className="font-medium text-ink">{formatPrice(desglose.aPagarAhora)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted">Saldo en el local</dt>
+                <dd className="font-medium text-ink">{formatPrice(desglose.saldo)}</dd>
+              </div>
+            </dl>
+          )}
 
           {eleccion && (
             <div className="mt-4 border-t border-line pt-4 text-sm">
@@ -997,8 +1023,12 @@ function ConfirmStep({
               <OpcionPago
                 activa={pagarAhora}
                 onElegir={() => onPagarAhora(true)}
-                titulo="Pagar ahora con Webpay"
-                detalle={`${formatPrice(precio)} con tarjeta. Tu hora queda confirmada al pagar`}
+                titulo={desglose.esAbono ? 'Abonar ahora con Webpay' : 'Pagar ahora con Webpay'}
+                detalle={
+                  desglose.esAbono
+                    ? `${formatPrice(desglose.aPagarAhora)} ahora y ${formatPrice(desglose.saldo)} en el local`
+                    : `${formatPrice(desglose.total)} con tarjeta. Tu hora queda confirmada al pagar`
+                }
               />
             </div>
           </fieldset>
@@ -1022,7 +1052,7 @@ function ConfirmStep({
               : guardando
                 ? 'Guardando…'
                 : pagarAhora
-                  ? `Pagar ${formatPrice(precio)}`
+                  ? `${desglose.esAbono ? 'Abonar' : 'Pagar'} ${formatPrice(desglose.aPagarAhora)}`
                   : 'Confirmar reserva'}
           </Button>
 
