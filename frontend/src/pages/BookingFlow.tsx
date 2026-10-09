@@ -124,6 +124,19 @@ export default function BookingFlow() {
    * sola hora.
    */
   const [codigoGuardado, setCodigoGuardado] = useState<string | null>(null)
+  /**
+   * Si se paga ahora con Webpay o en el estudio.
+   *
+   * VIVE AQUI Y NO EN `ConfirmStep` a proposito. Ese paso solo se renderiza
+   * mientras `!esperandoHorario`, asi que una recarga de la disponibilidad lo
+   * desmonta y lo vuelve a montar: con el estado dentro, la eleccion se
+   * perdia en silencio y al confirmar se tomaba la rama de "pagar en el
+   * estudio" aunque la clienta hubiera elegido Webpay.
+   *
+   * Por defecto NO: pagar en el estudio es como funciona hoy el salon, y
+   * preseleccionar el cobro empujaria a pagar a quien solo queria la hora.
+   */
+  const [pagarAhora, setPagarAhora] = useState(false)
   const [calendarView, setCalendarView] = useState({ year: 2026, month: 8 })
   // Los nombres se guardan junto a la reserva porque la pantalla final ya no
   // puede resolverlos: la reserva referencia ids de la base y los datos de
@@ -403,7 +416,9 @@ export default function BookingFlow() {
           errorAlGuardar={reserva.error}
           abriendoPago={webpay.enviando}
           errorDePago={webpay.error}
-          onConfirm={(contact, pagarAhora) => {
+          pagarAhora={pagarAhora}
+          onPagarAhora={setPagarAhora}
+          onConfirm={(contact) => {
             // Si un intento anterior ya guardo la reserva, se conserva su codigo
             // en vez de generar otro: es la misma hora.
             const codigo = codigoGuardado ?? generateCode(bookingDraft.dateISO!)
@@ -823,6 +838,8 @@ function ConfirmStep({
   errorAlGuardar,
   abriendoPago,
   errorDePago,
+  pagarAhora,
+  onPagarAhora,
 }: {
   service: ServicioReservaVista
   /** Precio ya resuelto. Ver la nota en `DateStep`. */
@@ -844,27 +861,24 @@ function ConfirmStep({
   /** Sesión real de Supabase: es lo que decide si la reserva queda asociada. */
   conSesion: boolean
   onBack: () => void
-  /** `pagarAhora` decide si se va a Webpay en vez de terminar aqui. */
-  onConfirm: (contact: Contact, pagarAhora: boolean) => void
+  onConfirm: (contact: Contact) => void
   guardando: boolean
   errorAlGuardar: string | null
   /** Se esta abriendo la pasarela: la pagina esta a punto de cambiar sola. */
   abriendoPago: boolean
   /** El cobro no se pudo iniciar. La reserva SI quedo guardada. */
   errorDePago: string | null
+  /**
+   * Si se paga ahora con Webpay. Lo guarda `BookingFlow`, no este paso: aqui
+   * se perderia cada vez que el componente se remonte.
+   */
+  pagarAhora: boolean
+  onPagarAhora: (valor: boolean) => void
 }) {
   const [contact, setContact] = useState<Contact>(
     () => cuenta ?? { name: '', email: '', phone: '' },
   )
   const [showErrors, setShowErrors] = useState(false)
-  /**
-   * Si se paga ahora con Webpay o en el estudio.
-   *
-   * Por defecto NO: pagar en el estudio es como funciona hoy el salon, y
-   * preseleccionar el cobro en linea empujaria a pagar a quien solo queria
-   * tomar la hora. La reserva se guarda igual en los dos casos.
-   */
-  const [pagarAhora, setPagarAhora] = useState(false)
 
   // Una cuenta de Supabase puede no tener nombre ni teléfono: al registrarse
   // solo el correo es obligatorio. Si falta algo se piden los datos igual, ya
@@ -976,13 +990,13 @@ function ConfirmStep({
             <div className="mt-3 space-y-2">
               <OpcionPago
                 activa={!pagarAhora}
-                onElegir={() => setPagarAhora(false)}
+                onElegir={() => onPagarAhora(false)}
                 titulo="Pagar en el estudio"
                 detalle="El día de tu hora, en efectivo o tarjeta"
               />
               <OpcionPago
                 activa={pagarAhora}
-                onElegir={() => setPagarAhora(true)}
+                onElegir={() => onPagarAhora(true)}
                 titulo="Pagar ahora con Webpay"
                 detalle={`${formatPrice(precio)} con tarjeta. Tu hora queda confirmada al pagar`}
               />
@@ -996,14 +1010,11 @@ function ConfirmStep({
             onClick={() => {
               setShowErrors(true)
               if (Object.keys(errors).length > 0) return
-              onConfirm(
-                {
-                  name: contact.name.trim(),
-                  email: contact.email.trim(),
-                  phone: contact.phone.trim(),
-                },
-                pagarAhora,
-              )
+              onConfirm({
+                name: contact.name.trim(),
+                email: contact.email.trim(),
+                phone: contact.phone.trim(),
+              })
             }}
           >
             {abriendoPago
@@ -1062,9 +1073,16 @@ function ConfirmStep({
 }
 
 /**
- * Una opcion de pago. Es un `button` con `aria-pressed` y no un radio nativo
- * para poder pintar toda la tarjeta como zona pulsable, que es lo que ya hace
- * el checkout de la tienda.
+ * Una opcion de pago.
+ *
+ * Es un RADIO NATIVO envuelto en una etiqueta, no un `button` con
+ * `aria-pressed`. La etiqueta hace que toda la tarjeta sea zona pulsable igual
+ * que antes, pero ademas el navegador se encarga de la exclusion mutua, del
+ * foco y de las flechas del teclado, y un lector de pantalla anuncia "opcion 1
+ * de 2" en vez de un boton presionado.
+ *
+ * Importa que sea nativo: de esta eleccion depende que se cobre o no, asi que
+ * cuanto menos comportamiento propio tenga, menos puede fallar.
  */
 function OpcionPago({
   activa,
@@ -1078,17 +1096,23 @@ function OpcionPago({
   detalle: string
 }) {
   return (
-    <button
-      type="button"
-      onClick={onElegir}
-      aria-pressed={activa}
-      className={`w-full rounded-xl border p-4 text-left transition-colors ${
+    <label
+      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
         activa ? 'border-ink bg-ink/[0.03]' : 'border-line-soft hover:border-line'
       }`}
     >
-      <span className="block text-sm font-medium text-ink">{titulo}</span>
-      <span className="mt-0.5 block text-xs text-muted">{detalle}</span>
-    </button>
+      <input
+        type="radio"
+        name="pago-reserva"
+        checked={activa}
+        onChange={onElegir}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-ink">{titulo}</span>
+        <span className="mt-0.5 block text-xs text-muted">{detalle}</span>
+      </span>
+    </label>
   )
 }
 
