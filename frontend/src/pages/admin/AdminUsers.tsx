@@ -240,7 +240,7 @@ export default function AdminUsers() {
                     <CeldaCumpleanos fechaNacimiento={u.fechaNacimiento} hoy={hoy} />
                   </td>
                   <td className={tabla.td}>
-                    <p className="max-w-[12rem] truncate text-ink" title={u.email ?? undefined}>
+                    <p className="max-w-[11rem] truncate text-ink" title={u.email ?? undefined}>
                       {u.email ?? '—'}
                     </p>
                     <p className="text-xs text-muted">{u.telefono ?? '—'}</p>
