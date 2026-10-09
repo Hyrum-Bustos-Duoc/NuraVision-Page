@@ -309,12 +309,26 @@ Deno.serve(async (req: Request) => {
   }
 
   // --- Transbank ------------------------------------------------------------
+  /**
+   * La vuelta NO apunta al sitio, sino a `webpay-retorno`.
+   *
+   * Transbank no vuelve siempre igual: el pago completado llega por GET, pero
+   * el abandono y el timeout en integracion llegan por POST. Un sitio estatico
+   * no puede atender ese POST —el hosting solo reescribe a index.html las
+   * peticiones GET—, asi que apuntar aqui directamente dejaria a la clienta en
+   * una pagina vacia justo despues de pagar.
+   *
+   * `webpay-retorno` absorbe las dos formas y rebota con un 303 a
+   * `${SITIO_URL}/confirmacion-pago` con la query normalizada.
+   */
+  const retornoUrl = `${urlSupabase.replace(/\/+$/, '')}/functions/v1/webpay-retorno`
+
   try {
     const { token: tokenWs, url } = await crearTransaccion({
       buyOrder,
       sessionId,
       amount: cobrable.monto,
-      returnUrl: `${sitioUrl}/confirmacion-pago`,
+      returnUrl: retornoUrl,
     })
 
     const { error: errorToken } = await admin
@@ -332,7 +346,23 @@ Deno.serve(async (req: Request) => {
     }
 
     // `url` y `token` son lo que el navegador tiene que enviar por POST.
-    return respuesta({ token: tokenWs, url, buyOrder, monto: Math.round(cobrable.monto) }, 200)
+    //
+    // `destinoFinal` se devuelve para poder diagnosticar: es a donde acabara la
+    // clienta, y depende de SITIO_URL, que es un secreto y no se puede leer de
+    // otro modo. Si apunta a un puerto o a un dominio equivocado, el sintoma es
+    // una pagina en blanco al volver del banco, y sin esto no habria forma de
+    // verlo sin hacer una compra entera.
+    return respuesta(
+      {
+        token: tokenWs,
+        url,
+        buyOrder,
+        monto: Math.round(cobrable.monto),
+        retornoUrl,
+        destinoFinal: `${sitioUrl}/confirmacion-pago`,
+      },
+      200,
+    )
   } catch (e: unknown) {
     const detalle = e instanceof Error ? e.message : String(e)
     console.error('Transbank no creo la transaccion:', detalle)
