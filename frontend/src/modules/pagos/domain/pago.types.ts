@@ -67,12 +67,19 @@ export interface Comprobante {
  *   · `tbkToken` ("TBK_TOKEN"): la clienta ABANDONO el formulario. No hay nada
  *     que confirmar, solo que anotar.
  *
- * Que los dos lleguen vacios tambien es un caso real: alguien que abre
+ * Y hay un tercer caso: el TIMEOUT. Transbank no manda ningun token, solo
+ * `TBK_ORDEN_COMPRA` y `TBK_ID_SESION`. No se puede confirmar nada, pero
+ * tampoco es una URL vacia: se sabe que la sesion de pago expiro y se puede
+ * decir, que es muy distinto de no mostrar nada.
+ *
+ * Que llegue todo vacio tambien es un caso real: alguien que abre
  * /confirmacion-pago a mano.
  */
 export interface RetornoWebpay {
   tokenWs: string | null
   tbkToken: string | null
+  /** `TBK_ORDEN_COMPRA`. Lo unico que llega cuando la sesion expira. */
+  ordenCompra: string | null
 }
 
 /** Etiquetas legibles de los medios de pago que informa Transbank. */

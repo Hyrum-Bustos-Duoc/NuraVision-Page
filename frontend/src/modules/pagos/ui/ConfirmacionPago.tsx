@@ -5,7 +5,7 @@ import { formatPrice } from '@/shared/lib/format'
 import { boton, tamanoBoton } from '@/shared/ui/nv-estilos'
 import { confirmarPago } from '../application'
 import { ETIQUETA_TIPO_PAGO, type Comprobante } from '../domain/pago.types'
-import { leerRetornoWebpay, retornoVacio } from '../domain/webpay.retorno'
+import { esTimeout, leerRetornoWebpay, retornoVacio } from '../domain/webpay.retorno'
 import { pagoRepository } from '../infrastructure/supabase-pago.repository'
 
 /**
@@ -43,11 +43,15 @@ export default function ConfirmacionPago() {
   // nada" se resuelve sin tocar el estado ni lanzar ninguna peticion.
   const retorno = useMemo(() => leerRetornoWebpay(search), [search])
   const sinDatos = retornoVacio(retorno)
+  const expirada = esTimeout(retorno)
+  // Ni la URL vacia ni el timeout tienen nada que confirmar: en los dos casos se
+  // resuelve aqui, sin peticion y sin tocar el estado.
+  const nadaQueConfirmar = sinDatos || expirada
 
   const [estado, setEstado] = useState<Estado>({ fase: 'confirmando' })
 
   useEffect(() => {
-    if (sinDatos) return
+    if (nadaQueConfirmar) return
     // Guarda de cancelacion: si la clienta se va antes de que responda, no se
     // escribe en un componente desmontado.
     let vivo = true
@@ -70,7 +74,27 @@ export default function ConfirmacionPago() {
     return () => {
       vivo = false
     }
-  }, [retorno, sinDatos])
+  }, [retorno, nadaQueConfirmar])
+
+  if (expirada) {
+    return (
+      <Marco>
+        <Insignia ok={false} />
+        <h1 className="mt-6 font-serif text-3xl font-light text-nv-ink">
+          Se agotó el tiempo para pagar
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-nv-muted1">
+          La sesión de pago expiró antes de completarse, así que{' '}
+          <strong className="font-medium text-nv-ink">no se te cobró nada</strong>. Tu pedido
+          quedó registrado y puedes pagarlo cuando quieras.
+        </p>
+        {retorno.ordenCompra && (
+          <p className="mt-2 text-xs text-nv-soft1">Orden {retorno.ordenCompra}</p>
+        )}
+        <Acciones />
+      </Marco>
+    )
+  }
 
   if (sinDatos) {
     return (
@@ -150,7 +174,12 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
         {c.codigo && (
           <Dato etiqueta={esReserva ? 'Reserva' : 'Pedido'} valor={c.codigo} destacado />
         )}
-        <Dato etiqueta="Monto" valor={formatPrice(c.monto)} destacado />
+        {/* Se comprueba el tipo antes de formatear: `formatPrice` de un valor
+            ausente pinta "NaN", y un comprobante que dice NaN en el monto es
+            peor que uno que no lo muestra. */}
+        {typeof c.monto === 'number' && Number.isFinite(c.monto) && (
+          <Dato etiqueta="Monto" valor={formatPrice(c.monto)} destacado />
+        )}
         {/* Solo lo que tiene sentido cuando hubo cobro: en un rechazo no hay
             codigo de autorizacion ni tarjeta que mostrar. */}
         {c.aprobado && c.codigoAutorizacion && (
@@ -168,7 +197,7 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
         {c.aprobado && typeof c.cuotas === 'number' && c.cuotas > 1 && (
           <Dato etiqueta="Cuotas" valor={String(c.cuotas)} />
         )}
-        <Dato etiqueta="Orden de compra" valor={c.ordenCompra} />
+        {c.ordenCompra && <Dato etiqueta="Orden de compra" valor={c.ordenCompra} />}
       </dl>
 
       {c.aprobado && (

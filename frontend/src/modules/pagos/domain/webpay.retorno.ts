@@ -5,23 +5,22 @@ import type { RetornoWebpay } from './pago.types'
  *
  * Es logica pura —de una cadena de busqueda a un objeto— para poder probarla sin
  * navegador, porque de aqui depende que la pantalla de resultado distinga un
- * pago completado de un abandono.
+ * pago completado de un abandono o de una sesion expirada.
  *
  * ----------------------------------------------------------------------------
- * POR QUE SE LEEN DOS PARAMETROS Y NO UNO
+ * LAS CUATRO FORMAS DE VOLVER
  * ----------------------------------------------------------------------------
- * Transbank usa nombres distintos segun lo que paso:
+ * Transbank usa nombres distintos segun lo que paso, y no mirarlos todos deja
+ * pantallas sin explicacion:
  *
- *   · `token_ws`  -> la clienta termino el formulario (pago o rechazo).
- *   · `TBK_TOKEN` -> la clienta se fue sin pagar, o se agoto el tiempo.
+ *   · `token_ws`              -> se completo el formulario (aprobado o rechazado).
+ *   · `TBK_TOKEN` + orden     -> la clienta se fue sin pagar.
+ *   · solo `TBK_ORDEN_COMPRA` -> la sesion de pago expiro. NO llega token.
+ *   · nada                    -> alguien abrio esta direccion a mano.
  *
- * Mirar solo `token_ws` haria que un abandono se viera como una pantalla sin
- * datos, que es lo peor posible: la clienta no sabria si le cobraron.
- *
- * Hay un tercer caso que Transbank documenta y que aqui se resuelve solo: que
- * lleguen LOS DOS. Ocurre cuando se reintenta un pago en una sesion anulada.
- * Se da prioridad a `token_ws`, porque si existe hay un cobro real que
- * confirmar; `TBK_TOKEN` se refiere entonces al intento viejo.
+ * Los parametros llegan siempre por GET porque la `return_url` apunta a la
+ * funcion `webpay-retorno`, que absorbe el POST que Transbank usa en el
+ * abandono y el timeout y rebota con la query normalizada.
  */
 export function leerRetornoWebpay(busqueda: string): RetornoWebpay {
   const params = new URLSearchParams(busqueda)
@@ -33,14 +32,28 @@ export function leerRetornoWebpay(busqueda: string): RetornoWebpay {
 
   const tokenWs = limpio(params.get('token_ws'))
   const tbkToken = limpio(params.get('TBK_TOKEN'))
+  const ordenCompra = limpio(params.get('TBK_ORDEN_COMPRA'))
 
-  // Con los dos presentes manda `token_ws`: se devuelve `tbkToken` en null para
-  // que quien decida no tenga que repetir esta regla.
-  if (tokenWs !== null) return { tokenWs, tbkToken: null }
-  return { tokenWs: null, tbkToken }
+  // Con los dos tokens presentes manda `token_ws`: si existe hay un cobro real
+  // que confirmar, y `TBK_TOKEN` se refiere entonces al intento viejo. Ocurre al
+  // reintentar sobre una sesion ya anulada.
+  if (tokenWs !== null) return { tokenWs, tbkToken: null, ordenCompra }
+  return { tokenWs: null, tbkToken, ordenCompra }
 }
 
-/** Si la URL de retorno no trae nada que procesar. */
+/** Si la URL de retorno no trae absolutamente nada que procesar. */
 export function retornoVacio(retorno: RetornoWebpay): boolean {
-  return retorno.tokenWs === null && retorno.tbkToken === null
+  return retorno.tokenWs === null && retorno.tbkToken === null && retorno.ordenCompra === null
+}
+
+/**
+ * Si la sesion de pago expiro.
+ *
+ * Se reconoce por la ausencia de token junto a la presencia de la orden: sin
+ * token no hay nada que confirmar contra Transbank, pero si se sabe que hubo un
+ * intento y que se quedo sin tiempo. Distinguirlo es lo que permite decir
+ * "se agoto el tiempo" en vez de "no hay nada aqui".
+ */
+export function esTimeout(retorno: RetornoWebpay): boolean {
+  return retorno.tokenWs === null && retorno.tbkToken === null && retorno.ordenCompra !== null
 }
