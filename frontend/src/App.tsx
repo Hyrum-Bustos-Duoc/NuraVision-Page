@@ -42,6 +42,7 @@ import AIAnalysis from '@/pages/AIAnalysis'
 import Tienda from '@/modules/tienda/ui/Tienda'
 import DetalleProducto from '@/modules/tienda/ui/DetalleProducto'
 import Checkout from '@/modules/pedidos/ui/Checkout'
+import ConfirmacionPago from '@/modules/pagos/ui/ConfirmacionPago'
 import AdminPedidos from '@/modules/pedidos/ui/AdminPedidos'
 import AdminProductos from '@/modules/tienda/ui/AdminProductos'
 import Profile from '@/pages/Profile'
@@ -132,6 +133,10 @@ export default function App() {
                 <Route path="tienda" element={<Tienda />} />
                 <Route path="tienda/:slug" element={<DetalleProducto />} />
                 <Route path="checkout" element={<Checkout />} />
+                {/* La `return_url` de Transbank. Va dentro del layout de
+                    cliente para que la clienta vuelva del banco al sitio de
+                    siempre, con su cabecera y su carrito. */}
+                <Route path="confirmacion-pago" element={<ConfirmacionPago />} />
                 <Route path="profesionales" element={<Professionals />} />
                 <Route path="profesionales/:id" element={<ProfessionalDetail />} />
                 <Route path="reservar" element={<BookingFlow />} />

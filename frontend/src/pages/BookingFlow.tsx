@@ -11,6 +11,7 @@ import { useProfesionalesPorServicio } from '@/modules/profesionales/ui/useProfe
 import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
 import { useCrearReserva } from '@/modules/reservas/ui/useCrearReserva'
+import { usePagoWebpay } from '@/modules/pagos/ui/usePagoWebpay'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -114,6 +115,15 @@ export default function BookingFlow() {
       ? { name: currentUser.name, email: currentUser.email, phone: currentUser.phone }
       : null
   const reserva = useCrearReserva()
+  const webpay = usePagoWebpay()
+  /**
+   * El codigo de la reserva si ya se guardo.
+   *
+   * Hace falta porque el cobro puede fallar DESPUES de haberla creado: sin
+   * esto, el segundo clic en el boton crearia una reserva duplicada por una
+   * sola hora.
+   */
+  const [codigoGuardado, setCodigoGuardado] = useState<string | null>(null)
   const [calendarView, setCalendarView] = useState({ year: 2026, month: 8 })
   // Los nombres se guardan junto a la reserva porque la pantalla final ya no
   // puede resolverlos: la reserva referencia ids de la base y los datos de
@@ -391,8 +401,12 @@ export default function BookingFlow() {
           onBack={() => clearFrom('time')}
           guardando={reserva.guardando}
           errorAlGuardar={reserva.error}
-          onConfirm={(contact) => {
-            const codigo = generateCode(bookingDraft.dateISO!)
+          abriendoPago={webpay.enviando}
+          errorDePago={webpay.error}
+          onConfirm={(contact, pagarAhora) => {
+            // Si un intento anterior ya guardo la reserva, se conserva su codigo
+            // en vez de generar otro: es la misma hora.
+            const codigo = codigoGuardado ?? generateCode(bookingDraft.dateISO!)
             const horaInicio = bookingDraft.time!
             // La hora de término se calcula al reservar y se guarda: si mañana
             // cambia la duración del servicio, esta reserva conserva el bloque
@@ -400,7 +414,8 @@ export default function BookingFlow() {
             const horaFin = minutesToTime(timeToMinutes(horaInicio) + service.duracionMinutos)
 
             void (async () => {
-              const guardada = await reserva.crear({
+              if (codigoGuardado === null) {
+                const guardada = await reserva.crear({
                 servicioId: service.id,
                 profesionalId: professional.id,
                 fecha: bookingDraft.dateISO!,
@@ -435,9 +450,24 @@ export default function BookingFlow() {
                   : null,
               })
 
-              // Si la base la rechazó no se avanza: el paso de confirmación
-              // muestra el error y conserva lo elegido para reintentar.
-              if (!guardada) return
+                // Si la base la rechazó no se avanza: el paso de confirmación
+                // muestra el error y conserva lo elegido para reintentar.
+                if (!guardada) return
+                setCodigoGuardado(codigo)
+              }
+
+              if (pagarAhora) {
+                /**
+                 * La reserva ya existe; ahora se cobra.
+                 *
+                 * No se limpia el borrador ni se pinta la pantalla de exito: de
+                 * eso se encarga /confirmacion-pago cuando la clienta vuelva de
+                 * Webpay. Si el cobro no llega a abrirse, este paso sigue en
+                 * pantalla con el aviso y el boton reintenta solo el pago.
+                 */
+                await webpay.pagar({ tipo: 'reserva', codigo })
+                return
+              }
 
               const booking: Booking = {
                 id: `b-${Date.now()}`,
@@ -791,6 +821,8 @@ function ConfirmStep({
   onConfirm,
   guardando,
   errorAlGuardar,
+  abriendoPago,
+  errorDePago,
 }: {
   service: ServicioReservaVista
   /** Precio ya resuelto. Ver la nota en `DateStep`. */
@@ -812,14 +844,27 @@ function ConfirmStep({
   /** Sesión real de Supabase: es lo que decide si la reserva queda asociada. */
   conSesion: boolean
   onBack: () => void
-  onConfirm: (contact: Contact) => void
+  /** `pagarAhora` decide si se va a Webpay en vez de terminar aqui. */
+  onConfirm: (contact: Contact, pagarAhora: boolean) => void
   guardando: boolean
   errorAlGuardar: string | null
+  /** Se esta abriendo la pasarela: la pagina esta a punto de cambiar sola. */
+  abriendoPago: boolean
+  /** El cobro no se pudo iniciar. La reserva SI quedo guardada. */
+  errorDePago: string | null
 }) {
   const [contact, setContact] = useState<Contact>(
     () => cuenta ?? { name: '', email: '', phone: '' },
   )
   const [showErrors, setShowErrors] = useState(false)
+  /**
+   * Si se paga ahora con Webpay o en el estudio.
+   *
+   * Por defecto NO: pagar en el estudio es como funciona hoy el salon, y
+   * preseleccionar el cobro en linea empujaria a pagar a quien solo queria
+   * tomar la hora. La reserva se guarda igual en los dos casos.
+   */
+  const [pagarAhora, setPagarAhora] = useState(false)
 
   // Una cuenta de Supabase puede no tener nombre ni teléfono: al registrarse
   // solo el correo es obligatorio. Si falta algo se piden los datos igual, ya
@@ -924,22 +969,62 @@ function ConfirmStep({
               </div>
             </div>
           )}
+          <fieldset className="mt-6 border-t border-line pt-5">
+            <legend className="text-xs uppercase tracking-[0.12em] text-muted">
+              Cómo quieres pagar
+            </legend>
+            <div className="mt-3 space-y-2">
+              <OpcionPago
+                activa={!pagarAhora}
+                onElegir={() => setPagarAhora(false)}
+                titulo="Pagar en el estudio"
+                detalle="El día de tu hora, en efectivo o tarjeta"
+              />
+              <OpcionPago
+                activa={pagarAhora}
+                onElegir={() => setPagarAhora(true)}
+                titulo="Pagar ahora con Webpay"
+                detalle={`${formatPrice(precio)} con tarjeta. Tu hora queda confirmada al pagar`}
+              />
+            </div>
+          </fieldset>
+
           <Button
             full
-            className="mt-6"
-            disabled={guardando}
+            className="mt-5"
+            disabled={guardando || abriendoPago}
             onClick={() => {
               setShowErrors(true)
               if (Object.keys(errors).length > 0) return
-              onConfirm({
-                name: contact.name.trim(),
-                email: contact.email.trim(),
-                phone: contact.phone.trim(),
-              })
+              onConfirm(
+                {
+                  name: contact.name.trim(),
+                  email: contact.email.trim(),
+                  phone: contact.phone.trim(),
+                },
+                pagarAhora,
+              )
             }}
           >
-            {guardando ? 'Guardando…' : 'Confirmar reserva'}
+            {abriendoPago
+              ? 'Redirigiendo a Webpay…'
+              : guardando
+                ? 'Guardando…'
+                : pagarAhora
+                  ? `Pagar ${formatPrice(precio)}`
+                  : 'Confirmar reserva'}
           </Button>
+
+          {/* La reserva YA quedo guardada: si no se dice, parecera que se
+              perdio y se intentara reservar otra vez. */}
+          {errorDePago && (
+            <p className="mt-3 rounded-xl border border-line px-4 py-3 text-sm text-ink">
+              {errorDePago}
+              <span className="mt-1 block text-xs text-muted">
+                Tu hora quedó reservada. Puedes pagarla en el estudio o reintentar ahora.
+              </span>
+            </p>
+          )}
 
           {/* La reserva no quedó guardada: se informa aquí y el botón sigue
               disponible para reintentar, sin perder lo que ya se eligió. */}
@@ -973,6 +1058,37 @@ function ConfirmStep({
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Una opcion de pago. Es un `button` con `aria-pressed` y no un radio nativo
+ * para poder pintar toda la tarjeta como zona pulsable, que es lo que ya hace
+ * el checkout de la tienda.
+ */
+function OpcionPago({
+  activa,
+  onElegir,
+  titulo,
+  detalle,
+}: {
+  activa: boolean
+  onElegir: () => void
+  titulo: string
+  detalle: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onElegir}
+      aria-pressed={activa}
+      className={`w-full rounded-xl border p-4 text-left transition-colors ${
+        activa ? 'border-ink bg-ink/[0.03]' : 'border-line-soft hover:border-line'
+      }`}
+    >
+      <span className="block text-sm font-medium text-ink">{titulo}</span>
+      <span className="mt-0.5 block text-xs text-muted">{detalle}</span>
+    </button>
   )
 }
 
