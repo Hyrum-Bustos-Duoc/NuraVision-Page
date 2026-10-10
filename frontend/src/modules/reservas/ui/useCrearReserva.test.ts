@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import type { NuevaReserva } from '../domain/reserva.types'
 import { useCrearReserva } from './useCrearReserva'

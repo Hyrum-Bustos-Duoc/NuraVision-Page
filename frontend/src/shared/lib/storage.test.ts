@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import type { AppData, Booking } from '@/shared/types'
 import { loadStoredData } from './storage'
 
