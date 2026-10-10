@@ -81,7 +81,7 @@ describe('politicas (links de Ayuda del footer)', () => {
   it('despacho, devoluciones y cancelacion', () => {
     expect(responder(PREGUNTAS_AYUDA.despacho, contexto).mensaje.texto).toMatch(/tres opciones/)
     expect(responder(PREGUNTAS_AYUDA.devoluciones, contexto).mensaje.texto).toMatch(/10 días/)
-    expect(responder(PREGUNTAS_AYUDA.cancelacion, contexto).mensaje.texto).toMatch(/12 horas/)
+    expect(responder(PREGUNTAS_AYUDA.cancelacion, contexto).mensaje.texto).toMatch(/24 horas/)
   })
 })
 

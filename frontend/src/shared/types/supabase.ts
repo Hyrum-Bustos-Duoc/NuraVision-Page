@@ -73,6 +73,11 @@ export interface Database {
           precio_base: number
           /** boolean */
           activo: boolean
+          /**
+           * integer NOT NULL default 0, check >= 0 (0015). Abono en CLP enteros
+           * que se exige al reservar; 0 = sin abono. Lo edita el personal.
+           */
+          abono: number
         }
         Insert: {
           id?: number
@@ -86,6 +91,7 @@ export interface Database {
           duracion_minutos: number
           precio_base: number
           activo?: boolean
+          abono?: number
         }
         Update: {
           id?: number
@@ -99,6 +105,7 @@ export interface Database {
           duracion_minutos?: number
           precio_base?: number
           activo?: boolean
+          abono?: number
         }
         Relationships: []
       }
@@ -130,6 +137,13 @@ export interface Database {
           profesional_id: number | null
           /** timestamptz */
           creado_en: string
+          /**
+           * date, nullable (0016). PostgREST la entrega como 'YYYY-MM-DD', sin
+           * hora ni zona. Replica VALIDADA de
+           * auth.users.raw_user_meta_data.fecha_nacimiento: null = no la declaro
+           * o era invalida. Check: entre 1920-01-01 y current_date.
+           */
+          fecha_nacimiento: string | null
         }
         Insert: {
           id: string
@@ -139,6 +153,7 @@ export interface Database {
           rol?: UsuarioRol
           profesional_id?: number | null
           creado_en?: string
+          fecha_nacimiento?: string | null
         }
         Update: {
           id?: string
@@ -148,6 +163,7 @@ export interface Database {
           rol?: UsuarioRol
           profesional_id?: number | null
           creado_en?: string
+          fecha_nacimiento?: string | null
         }
         Relationships: []
       }
@@ -289,6 +305,15 @@ export interface Database {
            * mas de lo habitual porque `reservas` no tiene columna de precio.
            */
           detalles_extra: Json | null
+          /**
+           * integer NOT NULL default 0, check >= 0 (0015). Abono en CLP EXIGIDO
+           * al crear la reserva; no es comprobante de pago.
+           *
+           * Solo en Row a proposito: el trigger `reservas_fijar_abono` lo copia
+           * de servicios.abono e ignora lo enviado, y ningun GRANT UPDATE lo
+           * incluye. Declararlo en Insert/Update invitaria a enviarlo.
+           */
+          abono: number
         }
         Insert: {
           id?: number

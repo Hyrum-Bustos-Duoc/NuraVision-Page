@@ -215,7 +215,7 @@ export function responder(entrada: string, contexto: ContextoNuria): RespuestaNu
     return {
       mensaje: {
         texto:
-          'Puedes cancelar o reprogramar sin costo hasta 12 horas antes de tu hora. Después de eso, el abono no es reembolsable.',
+          'Puedes cancelar o reprogramar sin costo hasta 24 horas antes de tu hora. Después de eso, el abono no es reembolsable.',
         chips: ['Reservar una hora'],
       },
     }

@@ -62,6 +62,14 @@ export class SupabaseReservaRepository implements ReservaRepository {
             'Revisa que las migraciones 0003 y 0004 estén aplicadas.',
         )
       }
+      // 23503: el servicio o la profesional no existe o no es visible. Lo
+      // lanzan las claves foraneas y el trigger de abono de 0015. Se decide por el codigo y nunca por el
+      // texto, que es de Postgres y nombra ids internos.
+      if (error.code === '23503') {
+        throw new Error(
+          'El servicio o la profesional que elegiste ya no está disponible. Vuelve a intentarlo o elige otra opción.',
+        )
+      }
       throw new Error(`No se pudo guardar la reserva: ${error.message}`)
     }
   }

@@ -1,3 +1,4 @@
+import { esFechaISO } from '@/shared/lib/calendario'
 import type { Tables } from '@/shared/types/supabase'
 import type { Usuario } from '../domain/usuario.types'
 
@@ -21,8 +22,16 @@ export function toUsuario(row: PerfilRow): Usuario {
     // rutas. `?? null` cubre la base donde 0010 no se aplico: la columna no
     // existe y llega undefined.
     profesionalId: row.profesional_id != null ? String(row.profesional_id) : null,
+    // `?? null`: en una base sin 0016 la columna no existe y llega undefined.
+    // La forma se comprueba aunque el check de la base ya la acote, igual que
+    // en auth.mapper: a la interfaz solo llega una fecha que existe.
+    fechaNacimiento: fechaOpcional(row.fecha_nacimiento ?? null),
     creadoEn: row.creado_en,
   }
+}
+
+function fechaOpcional(valor: string | null): string | null {
+  return valor !== null && esFechaISO(valor) ? valor : null
 }
 
 function normalizar(valor: string | null): string | null {

@@ -1,4 +1,5 @@
 import type { Database, Json, Tables } from '@/shared/types/supabase'
+import { aAbono } from '@/shared/lib/abono'
 import type { NuevaReserva, Reserva, VarianteElegida } from '../domain/reserva.types'
 
 export type ReservaInsert = Database['public']['Tables']['reservas']['Insert']
@@ -102,5 +103,7 @@ export function toReserva(row: ReservaRow): Reserva {
     codigo: row.codigo,
     estado: row.estado,
     varianteElegida: aVarianteElegida(row.detalles_extra),
+    // 0 en una base sin 0015, donde la columna no llega.
+    abono: aAbono(row.abono),
   }
 }

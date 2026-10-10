@@ -39,9 +39,24 @@ export function toISODate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+/**
+ * Fecha local ('YYYY-MM-DD') de un instante con zona, como un `timestamptz`.
+ * Cortar el texto en la "T" daria la fecha UTC: una cuenta creada a las 22:30
+ * en Chile apareceria creada al dia siguiente.
+ */
+export function fechaLocalDeInstante(instante: string): string {
+  return toISODate(new Date(instante))
+}
+
 export function formatLongDate(iso: string): string {
   const date = parseISODate(iso)
   return `${date.getDate()} de ${MONTHS[date.getMonth()]}, ${date.getFullYear()}`
+}
+
+/** "4 de marzo": dia y mes, sin año. */
+export function formatDiaMes(iso: string): string {
+  const date = parseISODate(iso)
+  return `${date.getDate()} de ${MONTHS[date.getMonth()]}`
 }
 
 export function formatDayMonthShort(iso: string): { day: number; month: string } {

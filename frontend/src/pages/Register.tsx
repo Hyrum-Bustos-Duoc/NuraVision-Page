@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { rutaDeRetorno } from '@/modules/auth/ui/ruta-inicial'
+import { FECHA_NACIMIENTO_MINIMA } from '@/modules/auth/application'
+import { hoyISO, sumarMeses } from '@/shared/lib/calendario'
+import { SelectorFecha } from '@/shared/ui/SelectorFecha'
 import { Button } from '@/shared/ui/ui'
 
 export default function Register() {
@@ -14,6 +17,7 @@ export default function Register() {
   const [apellido, setApellido] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
+  const [fechaNacimiento, setFechaNacimiento] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [creando, setCreando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +29,7 @@ export default function Register() {
    * "mis reservas" esta vacio.
    */
   const [faltaConfirmar, setFaltaConfirmar] = useState(false)
+  const hoy = hoyISO()
 
   async function crearCuenta() {
     setCreando(true)
@@ -37,6 +42,7 @@ export default function Register() {
         // la reserva y en el saludo, y la base no los necesita separados.
         nombre: `${nombre.trim()} ${apellido.trim()}`.trim(),
         telefono,
+        fechaNacimiento,
       })
 
       if (resultado.sesionIniciada) navigate(volver ?? '/')
@@ -103,6 +109,17 @@ export default function Register() {
             autoComplete="email"
           />
           <Field label="Teléfono" value={telefono} onChange={setTelefono} autoComplete="tel" />
+          <SelectorFecha
+            etiqueta="Cumpleaños (opcional)"
+            valor={fechaNacimiento}
+            onCambio={setFechaNacimiento}
+            minimo={FECHA_NACIMIENTO_MINIMA}
+            maximo={hoy}
+            // Sin fecha, el calendario abre en los años con este a la vista: la
+            // mayoria de quienes reservan rondan esa edad, y llegar a cualquier
+            // otro año es un desplazamiento corto.
+            sugerida={sumarMeses(hoy, -12 * 30)}
+          />
           <div>
             <Field
               label="Contraseña"

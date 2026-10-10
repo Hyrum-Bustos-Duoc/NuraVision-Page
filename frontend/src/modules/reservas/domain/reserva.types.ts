@@ -85,4 +85,13 @@ export interface Reserva {
   estado: EstadoReserva
   /** Lo que se eligio al reservar, o `null` si el servicio no preguntaba nada. */
   varianteElegida: VarianteElegida | null
+  /**
+   * Abono EXIGIDO al crear la reserva, en CLP; 0 = sin abono.
+   *
+   * Lo fija la base (trigger de 0015) copiando el del servicio, y no se puede
+   * editar: cancelar o reprogramar no lo cambian. No es comprobante de pago: el
+   * pago es simulado. No existe en `NuevaReserva` a proposito, porque lo que
+   * enviara el navegador se ignoraria.
+   */
+  abono: number
 }

@@ -1,8 +1,10 @@
 import type { User } from '@supabase/supabase-js'
+import { esFechaISO } from '@/shared/lib/calendario'
 import type { UsuarioAuth } from '../domain/auth.types'
 
 /**
- * Claves con las que se guardan el nombre y el telefono en `user_metadata`.
+ * Claves con las que se guardan el nombre, el telefono y el cumpleaños en
+ * `user_metadata`.
  *
  * Se exportan porque el registro las escribe y el mapper las lee: si solo una
  * de las dos partes las conociera, un cambio de nombre aqui pasaria inadvertido
@@ -10,6 +12,7 @@ import type { UsuarioAuth } from '../domain/auth.types'
  */
 export const META_NOMBRE = 'nombre'
 export const META_TELEFONO = 'telefono'
+export const META_FECHA_NACIMIENTO = 'fecha_nacimiento'
 
 /**
  * Clave que marca al personal del estudio dentro de `app_metadata`.
@@ -38,6 +41,16 @@ function textoOpcional(valor: unknown): string | null {
   if (typeof valor !== 'string') return null
   const limpio = valor.trim()
   return limpio === '' ? null : limpio
+}
+
+/**
+ * El cumpleaños se guarda como 'YYYY-MM-DD'. Como `user_metadata` lo puede
+ * reescribir la propia persona con cualquier cosa, se acepta solo una fecha que
+ * exista; un "1990-02-30" o un timestamp con hora se tratan como ausentes.
+ */
+function fechaOpcional(valor: unknown): string | null {
+  const texto = textoOpcional(valor)
+  return texto !== null && esFechaISO(texto) ? texto : null
 }
 
 /**
@@ -86,6 +99,7 @@ export function toUsuarioAuth(user: User): UsuarioAuth {
     email: user.email ?? '',
     nombre: textoOpcional(meta?.[META_NOMBRE]),
     telefono: textoOpcional(meta?.[META_TELEFONO]),
+    fechaNacimiento: fechaOpcional(meta?.[META_FECHA_NACIMIENTO]),
     esStaff: esMarcaVerdadera(metaApp?.[APP_META_ES_STAFF]),
     profesionalId: idOpcional(metaApp?.[APP_META_PROFESIONAL_ID]),
   }
