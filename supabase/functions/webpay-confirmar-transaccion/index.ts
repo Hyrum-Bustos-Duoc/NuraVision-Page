@@ -124,6 +124,32 @@ interface FilaPago {
   payment_type_code: string | null
   cuotas: number | null
   tarjeta_final: string | null
+  /** Lo que respondio Transbank, mas `motivo` cuando hubo algo que explicar. */
+  respuesta: { motivo?: unknown } | null
+}
+
+/**
+ * Textos para la clienta cuando el resultado necesita explicacion.
+ *
+ * Se GUARDAN en `pagos.respuesta.motivo` ademas de devolverse: una recarga de
+ * la pantalla responde desde la fila (`repetida`), y sin el motivo guardado un
+ * 'error' llegaria sin decir si fue un cobro duplicado o una caida del banco.
+ * `respuesta` es jsonb y ya era el sitio de "lo que paso con este intento", asi
+ * que no hace falta columna nueva.
+ */
+const MOTIVO = {
+  anulado: 'El pago se cancelo antes de completarse.',
+  rechazado: 'El pago fue rechazado por el medio de pago.',
+  noValidado: 'El pago no se pudo validar.',
+  sinRespuesta:
+    'No pudimos confirmar el pago con el banco. El estudio lo revisara y, si se ' +
+    'hizo el cargo, lo devolvera.',
+  duplicado:
+    'Esto ya estaba pagado y este cobro quedo duplicado. El estudio lo revisara ' +
+    'para devolverlo.',
+  yaNoPendiente:
+    'El pago se aprobo, pero la reserva o el pedido ya no estaba pendiente ' +
+    '(por ejemplo, se cancelo). El estudio lo revisara y, si corresponde, lo devolvera.',
 }
 
 /**
@@ -158,6 +184,7 @@ function comprobante(pago: FilaPago, estado: string, codigo: string | null) {
     cuotas: pago.cuotas,
     tarjetaFinal: pago.tarjeta_final,
     tipo: pago.pedido_id !== null ? 'pedido' : 'reserva',
+    ...(typeof pago.respuesta?.motivo === 'string' ? { motivo: pago.respuesta.motivo } : {}),
   }
 }
 
@@ -193,7 +220,7 @@ Deno.serve(async (req: Request) => {
   const COLUMNAS =
     'id, buy_order, monto, monto_total, estado, pedido_id, reserva_id, ' +
     'confirmado_en, response_code, authorization_code, payment_type_code, ' +
-    'cuotas, tarjeta_final'
+    'cuotas, tarjeta_final, respuesta'
 
   /**
    * El codigo del pedido o de la reserva a la que pertenece el intento.
@@ -227,8 +254,8 @@ Deno.serve(async (req: Request) => {
 
   // --- Abandono -------------------------------------------------------------
   // Se exigen el token Y la orden de compra. Con solo el token, cualquiera que
-  // lo viera pasar podria anular un pago ajeno que aun esta en curso. La
-  // respuesta es la misma coincidan o no: no confirma si el intento existe.
+  // lo viera pasar podria anular un pago ajeno que aun esta en curso. Si no
+  // coinciden, la respuesta no dice nada del intento (ni tipo ni orden).
   if (!tokenWs && tbkToken) {
     const { data: pago } = await admin
       .from('pagos')
@@ -236,22 +263,26 @@ Deno.serve(async (req: Request) => {
       .eq('token_ws', tbkToken)
       .maybeSingle<FilaPago>()
 
-    if (pago && pago.confirmado_en === null && ordenCompra === pago.buy_order) {
-      await admin
-        .from('pagos')
-        .update({ estado: 'anulado', confirmado_en: new Date().toISOString() })
-        .eq('id', pago.id)
-        .is('confirmado_en', null)
+    if (!pago || ordenCompra !== pago.buy_order) {
+      return respuesta({ estado: 'anulado', aprobado: false, motivo: MOTIVO.anulado }, 200)
     }
 
-    return respuesta(
-      {
+    const { data: anulado } = await admin
+      .from('pagos')
+      .update({
         estado: 'anulado',
-        aprobado: false,
-        motivo: 'El pago se cancelo antes de completarse.',
-      },
-      200,
-    )
+        confirmado_en: new Date().toISOString(),
+        respuesta: { motivo: MOTIVO.anulado },
+      })
+      .eq('id', pago.id)
+      .is('confirmado_en', null)
+      .select(COLUMNAS)
+      .maybeSingle<FilaPago>()
+
+    // Sin fila: ya estaba reclamado (recarga de la pantalla de abandono, o el
+    // commit llego antes). Se responde lo guardado, como cualquier repeticion.
+    if (!anulado) return yaReclamado(pago)
+    return respuesta(comprobante(anulado, 'anulado', null), 200)
   }
 
   if (!tokenWs) {
@@ -318,7 +349,10 @@ Deno.serve(async (req: Request) => {
       // mano contra el portal de Transbank, y la fila deja constancia.
       await admin
         .from('pagos')
-        .update({ estado: 'error', respuesta: { error: detalle, estado: detalleEstado } })
+        .update({
+          estado: 'error',
+          respuesta: { error: detalle, estado: detalleEstado, motivo: MOTIVO.sinRespuesta },
+        })
         .eq('id', pago.id)
       return respuesta({ error: 'La pasarela de pago no respondio.', estado: 'error' }, 502)
     }
@@ -351,6 +385,9 @@ Deno.serve(async (req: Request) => {
       ? 'rechazado'
       : 'error'
 
+  const motivoFinal =
+    estadoFinal === 'rechazado' ? MOTIVO.rechazado : estadoFinal === 'error' ? MOTIVO.noValidado : null
+
   const resultado = {
     response_code: commit.response_code ?? null,
     authorization_code: commit.authorization_code ?? null,
@@ -359,7 +396,10 @@ Deno.serve(async (req: Request) => {
     // Transbank entrega solo los ultimos digitos, y aqui se recortan otra vez
     // por si algun dia mandara mas: la columna no admite mas de 4.
     tarjeta_final: (commit.card_detail?.card_number ?? '').slice(-4) || null,
-    respuesta: commit as unknown as Record<string, unknown>,
+    respuesta: {
+      ...(commit as unknown as Record<string, unknown>),
+      ...(motivoFinal ? { motivo: motivoFinal } : {}),
+    },
   }
 
   const { data: guardado, error: errorGuardar } = await admin
@@ -379,18 +419,17 @@ Deno.serve(async (req: Request) => {
     )
     const { data: duplicado } = await admin
       .from('pagos')
-      .update({ estado: 'error', ...resultado })
+      .update({
+        estado: 'error',
+        ...resultado,
+        respuesta: { ...resultado.respuesta, motivo: MOTIVO.duplicado },
+      })
       .eq('id', pago.id)
       .select(COLUMNAS)
       .maybeSingle<FilaPago>()
     const fila = duplicado ?? pago
     return respuesta(
-      {
-        ...comprobante(fila, 'error', await codigoDe(fila)),
-        motivo:
-          'Esto ya estaba pagado y este cobro quedo duplicado. El estudio lo ' +
-          'revisara para devolverlo.',
-      },
+      { ...comprobante(fila, 'error', await codigoDe(fila)), motivo: MOTIVO.duplicado },
       200,
     )
   }
@@ -403,35 +442,57 @@ Deno.serve(async (req: Request) => {
   const filaFinal = guardado ?? pago
 
   if (!aprobado) {
-    return respuesta(
-      {
-        ...comprobante(filaFinal, estadoFinal, await codigoDe(filaFinal)),
-        motivo:
-          estadoFinal === 'rechazado'
-            ? 'El pago fue rechazado por el medio de pago.'
-            : 'El pago no se pudo validar.',
-      },
-      200,
-    )
+    return respuesta(comprobante(filaFinal, estadoFinal, await codigoDe(filaFinal)), 200)
   }
 
   // --- Se marca lo pagado ---------------------------------------------------
   // Se hace DESPUES de guardar el resultado del commit: si esto fallara, el pago
-  // ya esta registrado como autorizado y el estudio puede corregir el pedido a
-  // mano. Al reves se perderia el unico rastro del cobro.
-  if (filaFinal.pedido_id !== null) {
-    const { error } = await admin
-      .from('pedidos')
-      .update({ estado: 'pagado', actualizado_en: new Date().toISOString() })
-      .eq('id', filaFinal.pedido_id)
-    if (error) console.error('Pago autorizado pero el pedido no se marco:', error.message)
-  } else if (filaFinal.reserva_id !== null) {
-    const { error } = await admin
-      .from('reservas')
-      .update({ estado: 'confirmada' })
-      .eq('id', filaFinal.reserva_id)
-      .eq('estado', 'pendiente')
-    if (error) console.error('Pago autorizado pero la reserva no se marco:', error.message)
+  // ya esta registrado como autorizado y el estudio puede corregir a mano. Al
+  // reves se perderia el unico rastro del cobro.
+  //
+  // Cada UPDATE filtra por el estado del que se puede partir. Un pedido solo
+  // pasa a 'pagado' desde 'pendiente_pago' (0013). Una reserva solo desde
+  // 'pendiente' o 'confirmada' (el personal pudo confirmarla antes del pago;
+  // reescribir 'confirmada' no cambia nada). Si no toca fila, lo pagado se
+  // cancelo o se cerro mientras la clienta estaba en Transbank: el pago queda
+  // 'autorizado' —el cobro es real— y se explica con un motivo guardado.
+  const { data: marcadas, error: errorMarca } =
+    filaFinal.pedido_id !== null
+      ? await admin
+          .from('pedidos')
+          .update({ estado: 'pagado', actualizado_en: new Date().toISOString() })
+          .eq('id', filaFinal.pedido_id)
+          .eq('estado', 'pendiente_pago')
+          .select('id')
+      : await admin
+          .from('reservas')
+          .update({ estado: 'confirmada' })
+          .eq('id', filaFinal.reserva_id!)
+          .in('estado', ['pendiente', 'confirmada'])
+          .select('id')
+
+  const codigo = await codigoDe(filaFinal)
+
+  if (errorMarca) {
+    // Fallo de la base, no un cambio de estado: no se inventa un motivo. El
+    // pago autorizado queda y el estudio corrige a mano.
+    console.error('Pago autorizado pero no se marco lo pagado:', errorMarca.message)
+  } else if (!marcadas || marcadas.length === 0) {
+    console.error(
+      `Pago ${filaFinal.id} autorizado sobre un ${filaFinal.pedido_id !== null ? 'pedido' : 'reserva'} ` +
+        'que ya no estaba pendiente. Revisar y devolver si corresponde.',
+    )
+    const { data: conMotivo } = await admin
+      .from('pagos')
+      .update({ respuesta: { ...resultado.respuesta, motivo: MOTIVO.yaNoPendiente } })
+      .eq('id', filaFinal.id)
+      .select(COLUMNAS)
+      .maybeSingle<FilaPago>()
+    // Sin correo de confirmacion: confirmaria una hora que ya no existe.
+    return respuesta(
+      { ...comprobante(conMotivo ?? filaFinal, 'autorizado', codigo), motivo: MOTIVO.yaNoPendiente },
+      200,
+    )
   }
 
   // --- Aviso por correo -----------------------------------------------------
@@ -449,7 +510,6 @@ Deno.serve(async (req: Request) => {
    * reconoce como sesion (getUser falla); con solo el id respondia 403. El
    * codigo es la via que esa funcion ya acepta sin sesion, y aqui se tiene.
    */
-  const codigo = await codigoDe(filaFinal)
   if (filaFinal.reserva_id !== null && codigo !== null) {
     try {
       const { error } = await admin.functions.invoke('enviar-confirmacion-reserva', {

@@ -283,7 +283,10 @@ Deno.serve(async (req: Request) => {
     const variante = (reserva.detalles_extra as
       | { variante?: { precio?: number } }
       | null)?.variante
-    const precio = Math.round(
+    // floor y no round: el trigger de 0019 topa el abono con floor(precio). Con
+    // round, un precio de 4999.60 daria abono 4999 y total 5000, un saldo
+    // fantasma de $1, y sin abono se cobraria por encima del precio.
+    const precio = Math.floor(
       Number(typeof variante?.precio === 'number' ? variante.precio : (servicio?.precio_base ?? 0)),
     )
     const abono = Number(reserva.abono ?? 0)
