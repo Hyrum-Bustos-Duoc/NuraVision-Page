@@ -199,7 +199,7 @@ describe('ConfirmacionPago', () => {
     window.sessionStorage.clear()
   })
 
-  // --- QA (nv-qa, 2026-10-11): casos que hoy fallan ---------------------------
+  // --- QA (nv-qa, 2026-10-11): casos que encontro QA --------------------------------------
 
   // webpay-confirmar-transaccion deja 'error' cuando NO sabe si se cobro (commit y
   // consulta de estado sin respuesta) o cuando SI se cobro (segundo autorizado,
@@ -247,4 +247,24 @@ describe('ConfirmacionPago', () => {
     expect(screen.getByText('Seguimos verificando tu pago')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /consultar|verificar|actualizar/i })).toBeInTheDocument()
   })
+
+  // QA (nv-qa, 2026-10-11, segunda pasada): la reserva guardada camino a Webpay
+  // (BookingFlow, sessionStorage) no se olvida al aprobarse el pago. En la misma
+  // pestaña, elegir de nuevo esa hora con el mismo contacto reutiliza un codigo
+  // ya pagado: Webpay responde 409 "ya esta pagado" y el paso Abono dice
+  // "sin el abono no esta confirmada. Reintenta el pago".
+  it('QA: un pago aprobado olvida la reserva sin pagar de esta pestaña', async () => {
+    window.sessionStorage.setItem(
+      'nuravision:reserva-sin-pagar',
+      JSON.stringify({ clave: '7||3|2026-10-20|10:00', contacto: 'Ana|ana@correo.cl|+569', codigo: 'NV-2010-1234' }),
+    )
+    confirmar.mockResolvedValue(APROBADO)
+    pintar()
+
+    await avanzar(0)
+    expect(screen.getByText('¡Pago aprobado!')).toBeInTheDocument()
+    expect(window.sessionStorage.getItem('nuravision:reserva-sin-pagar')).toBeNull()
+    window.sessionStorage.clear()
+  })
 })
+

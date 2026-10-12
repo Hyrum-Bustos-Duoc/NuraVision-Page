@@ -12,6 +12,10 @@
  * y `contacto` los datos de quien reserva: si cualquiera cambia, es otra
  * reserva y no se reutiliza el codigo.
  *
+ * Vive en `shared` porque la usan dos modulos: `reservas` la escribe y `pagos`
+ * la olvida al aprobarse el cobro (si no, la misma hora con el mismo contacto
+ * reutilizaria un codigo ya pagado). Ningun modulo importa del otro.
+ *
  * sessionStorage: vale para esta pestaña y este viaje de ida y vuelta. Todo en
  * try/catch: sin almacenamiento solo se pierde la reutilizacion.
  */

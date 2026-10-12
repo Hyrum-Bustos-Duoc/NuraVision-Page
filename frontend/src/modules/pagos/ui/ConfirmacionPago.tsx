@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import { formatPrice } from '@/shared/lib/format'
+import { olvidarReservaSinPagar } from '@/shared/lib/reserva-sin-pagar'
 import { boton, tamanoBoton } from '@/shared/ui/nv-estilos'
 import { confirmarPago } from '../application'
 import { ETIQUETA_TIPO_PAGO, type Comprobante, type DestinoPago } from '../domain/pago.types'
@@ -110,8 +111,11 @@ export default function ConfirmacionPago() {
             else temporizador = setTimeout(consultar, INTERVALO_REINTENTO_MS)
             return
           }
-          // Cobrado: ya no hay nada que reintentar en esta pestaña.
-          if (comprobante.aprobado) olvidarPagoPendiente()
+          // Cobrado: ya no hay nada que reintentar ni reservar con ese codigo.
+          if (comprobante.aprobado) {
+            olvidarPagoPendiente()
+            olvidarReservaSinPagar()
+          }
           setEstado({ fase: 'resuelto', comprobante })
         })
         .catch((e: unknown) => {

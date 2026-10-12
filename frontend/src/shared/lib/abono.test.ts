@@ -35,4 +35,12 @@ describe('abonoACobrar', () => {
   it('nunca supera el precio de lo elegido', () => {
     expect(abonoACobrar(10000, 12000)).toBe(10000)
   })
+
+  it('redondea el precio hacia abajo, como la base', () => {
+    expect(abonoACobrar(4999.6, 5000)).toBe(4999)
+  })
+
+  it('es 0 si lo elegido cuesta 0, y entonces no hay paso de abono', () => {
+    expect(abonoACobrar(0, 5000)).toBe(0)
+  })
 })

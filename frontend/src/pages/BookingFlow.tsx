@@ -19,7 +19,7 @@ import {
   olvidarReservaSinPagar,
   recordarReservaSinPagar,
   type ReservaSinPagar,
-} from '@/modules/reservas/infrastructure/reserva-sin-pagar.storage'
+} from '@/shared/lib/reserva-sin-pagar'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -273,8 +273,12 @@ export default function BookingFlow() {
   /**
    * La regla unica de abono-servicios-unas: `abono > 0` agrega el paso de pago;
    * con 0 el flujo es exactamente el de antes. No se mira la categoria.
+   *
+   * Se mira el abono que de verdad se cobra, no el configurado: una opcion de
+   * precio 0 deja el abono en 0 en la base, y forzar el paso llevaria a un
+   * cobro que el servidor rechaza sin salida para la clienta.
    */
-  const conAbono = (service?.abono ?? 0) > 0
+  const conAbono = abonoACobrar(precioTotal, service?.abono ?? 0) > 0
   const claveBorrador = [
     bookingDraft.serviceId,
     bookingDraft.varianteOpcionId,
@@ -1030,9 +1034,9 @@ function ConfirmStep({
   pagarAhora: boolean
   onPagarAhora: (valor: boolean) => void
 }) {
-  const conAbono = service.abono > 0
   // Lo que de verdad se cobra: la base lo limita al precio (ver abonoACobrar).
   const abono = abonoACobrar(precio, service.abono)
+  const conAbono = abono > 0
   const [contact, setContact] = useState<Contact>(
     () => contactoEscrito ?? cuenta ?? { name: '', email: '', phone: '' },
   )
