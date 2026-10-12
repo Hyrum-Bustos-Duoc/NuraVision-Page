@@ -640,3 +640,36 @@ test.describe('abono en el panel', () => {
     expect(patches[0].postDataJSON()).toMatchObject({ abono: 6000 })
   })
 })
+
+// --- QA (nv-qa, 2026-10-11) ----------------------------------------------------
+// Tras salir a Webpay, la pagina del flujo pierde el estado (`reservaGuardada`).
+// Si la clienta vuelve sin pagar y reintenta, se crea OTRA reserva por la misma
+// hora: la primera queda 'pendiente' y huerfana. La pantalla de resultado no
+// ofrece reintentar el pago de la reserva ya creada (spec pagos-webpay).
+test.describe('QA: reintento despues de salir a Webpay', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(HOY)
+  })
+
+  test('QA: volver de Webpay sin pagar y reintentar no crea una segunda reserva', async ({ page }) => {
+    const { inserts, cobros, formularios } = await simularApi(page)
+    const hora = await llegarAConfirmar(page, 'Manicura Completa')
+    await llenarContacto(page)
+    await page.getByRole('button', { name: 'Continuar al abono' }).click()
+    await pagar(page).click()
+    await esperarWebpay(page, formularios)
+
+    // «Atras» en Webpay: Chromium recarga el flujo desde cero.
+    await page.goBack()
+    const otra = await llegarAConfirmar(page, 'Manicura Completa')
+    expect(otra).toBe(hora)
+    await llenarContacto(page)
+    await page.getByRole('button', { name: 'Continuar al abono' }).click()
+    await pagar(page).click()
+    await expect.poll(() => cobros.length).toBe(2)
+
+    const codigos = cobros.map((c) => (c.postDataJSON() as { reservaCodigo: string }).reservaCodigo)
+    console.log('QA inserts:', inserts.length, 'codigos cobrados:', codigos)
+    expect(inserts).toHaveLength(1)
+  })
+})

@@ -1,4 +1,4 @@
-import type { Comprobante, EstadoPago } from '../domain/pago.types'
+import type { Comprobante, DestinoPago, EstadoPago } from '../domain/pago.types'
 
 /**
  * Respuesta de `webpay-confirmar-transaccion` tal como llega.
@@ -30,7 +30,15 @@ export interface RespuestaConfirmacion {
 const numero = (v: number | null | undefined): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null
 
-export function toComprobante(r: RespuestaConfirmacion): Comprobante {
+/**
+ * `pendiente` es lo que se recordo al salir a Webpay (ver
+ * pago-pendiente.storage). Solo se usa si la respuesta no dice si era una
+ * reserva o un pedido.
+ */
+export function toComprobante(
+  r: RespuestaConfirmacion,
+  pendiente: DestinoPago | null = null,
+): Comprobante {
   return {
     // Sin estado no hay nada aprobado: se lee como error, nunca como cobro.
     estado: r.estado ?? 'error',
@@ -45,9 +53,10 @@ export function toComprobante(r: RespuestaConfirmacion): Comprobante {
     tipoPago: r.tipoPago ?? null,
     cuotas: numero(r.cuotas),
     tarjetaFinal: r.tarjetaFinal ?? null,
-    // Un abandono no dice que se pagaba. 'pedido' solo cambia el enlace de
-    // salida (tienda en vez de mis reservas); no afirma nada del cobro.
-    tipo: r.tipo === 'reserva' ? 'reserva' : 'pedido',
+    // Manda lo que dice el servidor; si calla, lo recordado al salir. 'pedido'
+    // como ultimo recurso solo cambia el enlace de salida (tienda en vez de
+    // mis reservas); no afirma nada del cobro.
+    tipo: r.tipo ?? pendiente?.tipo ?? 'pedido',
     motivo: r.motivo,
     repetida: r.repetida,
     procesando: r.procesando,

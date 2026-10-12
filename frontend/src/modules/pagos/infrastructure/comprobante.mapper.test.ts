@@ -1,3 +1,4 @@
+import type { DestinoPago } from '../domain/pago.types'
 import { toComprobante } from './comprobante.mapper'
 
 describe('toComprobante', () => {
@@ -48,5 +49,21 @@ describe('toComprobante', () => {
 
   it('sin estado se lee como error, no como cobro', () => {
     expect(toComprobante({}).estado).toBe('error')
+  })
+})
+
+describe('toComprobante: tipo', () => {
+  const pendiente: DestinoPago = { tipo: 'reserva', codigo: 'NV-2010-1234' }
+
+  it('usa el tipo del servidor cuando lo trae', () => {
+    expect(toComprobante({ tipo: 'pedido' }, pendiente).tipo).toBe('pedido')
+  })
+
+  it('si el servidor no lo trae, usa el pago recordado al salir a Webpay', () => {
+    expect(toComprobante({ estado: 'anulado' }, pendiente).tipo).toBe('reserva')
+  })
+
+  it('sin ninguno de los dos, cae en pedido', () => {
+    expect(toComprobante({ estado: 'anulado' }).tipo).toBe('pedido')
   })
 })

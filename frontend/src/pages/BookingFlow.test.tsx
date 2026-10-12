@@ -36,10 +36,10 @@ vi.mock('@/shared/state/AppState', () => ({
     bookings: [],
   }),
 }))
+const ANA = { id: 'u1', nombre: 'Ana Pérez', email: 'ana@correo.cl', telefono: '+56911112222' }
+let usuarioActual: typeof ANA | null = ANA
 vi.mock('@/modules/auth/ui/useAuth', () => ({
-  useAuth: () => ({
-    usuario: { id: 'u1', nombre: 'Ana Pérez', email: 'ana@correo.cl', telefono: '+56911112222' },
-  }),
+  useAuth: () => ({ usuario: usuarioActual }),
 }))
 vi.mock('@/modules/servicios/ui/useServicioDetalle', () => ({
   useServicioDetalle: () => ({ estado: 'listo', servicio }),
@@ -116,6 +116,10 @@ function pintar() {
   )
 }
 
+// La reserva sin pagar se recuerda en sessionStorage (para volver de Webpay
+// sin duplicarla): cada prueba empieza sin ninguna.
+beforeEach(() => window.sessionStorage.clear())
+
 describe('BookingFlow: como se paga', () => {
   beforeEach(() => {
     crear.mockReset().mockResolvedValue(true)
@@ -155,6 +159,25 @@ describe('BookingFlow: como se paga', () => {
       expect(pagar).toHaveBeenCalledWith({ tipo: 'reserva', codigo })
       // Sin pantalla de exito local: el resultado lo da /confirmacion-pago.
       expect(addBooking).not.toHaveBeenCalled()
+    })
+
+    // Volver de Webpay sin pagar recarga la pagina: la reserva ya creada para
+    // la misma hora y el mismo contacto se cobra, no se crea otra.
+    it('reutiliza la reserva recordada para la misma hora y el mismo contacto', async () => {
+      window.sessionStorage.setItem(
+        'nuravision:reserva-sin-pagar',
+        JSON.stringify({
+          clave: '7||3|2026-10-20|10:00',
+          contacto: 'Ana Pérez|ana@correo.cl|+56911112222',
+          codigo: 'NV-2010-0001',
+        }),
+      )
+      const usuario = userEvent.setup()
+      pintar()
+      await usuario.click(screen.getByRole('button', { name: 'Continuar al abono' }))
+      await usuario.click(screen.getByRole('button', { name: 'Pagar abono con Webpay' }))
+      expect(crear).not.toHaveBeenCalled()
+      expect(pagar).toHaveBeenCalledWith({ tipo: 'reserva', codigo: 'NV-2010-0001' })
     })
 
     it('si la base rechaza la reserva no abre Webpay', async () => {
@@ -222,5 +245,57 @@ describe('BookingFlow: como se paga', () => {
       expect(avisar).toHaveBeenCalledTimes(1)
       expect(avisar).toHaveBeenCalledWith(crear.mock.calls[0][0].codigo)
     })
+  })
+})
+
+// --- QA (nv-qa, 2026-10-11): casos que hoy fallan -----------------------------
+describe('BookingFlow QA: Webpay', () => {
+  afterEach(() => {
+    usuarioActual = ANA
+  })
+  beforeEach(() => {
+    crear.mockReset().mockResolvedValue(true)
+    pagar.mockReset().mockResolvedValue(true)
+    addBooking.mockReset()
+    avisar.mockReset()
+    errorDeWebpay = null
+  })
+
+  // La reserva guardada se reutiliza por `claveBorrador`, que no incluye el
+  // contacto. Si la clienta corrige su correo tras el fallo, se cobra y se avisa
+  // a la reserva con el correo viejo.
+  it('QA: corregir el correo tras un fallo de Webpay no deja la reserva con el correo viejo', async () => {
+    servicio = servicioCon(0)
+    // Invitada: sin sesion los campos de contacto se pueden editar.
+    usuarioActual = null
+    pagar.mockResolvedValue(false)
+    errorDeWebpay = 'La pasarela no respondió.'
+    const usuario = userEvent.setup()
+    pintar()
+    await usuario.type(screen.getByLabelText('Nombre y apellido'), 'Ana Invitada')
+    await usuario.type(screen.getByLabelText('Correo electrónico'), 'ana@correo.cl')
+    await usuario.type(screen.getByLabelText('Teléfono'), '+56911112222')
+    await usuario.click(screen.getByRole('radio', { name: /Pagar ahora con Webpay/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Pagar $18.000 con Webpay' }))
+    expect(await screen.findByText(/Tu hora quedó reservada/)).toBeInTheDocument()
+
+    const correo = screen.getByLabelText(/Correo electrónico/)
+    await usuario.clear(correo)
+    await usuario.type(correo, 'corregido@correo.cl')
+    await usuario.click(screen.getByRole('button', { name: 'Pagar $18.000 con Webpay' }))
+
+    const ultima = crear.mock.calls.at(-1)![0] as unknown as { clienteEmail: string }
+    expect(ultima.clienteEmail).toBe('corregido@correo.cl')
+  })
+
+  // 0019 fija reservas.abono = least(servicios.abono, precio efectivo). Si el
+  // estudio bajo el precio por debajo del abono, Webpay cobra el precio, no el
+  // abono que se anuncia.
+  it('QA: con abono mayor que el precio anuncia lo que de verdad se cobra', async () => {
+    servicio = { ...servicioCon(12000), precioBase: 10000 }
+    const usuario = userEvent.setup()
+    pintar()
+    await usuario.click(screen.getByRole('button', { name: 'Continuar al abono' }))
+    expect(screen.getByText('Abono hoy con Webpay').nextSibling).toHaveTextContent('$10.000')
   })
 })

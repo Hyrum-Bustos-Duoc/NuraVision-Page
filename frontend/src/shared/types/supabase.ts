@@ -39,7 +39,7 @@ export type EstadoPedido =
   | 'entregado'
   | 'cancelado'
 
-/** Estado de un intento de cobro con Webpay (0015). */
+/** Estado de un intento de cobro con Webpay (0018). */
 export type EstadoPago = 'iniciado' | 'autorizado' | 'rechazado' | 'anulado' | 'error'
 
 export interface Database {
@@ -481,7 +481,7 @@ export interface Database {
         Relationships: []
       }
       /**
-       * Intentos de cobro con Webpay Plus (0015).
+       * Intentos de cobro con Webpay Plus (0018).
        *
        * `Insert` y `Update` son `never` a proposito: la tabla solo la escriben
        * las Edge Functions con la service_role key. Si apareciera aqui un tipo
@@ -499,7 +499,7 @@ export interface Database {
           token_ws: string | null
           monto: number
           /**
-           * integer nullable (0016). Total del servicio el dia del cobro,
+           * integer nullable (0018). Total del servicio el dia del cobro,
            * cuando se pago solo un abono. El saldo pendiente es
            * `monto_total - monto`. NULL si se cobro el total.
            */

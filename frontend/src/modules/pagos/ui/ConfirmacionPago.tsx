@@ -4,9 +4,15 @@ import { Check, X } from 'lucide-react'
 import { formatPrice } from '@/shared/lib/format'
 import { boton, tamanoBoton } from '@/shared/ui/nv-estilos'
 import { confirmarPago } from '../application'
-import { ETIQUETA_TIPO_PAGO, type Comprobante } from '../domain/pago.types'
+import { ETIQUETA_TIPO_PAGO, type Comprobante, type DestinoPago } from '../domain/pago.types'
+import { admiteReintento, resultadoDePago } from '../domain/resultado-pago'
 import { esTimeout, leerRetornoWebpay, retornoVacio } from '../domain/webpay.retorno'
+import {
+  leerPagoPendiente,
+  olvidarPagoPendiente,
+} from '../infrastructure/pago-pendiente.storage'
 import { pagoRepository } from '../infrastructure/supabase-pago.repository'
+import { usePagoWebpay } from './usePagoWebpay'
 
 /**
  * Pantalla de resultado del pago. Es la `return_url` que recibe Transbank.
@@ -59,6 +65,16 @@ export default function ConfirmacionPago() {
   const nadaQueConfirmar = sinDatos || expirada
 
   const [estado, setEstado] = useState<Estado>({ fase: 'confirmando' })
+  /**
+   * Cuantas veces se pidio «Volver a consultar». Es dependencia del efecto: al
+   * cambiar, el efecto vuelve a lanzar la confirmacion desde cero.
+   */
+  const [ronda, setRonda] = useState(0)
+  /**
+   * Lo que se estaba pagando al salir a Webpay. Se lee una vez al montar: es
+   * lo que permite reintentar aunque la respuesta no traiga el codigo.
+   */
+  const [pendiente] = useState(leerPagoPendiente)
 
   /**
    * Sincroniza con la Edge Function: confirma y, si responde `procesando`,
@@ -94,6 +110,8 @@ export default function ConfirmacionPago() {
             else temporizador = setTimeout(consultar, INTERVALO_REINTENTO_MS)
             return
           }
+          // Cobrado: ya no hay nada que reintentar en esta pestaña.
+          if (comprobante.aprobado) olvidarPagoPendiente()
           setEstado({ fase: 'resuelto', comprobante })
         })
         .catch((e: unknown) => {
@@ -110,7 +128,7 @@ export default function ConfirmacionPago() {
       vivo = false
       clearTimeout(temporizador)
     }
-  }, [retorno, nadaQueConfirmar])
+  }, [retorno, nadaQueConfirmar, ronda])
 
   if (expirada) {
     return (
@@ -121,13 +139,15 @@ export default function ConfirmacionPago() {
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-nv-muted1">
           La sesión de pago expiró antes de completarse, así que{' '}
-          <strong className="font-medium text-nv-ink">no se te cobró nada</strong>. Tu pedido
-          quedó registrado y puedes pagarlo cuando quieras.
+          <strong className="font-medium text-nv-ink">no se te cobró nada</strong>.{' '}
+          {pendiente?.tipo === 'reserva' ? 'Tu reserva' : 'Tu pedido'} quedó registrado y puedes
+          pagarlo cuando quieras.
         </p>
         {retorno.ordenCompra && (
           <p className="mt-2 text-xs text-nv-soft1">Orden {retorno.ordenCompra}</p>
         )}
-        <Acciones />
+        {pendiente && <ReintentarPago destino={pendiente} />}
+        <Acciones esReserva={pendiente?.tipo === 'reserva'} />
       </Marco>
     )
   }
@@ -171,12 +191,22 @@ export default function ConfirmacionPago() {
           Seguimos verificando tu pago
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-nv-muted1">
-          Transbank está tardando más de lo normal en confirmarlo. No vuelvas a pagar: revisa tu
-          correo en unos minutos, te enviaremos el resultado. Si no llega, escríbenos con tu código.
+          Transbank está tardando más de lo normal en confirmarlo. No vuelvas a pagar: consulta
+          otra vez en un momento. Si sigue así, escríbenos con tu código y lo revisamos.
         </p>
         {retorno.ordenCompra && (
           <p className="mt-2 text-xs text-nv-soft1">Orden {retorno.ordenCompra}</p>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            setEstado({ fase: 'confirmando' })
+            setRonda((r) => r + 1)
+          }}
+          className={`${boton.primario} ${tamanoBoton.medio} mt-8`}
+        >
+          Volver a consultar
+        </button>
         <Acciones />
       </Marco>
     )
@@ -199,12 +229,24 @@ export default function ConfirmacionPago() {
     )
   }
 
-  return <Voucher comprobante={estado.comprobante} />
+  return <Voucher comprobante={estado.comprobante} pendiente={pendiente} />
 }
 
 /** El comprobante, aprobado o no. */
-function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
+function Voucher({
+  comprobante: c,
+  pendiente,
+}: {
+  comprobante: Comprobante
+  pendiente: DestinoPago | null
+}) {
   const esReserva = c.tipo === 'reserva'
+  const resultado = resultadoDePago(c)
+  // Se reintenta lo que diga el servidor; si no trae codigo (abandono sin
+  // comprobante), lo recordado al salir a Webpay.
+  const destinoReintento: DestinoPago | null = c.codigo
+    ? { tipo: c.tipo, codigo: c.codigo }
+    : pendiente
 
   /**
    * Si hay un desglose de abono que mostrar.
@@ -213,31 +255,43 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
    * aporta nada y tres filas para decir una sola cifra solo confunden.
    */
   const desglose =
-    c.aprobado && c.monto !== null && c.montoTotal !== null && c.saldo !== null && c.saldo > 0
+    resultado === 'aprobado' && c.monto !== null && c.montoTotal !== null && c.saldo !== null && c.saldo > 0
       ? { total: c.montoTotal, abonado: c.monto, saldo: c.saldo }
       : null
 
-  const titulo = c.aprobado
-    ? '¡Pago aprobado!'
-    : c.estado === 'anulado'
-      ? 'Pago cancelado'
-      : 'Pago rechazado'
+  const titulo = {
+    aprobado: '¡Pago aprobado!',
+    revision: 'Recibimos tu pago, pero hay que revisarlo',
+    rechazado: 'Pago rechazado',
+    anulado: 'Pago cancelado',
+    incierto: 'No pudimos confirmar el resultado del pago',
+  }[resultado]
 
-  const bajada = c.aprobado
-    ? desglose
+  const bajada = {
+    aprobado: desglose
       ? // Con abono, lo primero que hay que decir es que queda algo por pagar:
         // enterarse en el local de que se debe el resto seria una sorpresa.
         'Tu hora quedó confirmada con el abono. El saldo se paga en el estudio el día de tu cita.'
       : esReserva
         ? 'Tu hora quedó confirmada. Te enviamos el detalle a tu correo.'
-        : 'Recibimos tu pago. Estamos preparando tu pedido.'
-    : c.estado === 'anulado'
-      ? 'No se completó el pago, así que no te cobramos nada. Puedes intentarlo otra vez.'
-      : (c.motivo ?? 'El medio de pago rechazó la transacción. No se te cobró.')
+        : 'Recibimos tu pago. Estamos preparando tu pedido.',
+    // Se cobro, pero ya no habia nada pendiente que confirmar: no se dice
+    // «confirmada» y se promete solo lo que el estudio puede cumplir.
+    revision: `${c.motivo ?? ''} El estudio revisará tu caso y, si corresponde, te devolverá el dinero.`.trim(),
+    // Unico caso en que consta que el medio de pago no cobro.
+    rechazado: c.motivo
+      ? `${c.motivo} No se te cobró.`
+      : 'El medio de pago rechazó la transacción. No se te cobró.',
+    // Abandono del formulario de Webpay: no llego a haber cargo.
+    anulado: 'No se completó el pago, así que no te cobramos nada. Puedes intentarlo otra vez.',
+    // 'error': puede haber cargo (cobro duplicado, o commit y consulta sin
+    // respuesta). Ni «no se te cobró» ni invitar a pagar de nuevo.
+    incierto: `${c.motivo ? `${c.motivo} ` : ''}No vuelvas a pagar: el cargo podría haberse hecho. Escríbenos al estudio con tu código y lo revisamos con Transbank.`,
+  }[resultado]
 
   return (
     <Marco>
-      <Insignia ok={c.aprobado} />
+      <Insignia ok={resultado === 'aprobado'} />
       <h1 className="mt-6 font-serif text-3xl font-light text-nv-ink sm:text-4xl">{titulo}</h1>
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-nv-muted1">{bajada}</p>
 
@@ -250,7 +304,7 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
             peor que uno que no lo muestra. */}
         {desglose ? (
           <>
-            {/* Las tres cifras del abono (0016). Van en este orden —total,
+            {/* Las tres cifras del abono (pagos.monto_total, 0018). Van en este orden —total,
                 pagado, saldo— porque es como se lee una cuenta: cuanto cuesta,
                 cuanto llevas, cuanto falta. */}
             <Dato etiqueta="Total del servicio" valor={formatPrice(desglose.total)} />
@@ -293,8 +347,38 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
         </p>
       )}
 
+      {admiteReintento(resultado) && destinoReintento && (
+        <ReintentarPago destino={destinoReintento} />
+      )}
       <Acciones esReserva={esReserva} />
     </Marco>
+  )
+}
+
+/**
+ * Vuelve a abrir Webpay para la misma reserva o pedido. Solo se pinta cuando
+ * consta que no hubo cargo (rechazo, abandono o sesion expirada). El monto lo
+ * vuelve a decidir el servidor con el codigo.
+ */
+function ReintentarPago({ destino }: { destino: DestinoPago }) {
+  const webpay = usePagoWebpay()
+  return (
+    <div className="mt-8">
+      <button
+        type="button"
+        onClick={() => void webpay.pagar(destino)}
+        disabled={webpay.enviando}
+        aria-busy={webpay.enviando}
+        className={`${boton.acento} ${tamanoBoton.medio}`}
+      >
+        {webpay.enviando ? 'Redirigiendo a Webpay…' : 'Reintentar el pago'}
+      </button>
+      {webpay.error && (
+        <p role="alert" className="mt-3 text-sm text-nv-error">
+          {webpay.error}
+        </p>
+      )}
+    </div>
   )
 }
 

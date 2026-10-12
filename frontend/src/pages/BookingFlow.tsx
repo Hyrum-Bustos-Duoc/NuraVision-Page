@@ -13,7 +13,13 @@ import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/s
 import { useCrearReserva } from '@/modules/reservas/ui/useCrearReserva'
 import { PasoAbono } from '@/modules/reservas/ui/PasoAbono'
 import { usePagoWebpay } from '@/modules/pagos/ui/usePagoWebpay'
-import { saldoTrasAbono } from '@/shared/lib/abono'
+import { abonoACobrar, saldoTrasAbono } from '@/shared/lib/abono'
+import {
+  leerReservaSinPagar,
+  olvidarReservaSinPagar,
+  recordarReservaSinPagar,
+  type ReservaSinPagar,
+} from '@/modules/reservas/infrastructure/reserva-sin-pagar.storage'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -33,6 +39,15 @@ type Step = 'service' | 'variant' | 'professional' | 'date' | 'time' | 'confirm'
 type Contact = { name: string; email: string; phone: string }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Los datos de contacto como parte de la identidad de una reserva sin pagar:
+ * si la clienta corrige su correo tras un fallo de Webpay, es otra reserva, y
+ * reutilizar la anterior cobraria y avisaria al correo equivocado.
+ */
+function claveContacto(contact: Contact): string {
+  return [contact.name, contact.email.toLowerCase(), contact.phone].join('|')
+}
 
 /**
  * Lo que el asistente necesita del servicio. Se construye desde la entidad de
@@ -164,12 +179,15 @@ export default function BookingFlow() {
    * codigo), asi que puede fallar con la reserva ya en la base. Reintentar debe
    * cobrar esa misma reserva, no crear otra por la misma hora. Va atada a la
    * clave del borrador por la misma razon que `fallidoPara`: si el borrador
-   * cambia, ese codigo ya no corresponde a lo que se ve.
+   * cambia, ese codigo ya no corresponde a lo que se ve. Y al contacto: ver
+   * `claveContacto`.
+   *
+   * Arranca desde sessionStorage: volver de Webpay sin pagar recarga esta
+   * pagina, y elegir de nuevo la misma hora debe cobrar la misma reserva.
    */
-  const [reservaGuardada, setReservaGuardada] = useState<{
-    clave: string
-    codigo: string
-  } | null>(null)
+  const [reservaGuardada, setReservaGuardada] = useState<ReservaSinPagar | null>(
+    leerReservaSinPagar,
+  )
   /**
    * Sin abono: si se paga ahora con Webpay o en el estudio.
    *
@@ -266,9 +284,16 @@ export default function BookingFlow() {
   ].join('|')
   const enPagoAbono = step === 'confirm' && conAbono && pagoPara === claveBorrador
   const errorVigente = fallidoPara === claveBorrador ? reserva.error : null
-  const codigoGuardado = reservaGuardada?.clave === claveBorrador ? reservaGuardada.codigo : null
   // El error de Webpay solo existe tras guardar la reserva de ESTE borrador.
-  const errorDePago = codigoGuardado !== null ? webpay.error : null
+  const errorDePago = reservaGuardada?.clave === claveBorrador ? webpay.error : null
+
+  /** El codigo ya guardado para este borrador y este contacto, si lo hay. */
+  function codigoGuardadoPara(contact: Contact): string | null {
+    return reservaGuardada?.clave === claveBorrador &&
+      reservaGuardada.contacto === claveContacto(contact)
+      ? reservaGuardada.codigo
+      : null
+  }
 
   // Cada paso del asistente vuelve al inicio de la pantalla.
   useScrollToTopOnChange(confirmado ? 'success' : enPagoAbono ? 'abono' : step)
@@ -346,14 +371,16 @@ export default function BookingFlow() {
    * rechazo (el error queda en `reserva.error` y lo muestra el paso que la
    * pidio, conservando lo elegido para reintentar).
    *
-   * Si ya hay una guardada para este borrador —el cobro fallo despues— se
-   * devuelve esa y no se crea otra.
+   * Si ya hay una guardada para este borrador y este contacto —el cobro fallo
+   * despues, o la clienta volvio de Webpay sin pagar— se devuelve esa y no se
+   * crea otra.
    *
    * `conCorreo` es falso en el camino de Webpay: el aviso sale al aprobarse el
    * pago, no al guardar una reserva que todavia no esta pagada.
    */
   async function guardarReserva(contact: Contact, conCorreo: boolean): Promise<string | null> {
-    if (codigoGuardado !== null) return codigoGuardado
+    const previo = codigoGuardadoPara(contact)
+    if (previo !== null) return previo
     const fecha = bookingDraft.dateISO
     const horaInicio = bookingDraft.time
     if (!service || !professional || !fecha || !horaInicio) return null
@@ -406,7 +433,9 @@ export default function BookingFlow() {
       setFallidoPara(clave)
       return null
     }
-    setReservaGuardada({ clave, codigo })
+    const guardadaAhora = { clave, contacto: claveContacto(contact), codigo }
+    setReservaGuardada(guardadaAhora)
+    recordarReservaSinPagar(guardadaAhora)
     return codigo
   }
 
@@ -431,10 +460,12 @@ export default function BookingFlow() {
     const horaInicio = bookingDraft.time
     if (!service || !professional || !fecha || !horaInicio) return
     // Si ya quedo guardada camino a Webpay, se guardo sin aviso: se manda ahora.
-    const veniaDeWebpay = codigoGuardado !== null
+    const veniaDeWebpay = codigoGuardadoPara(contact) !== null
     const codigo = await guardarReserva(contact, true)
     if (codigo === null) return
     if (veniaDeWebpay) reserva.avisar(codigo)
+    // Queda reservada sin cobro en linea: ya no hay nada que reintentar.
+    olvidarReservaSinPagar()
 
     const booking: Booking = {
       id: `b-${Date.now()}`,
@@ -631,7 +662,7 @@ export default function BookingFlow() {
           dateISO={bookingDraft.dateISO}
           time={bookingDraft.time}
           precio={precioTotal}
-          abono={service.abono}
+          abono={abonoACobrar(precioTotal, service.abono)}
           guardando={reserva.guardando}
           abriendoPago={webpay.enviando}
           errorAlGuardar={errorVigente}
@@ -1000,6 +1031,8 @@ function ConfirmStep({
   onPagarAhora: (valor: boolean) => void
 }) {
   const conAbono = service.abono > 0
+  // Lo que de verdad se cobra: la base lo limita al precio (ver abonoACobrar).
+  const abono = abonoACobrar(precio, service.abono)
   const [contact, setContact] = useState<Contact>(
     () => contactoEscrito ?? cuenta ?? { name: '', email: '', phone: '' },
   )
@@ -1104,11 +1137,11 @@ function ConfirmStep({
             <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">Abono hoy con Webpay</dt>
-                <dd className="text-ink">{formatPrice(service.abono)}</dd>
+                <dd className="text-ink">{formatPrice(abono)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Saldo en el local</dt>
-                <dd className="text-ink">{formatPrice(saldoTrasAbono(precio, service.abono))}</dd>
+                <dd className="text-ink">{formatPrice(saldoTrasAbono(precio, abono))}</dd>
               </div>
             </dl>
           )}

@@ -3,6 +3,7 @@ import { cuerpoDeFuncion, motivoDeFuncion } from '@/shared/infrastructure/supaba
 import { ErrorDePago, type PagoRepository } from '../domain/pago.repository'
 import type { Comprobante, DestinoPago, InicioPago, RetornoWebpay } from '../domain/pago.types'
 import { toComprobante, type RespuestaConfirmacion } from './comprobante.mapper'
+import { leerPagoPendiente } from './pago-pendiente.storage'
 
 /**
  * Habla con las dos Edge Functions de Webpay.
@@ -75,7 +76,7 @@ class EdgePagoRepository implements PagoRepository {
 
     if (!data) throw new ErrorDePago('La pasarela no devolvio el resultado del pago.')
 
-    return toComprobante(data)
+    return toComprobante(data, leerPagoPendiente())
   }
 }
 

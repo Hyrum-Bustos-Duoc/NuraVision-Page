@@ -85,7 +85,8 @@ describe('ConfirmacionPago', () => {
 
     await avanzar(30_000)
     expect(screen.getByText('Seguimos verificando tu pago')).toBeInTheDocument()
-    expect(screen.getByText(/revisa tu correo/)).toBeInTheDocument()
+    // No se promete un correo que nadie garantiza enviar.
+    expect(screen.queryByText(/correo/)).not.toBeInTheDocument()
     expect(screen.queryByText(/rechazado/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/no se te cobró/i)).not.toBeInTheDocument()
 
@@ -135,6 +136,115 @@ describe('ConfirmacionPago', () => {
 
     await avanzar(0)
     expect(screen.getByText('Pago rechazado')).toBeInTheDocument()
-    expect(screen.getByText('El banco rechazó la transacción.')).toBeInTheDocument()
+    expect(screen.getByText('El banco rechazó la transacción. No se te cobró.')).toBeInTheDocument()
+  })
+
+  it('un cobro en error dice que no vuelva a pagar y no ofrece reintentar', async () => {
+    confirmar.mockResolvedValue({
+      ...PROCESANDO,
+      estado: 'error',
+      procesando: undefined,
+      motivo: 'No pudimos confirmar el estado del pago con Transbank.',
+    })
+    pintar()
+
+    await avanzar(0)
+    expect(screen.getByText('No pudimos confirmar el resultado del pago')).toBeInTheDocument()
+    expect(screen.getByText(/No vuelvas a pagar/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reintentar el pago' })).not.toBeInTheDocument()
+  })
+
+  // Se cobro, pero la reserva ya no estaba pendiente (p. ej. se cancelo).
+  it('aprobado con motivo no presenta la hora como confirmada', async () => {
+    confirmar.mockResolvedValue({ ...APROBADO, motivo: 'La reserva ya estaba cancelada.' })
+    pintar()
+
+    await avanzar(0)
+    expect(screen.getByText(/La reserva ya estaba cancelada\./)).toBeInTheDocument()
+    expect(screen.getByText(/te devolverá el dinero/)).toBeInTheDocument()
+    expect(screen.queryByText(/confirmada/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Saldo a pagar en el local')).not.toBeInTheDocument()
+  })
+
+  it('volver a consultar relanza la confirmacion tras el limite', async () => {
+    confirmar.mockResolvedValue(PROCESANDO)
+    pintar()
+    await avanzar(30_000)
+
+    confirmar.mockResolvedValue({ ...APROBADO, repetida: true })
+    await act(async () => screen.getByRole('button', { name: 'Volver a consultar' }).click())
+    await avanzar(0)
+    expect(screen.getByText('¡Pago aprobado!')).toBeInTheDocument()
+  })
+
+  // Un abandono sin comprobante no trae codigo: se reintenta lo recordado al
+  // salir a Webpay.
+  it('un abandono sin codigo ofrece reintentar con el pago recordado', async () => {
+    window.sessionStorage.setItem(
+      'nuravision:pago-pendiente',
+      JSON.stringify({ tipo: 'reserva', codigo: 'NV-2010-1234' }),
+    )
+    confirmar.mockResolvedValue({
+      ...PROCESANDO,
+      estado: 'anulado',
+      procesando: undefined,
+      repetida: undefined,
+      codigo: null,
+    })
+    pintar()
+
+    await avanzar(0)
+    expect(screen.getByText('Pago cancelado')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reintentar el pago' })).toBeInTheDocument()
+    window.sessionStorage.clear()
+  })
+
+  // --- QA (nv-qa, 2026-10-11): casos que hoy fallan ---------------------------
+
+  // webpay-confirmar-transaccion deja 'error' cuando NO sabe si se cobro (commit y
+  // consulta de estado sin respuesta) o cuando SI se cobro (segundo autorizado,
+  // 23505). Al recargar, la respuesta repetida llega sin `motivo`.
+  it('QA: la recarga de un cobro en error no afirma que no se cobro', async () => {
+    confirmar.mockResolvedValue({
+      ...PROCESANDO,
+      estado: 'error',
+      procesando: undefined,
+      motivo: undefined,
+    })
+    pintar()
+
+    await avanzar(0)
+    expect(screen.queryByText(/no se te cobró/i)).not.toBeInTheDocument()
+  })
+
+  // Spec pagos-webpay, «Pantalla de resultado del pago»: no aprobado con el
+  // motivo y una accion para reintentar el pago.
+  it('QA: un pago rechazado ofrece reintentar el pago', async () => {
+    confirmar.mockResolvedValue({
+      ...PROCESANDO,
+      estado: 'rechazado',
+      procesando: undefined,
+      repetida: undefined,
+      motivo: 'El pago fue rechazado por el medio de pago.',
+    })
+    pintar()
+
+    await avanzar(0)
+    const acciones = [
+      ...screen.queryAllByRole('button', { name: /reintentar|pagar de nuevo|intentar/i }),
+      ...screen.queryAllByRole('link', { name: /reintentar|pagar de nuevo|intentar/i }),
+    ]
+    expect(acciones.length).toBeGreaterThan(0)
+  })
+
+  // Spec: «si a los 30 segundos no hay estado final, SHALL decir que el pago se
+  // esta verificando y ofrecer volver a consultar».
+  it('QA: tras 30 s en procesando ofrece volver a consultar', async () => {
+    confirmar.mockResolvedValue(PROCESANDO)
+    pintar()
+
+    await avanzar(30_000)
+    expect(screen.getByText('Seguimos verificando tu pago')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /consultar|verificar|actualizar/i })).toBeInTheDocument()
   })
 })

@@ -51,7 +51,7 @@ export interface Comprobante {
    */
   monto: number | null
   /**
-   * Total del servicio cuando solo se cobro un abono (0016), o `null` cuando se
+   * Total del servicio cuando solo se cobro un abono (0018), o `null` cuando se
    * cobro todo.
    *
    * Lo guardo el servidor el dia del cobro y no se recalcula: el estudio edita

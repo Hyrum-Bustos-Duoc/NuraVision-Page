@@ -22,3 +22,15 @@ export function aAbono(valor: unknown): number {
 export function saldoTrasAbono(precio: number, abono: number): number {
   return Math.max(0, precio - abono)
 }
+
+/**
+ * El abono que de verdad se cobra: nunca mas que el precio de lo elegido.
+ *
+ * Es la misma regla que aplica la base al insertar la reserva (trigger
+ * `reservas_fijar_precio`, 0019: `least(servicios.abono, precio efectivo)`).
+ * Si el estudio baja un precio por debajo del abono, Webpay cobra el precio, y
+ * anunciar otra cifra seria mentir sobre el cargo.
+ */
+export function abonoACobrar(precio: number, abono: number): number {
+  return Math.max(0, Math.min(abono, precio))
+}
