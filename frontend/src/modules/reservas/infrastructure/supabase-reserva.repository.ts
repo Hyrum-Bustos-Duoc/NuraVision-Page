@@ -63,13 +63,19 @@ export class SupabaseReservaRepository implements ReservaRepository {
         )
       }
       // 23503: el servicio o la profesional no existe o no es visible. Lo
-      // lanzan las claves foraneas y el trigger de abono de 0015. Se decide por el codigo y nunca por el
-      // texto, que es de Postgres y nombra ids internos.
+      // lanzan las claves foraneas y el trigger `reservas_fijar_precio`
+      // (0019). Se decide por el codigo y nunca por el texto, que es de
+      // Postgres y nombra ids internos.
       if (error.code === '23503') {
         throw new Error(
           'El servicio o la profesional que elegiste ya no está disponible. Vuelve a intentarlo o elige otra opción.',
         )
       }
+      // P0001 es un `raise exception` de `reservas_fijar_precio` (0019): la
+      // opcion de variante falta (hint `variante_requerida`) o ya no existe
+      // (`variante_no_disponible`). El texto lo escribimos nosotros, en
+      // español y pensado para la clienta: se muestra tal cual.
+      if (error.code === 'P0001') throw new Error(error.message)
       throw new Error(`No se pudo guardar la reserva: ${error.message}`)
     }
   }
