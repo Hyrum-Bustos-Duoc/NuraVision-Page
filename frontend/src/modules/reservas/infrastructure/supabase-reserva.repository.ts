@@ -70,6 +70,10 @@ export class SupabaseReservaRepository implements ReservaRepository {
           'El servicio o la profesional que elegiste ya no está disponible. Vuelve a intentarlo o elige otra opción.',
         )
       }
+      // P0001 es un `raise exception` de nuestros triggers (por ejemplo, la
+      // opcion de variante que falta o ya no existe). El texto lo escribimos
+      // nosotros, en español y pensado para la clienta: se muestra tal cual.
+      if (error.code === 'P0001') throw new Error(error.message)
       throw new Error(`No se pudo guardar la reserva: ${error.message}`)
     }
   }

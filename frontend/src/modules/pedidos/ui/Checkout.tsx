@@ -74,7 +74,22 @@ export default function Checkout() {
       : (entregaElegida ?? (carrito.prefiereEntregaEnCita && hayCitas ? 'cita' : 'despacho'))
   // Con una sola cita no hace falta elegirla.
   const cita = entrega === 'cita' ? (citas.find((c) => c.id === citaElegida) ?? citas[0] ?? null) : null
-  const pago: MetodoPagoPedido = metodoPermitido(pagoElegido, entrega) ? pagoElegido : 'webpay'
+  /**
+   * Con un pedido ya registrado para Webpay, el medio queda fijo.
+   *
+   * `metodo_pago` lo escribe `crear_pedido()` y el navegador no puede
+   * cambiarlo: 0013 solo concede UPDATE de `estado` y solo al personal. Dejar
+   * elegir "pagar en el estudio" aqui confirmaria en pantalla un pedido que en
+   * la base sigue diciendo Webpay; crear otro dejaria el primero reteniendo
+   * stock. Hasta que exista una via en el servidor para cambiarlo, solo se
+   * reintenta el cobro.
+   */
+  const pago: MetodoPagoPedido =
+    pedidoPendiente !== null
+      ? 'webpay'
+      : metodoPermitido(pagoElegido, entrega)
+        ? pagoElegido
+        : 'webpay'
 
   const lineas = carrito.items.map((i) => ({
     categoria: i.producto.categoria,
@@ -82,7 +97,16 @@ export default function Checkout() {
     precio: i.producto.precio,
     cantidad: i.cantidad,
   }))
-  const totales = calcularTotales(lineas, entrega, cita?.servicioId ?? null)
+  // Con el pedido registrado el carrito ya se vacio: las cifras son las que
+  // devolvio la base, no un recalculo sobre un carrito vacio que daria $0.
+  const totales = pedidoPendiente
+    ? {
+        subtotal: pedidoPendiente.subtotal,
+        envio: pedidoPendiente.costoEnvio,
+        descuento: pedidoPendiente.descuento,
+        total: pedidoPendiente.total,
+      }
+    : calcularTotales(lineas, entrega, cita?.servicioId ?? null)
   const errores = erroresDeEntrega({ nombre, email, entrega, direccion, comuna, reservaId: cita?.id })
 
   if (confirmado) return <Confirmacion {...confirmado} />
@@ -281,13 +305,17 @@ export default function Checkout() {
 
           {paso === 2 && (
             <>
-              <button
-                type="button"
-                onClick={() => setPaso(1)}
-                className="text-[12.5px] text-nv-soft1 hover:text-nv-ink"
-              >
-                ← Entrega
-              </button>
+              {/* La entrega ya quedo escrita en el pedido registrado: volver a
+                  editarla cambiaria la pantalla y no la base. */}
+              {pedidoPendiente === null && (
+                <button
+                  type="button"
+                  onClick={() => setPaso(1)}
+                  className="text-[12.5px] text-nv-soft1 hover:text-nv-ink"
+                >
+                  ← Entrega
+                </button>
+              )}
               <h1 className="mt-3 font-serif text-[30px] font-light leading-tight tracking-[-0.02em] text-nv-ink sm:text-[38px]">
                 Pago
               </h1>
@@ -304,6 +332,7 @@ export default function Checkout() {
                 <OpcionRadio
                   nombre="pago"
                   activa={pago === 'transferencia'}
+                  deshabilitada={pedidoPendiente !== null}
                   onElegir={() => setPagoElegido('transferencia')}
                   titulo="Transferencia bancaria"
                   detalle="Confirmamos tu pedido al recibir el pago"
@@ -311,7 +340,7 @@ export default function Checkout() {
                 <OpcionRadio
                   nombre="pago"
                   activa={pago === 'estudio'}
-                  deshabilitada={!metodoPermitido('estudio', entrega)}
+                  deshabilitada={pedidoPendiente !== null || !metodoPermitido('estudio', entrega)}
                   onElegir={() => setPagoElegido('estudio')}
                   titulo="Pagar en el estudio"
                   detalle="Solo para retiro o entrega en tu cita"
@@ -328,8 +357,9 @@ export default function Checkout() {
                       se perdio y volvera a empezar la compra. */}
                   {webpay.error && pedidoPendiente && (
                     <span className="mt-1 block text-nv-soft1">
-                      Tu pedido {pedidoPendiente.codigo} quedó registrado. Puedes reintentar el
-                      pago sin volver a armar el carrito.
+                      Tu pedido {pedidoPendiente.codigo} quedó registrado para pagar con Webpay.
+                      Puedes reintentar el pago sin volver a armar el carrito. Si prefieres otro
+                      medio de pago, escríbenos con tu código.
                     </span>
                   )}
                 </p>

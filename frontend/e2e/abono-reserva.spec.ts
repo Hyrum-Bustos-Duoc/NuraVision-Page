@@ -13,10 +13,12 @@ import { simularSesionStaff } from './fixtures/sesion'
 const QA_DIR =
   '/private/tmp/claude-502/-Users-hyrumbustos-Documents-GitHub-duoc-NuraVision-Page/57858c4f-3d79-45fb-8963-97035ce5e12d/scratchpad/qa-abono'
 
-const TARJETA = '4242 4242 4242 4242'
-const TARJETA_SIN_ESPACIOS = '4242424242424242'
-const CVV = '987'
-const TITULAR = 'TITULAR QAPRUEBA'
+/**
+ * Webpay simulado: la Edge Function devuelve esta URL y el navegador le envia
+ * un formulario con `token_ws`. Se atiende aqui para no salir a Transbank.
+ */
+const URL_WEBPAY = 'https://webpay.simulado.test/webpayserver/initTransaction'
+const TOKEN_WEBPAY = 'tok-simulado-1'
 const HOY = new Date('2026-10-08T12:00:00-03:00')
 
 const servicio = (id: number, nombre: string, categoria: string | null, precio: number, abono: number, variantes: unknown = null) => ({
@@ -58,16 +60,35 @@ interface OpcionesApi {
   /** Respuestas sucesivas al insert de reservas; la ultima se repite. */
   insert?: { status: number; body?: unknown; demoraMs?: number }[]
   reservas?: ReturnType<typeof reservaBase>[]
+  /** Respuestas sucesivas de `webpay-crear-transaccion`; la ultima se repite. */
+  webpay?: { status: number; body?: unknown }[]
 }
 
 /** Simula PostgREST y las Edge Functions. Devuelve lo que se escribio. */
 async function simularApi(page: Page, opciones: OpcionesApi = {}) {
   const inserts: Request[] = []
   const patches: Request[] = []
+  /** Llamadas a `webpay-crear-transaccion`: lo que se pidio cobrar. */
+  const cobros: Request[] = []
+  /** Formularios que llegaron a Webpay. */
+  const formularios: Request[] = []
   const respuestasInsert = opciones.insert ?? [{ status: 201 }]
+  const respuestasWebpay = opciones.webpay ?? [
+    { status: 200, body: { token: TOKEN_WEBPAY, url: URL_WEBPAY, buyOrder: 'RS1-abc', monto: 5000 } },
+  ]
   const reservas = opciones.reservas ?? []
 
   await page.route('**/functions/v1/**', (r) => r.fulfill({ json: { enviada: true } }))
+  // Registrada despues: Playwright prueba primero la ultima ruta que coincide.
+  await page.route('**/functions/v1/webpay-crear-transaccion', (r) => {
+    const resp = respuestasWebpay[Math.min(cobros.length, respuestasWebpay.length - 1)]
+    cobros.push(r.request())
+    return r.fulfill({ status: resp.status, json: resp.body ?? {} })
+  })
+  await page.route(`${URL_WEBPAY}**`, (r) => {
+    formularios.push(r.request())
+    return r.fulfill({ contentType: 'text/html', body: '<h1>Webpay simulado</h1>' })
+  })
   await page.route('**/storage/v1/**', (r) => r.abort())
   await page.route('**/rest/v1/**', async (route) => {
     const req = route.request()
@@ -117,21 +138,7 @@ async function simularApi(page: Page, opciones: OpcionesApi = {}) {
     }
     return route.fulfill({ json: [] })
   })
-  return { inserts, patches }
-}
-
-/** Todo lo que el navegador manda, para buscar la tarjeta en la red. */
-function registrarRed(page: Page) {
-  const vistas: string[] = []
-  page.on('request', (req) => vistas.push(`${req.method()} ${req.url()}\n${JSON.stringify(req.headers())}\n${req.postData() ?? ''}`))
-  return vistas
-}
-
-async function almacenamiento(page: Page) {
-  return page.evaluate(() => {
-    const volcar = (s: Storage) => Object.keys(s).map((k) => `${k}=${s.getItem(k)}`).join('\n')
-    return `${volcar(localStorage)}\n${volcar(sessionStorage)}\n${location.href}\n${document.cookie}`
-  })
+  return { inserts, patches, cobros, formularios }
 }
 
 /** Servicio -> profesional -> 16 nov 2026 (lunes) -> primera hora libre -> Confirmar. */
@@ -158,105 +165,99 @@ async function llenarContacto(page: Page) {
   await page.getByLabel('Teléfono').fill('+56912345678')
 }
 
-async function llenarTarjeta(page: Page, t: Partial<{ titular: string; numero: string; vencimiento: string; cvv: string }> = {}) {
-  await page.getByLabel('Nombre del titular').fill(t.titular ?? TITULAR)
-  await page.getByLabel('Número de tarjeta').fill(t.numero ?? TARJETA)
-  await page.getByLabel('Vencimiento').fill(t.vencimiento ?? '12/28')
-  await page.getByLabel('CVV').fill(t.cvv ?? CVV)
+const pagar = (page: Page) => page.getByRole('button', { name: 'Pagar abono con Webpay' })
+
+/** El navegador llego a Webpay con el token, por POST como exige Transbank. */
+async function esperarWebpay(page: Page, formularios: Request[]) {
+  await expect(page.getByRole('heading', { name: 'Webpay simulado' })).toBeVisible()
+  expect(formularios).toHaveLength(1)
+  expect(formularios[0].method()).toBe('POST')
+  expect(formularios[0].postData()).toBe(`token_ws=${TOKEN_WEBPAY}`)
 }
 
-const pagar = (page: Page) => page.getByRole('button', { name: 'Pagar abono y reservar' })
+/** Lo que se le pidio cobrar a la Edge Function: solo el codigo, nunca un monto. */
+function cuerpoCobro(cobro: Request) {
+  return cobro.postDataJSON() as Record<string, unknown>
+}
 
 test.describe('abono en el flujo de reserva', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(HOY)
   })
 
-  test('uñas: paso Abono, nada se inserta antes de pagar y la tarjeta no sale del navegador', async ({ page }) => {
-    const red = registrarRed(page)
-    const { inserts } = await simularApi(page)
+  test('uñas: paso Abono sin alternativa; pagar crea la reserva y va a Webpay con solo el codigo', async ({ page }) => {
+    const { inserts, cobros, formularios } = await simularApi(page)
     const hora = await llegarAConfirmar(page, 'Manicura Completa')
-    await expect(page.getByText('Abono al reservar')).toBeVisible()
+    await expect(page.getByText('Abono hoy con Webpay')).toBeVisible()
+    // Con abono no se elige: el pago en linea es obligatorio.
+    await expect(page.getByRole('radio')).toHaveCount(0)
+    await expect(page.getByText('Pagar en el estudio')).toHaveCount(0)
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
 
     await expect(page.getByRole('heading', { name: 'Abono', exact: true })).toBeVisible()
     const stepper = page.getByRole('group', { name: 'Pasos' })
     await expect(stepper).toContainText('Abono')
-    await expect(page.getByText('Pago de demostración:')).toBeVisible()
     const resumen = page.locator('aside')
-    await expect(resumen).toContainText('Abono hoy$5.000')
-    await expect(resumen).toContainText('Saldo a pagar en el estudio$13.000')
+    await expect(resumen).toContainText('Total del servicio$18.000')
+    await expect(resumen).toContainText('Abono hoy con Webpay$5.000')
+    await expect(resumen).toContainText('Saldo a pagar en el local$13.000')
     await expect(resumen).toContainText('El abono se descuenta del total el día de tu cita.')
-    expect(inserts).toHaveLength(0)
-
-    await llenarTarjeta(page)
+    // La tarjeta se escribe en Webpay, no aqui.
+    await expect(page.getByLabel('Número de tarjeta')).toHaveCount(0)
     await page.screenshot({ path: `${QA_DIR}/abono-escritorio.png`, fullPage: true })
     expect(inserts).toHaveLength(0)
-    await pagar(page).click()
+    expect(cobros).toHaveLength(0)
 
-    await expect(page.getByText('Abono pagado')).toBeVisible()
-    await expect(page.getByText('$5.000')).toBeVisible()
+    await pagar(page).click()
+    await esperarWebpay(page, formularios)
+
     expect(inserts).toHaveLength(1)
     const cuerpo = inserts[0].postDataJSON()
     const fila = Array.isArray(cuerpo) ? cuerpo[0] : cuerpo
     expect(fila).not.toHaveProperty('abono')
     expect(fila).toMatchObject({ servicio_id: 6, profesional_id: 1, fecha: '2026-11-16', hora_inicio: hora, cliente_email: 'ana@correo.cl' })
-
-    const todo = `${red.join('\n')}\n${await almacenamiento(page)}`
-    expect(todo).not.toContain(TARJETA_SIN_ESPACIOS)
-    expect(todo).not.toContain(TARJETA)
-    expect(todo).not.toContain('4242%204242')
-    expect(todo).not.toContain(TITULAR)
-    for (const r of red.filter((x) => x.startsWith('POST') || x.startsWith('PATCH'))) expect(r).not.toContain(CVV)
-
-    // Detalle local de la invitada: abono y politica.
-    const idLocal = await page.evaluate((codigo) => {
-      const datos = JSON.parse(localStorage.getItem('nuravision:data:v2') ?? '{}')
-      const b = datos.bookings.find((x: { code: string }) => x.code === codigo)
-      return `${b.id}|${b.abono}`
-    }, fila.codigo)
-    expect(idLocal.split('|')[1]).toBe('5000')
-    await page.goto(`/mis-reservas/${idLocal.split('|')[0]}`)
-    await expect(page.getByText('Abono', { exact: true })).toBeVisible()
-    await expect(page.getByText(/con menos de 24 horas, no es reembolsable\./)).toBeVisible()
-    await expect(page.getByText('$13.000')).toBeVisible()
+    // El monto lo decide el servidor: el navegador solo identifica la reserva.
+    expect(cobros).toHaveLength(1)
+    expect(cuerpoCobro(cobros[0])).toEqual({ reservaCodigo: fila.codigo })
   })
 
   test('doble clic en Pagar crea una sola reserva', async ({ page }) => {
-    const { inserts } = await simularApi(page, { insert: [{ status: 201, demoraMs: 800 }] })
+    const { inserts, cobros, formularios } = await simularApi(page, { insert: [{ status: 201, demoraMs: 800 }] })
     await llegarAConfirmar(page, 'Manicura Completa')
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await llenarTarjeta(page)
     await pagar(page).dblclick()
-    await expect(page.getByText('Abono pagado')).toBeVisible()
-    await page.waitForTimeout(300)
+    await esperarWebpay(page, formularios)
     expect(inserts).toHaveLength(1)
+    expect(cobros).toHaveLength(1)
   })
 
   for (const caso of [
     { nombre: '500', status: 500, body: { message: 'boom', code: 'XX000' } },
     { nombre: '23503', status: 409, body: { message: 'servicio 6 no existe', code: '23503', details: null, hint: null } },
+    // El trigger de la base rechaza una opcion de variante invalida: su texto
+    // es para la clienta y se muestra tal cual.
+    { nombre: 'P0001', status: 400, body: { message: 'Elige una opción válida para este servicio.', code: 'P0001', details: null, hint: null } },
   ]) {
     test(`insert que falla (${caso.nombre}): sigue en Abono, avisa que no hubo cobro y permite reintentar`, async ({ page }) => {
-      const { inserts } = await simularApi(page, { insert: [{ status: caso.status, body: caso.body }, { status: 201 }] })
+      const { inserts, cobros, formularios } = await simularApi(page, { insert: [{ status: caso.status, body: caso.body }, { status: 201 }] })
       await llegarAConfirmar(page, 'Manicura Completa')
       await llenarContacto(page)
       await page.getByRole('button', { name: 'Continuar al abono' }).click()
-      await llenarTarjeta(page)
       await pagar(page).click()
 
       const alerta = page.getByRole('alert')
       await expect(alerta).toContainText('No se realizó ningún cobro.')
       if (caso.nombre === '23503') await expect(alerta).toContainText('ya no está disponible')
+      if (caso.nombre === 'P0001') await expect(alerta).toContainText('Elige una opción válida para este servicio.')
       await expect(alerta).not.toContainText('servicio 6 no existe')
       await expect(page.getByRole('heading', { name: 'Abono', exact: true })).toBeVisible()
-      await expect(page.getByLabel('Número de tarjeta')).toHaveValue(TARJETA)
-      await expect(page.getByLabel('CVV')).toHaveValue(CVV)
+      // Sin reserva no se abre ningun cobro.
+      expect(cobros).toHaveLength(0)
 
       await pagar(page).click()
-      await expect(page.getByText('Abono pagado')).toBeVisible()
+      await esperarWebpay(page, formularios)
       expect(inserts).toHaveLength(2)
       // Codigo nuevo en el reintento: el anterior no llego a existir.
       expect(inserts[0].postDataJSON().codigo).not.toBe(inserts[1].postDataJSON().codigo)
@@ -268,12 +269,11 @@ test.describe('abono en el flujo de reserva', () => {
     await llegarAConfirmar(page, 'Manicura Completa')
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await llenarTarjeta(page)
     await pagar(page).click()
     await expect(page.getByRole('alert')).toContainText('No se realizó ningún cobro.')
     await page.getByRole('button', { name: '← Volver a la confirmación' }).click()
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await expect(page.getByLabel('Número de tarjeta')).toHaveValue('')
+    await expect(pagar(page)).toBeVisible()
     await expect(page.getByText('No se realizó ningún cobro.')).toHaveCount(0)
   })
 
@@ -290,40 +290,51 @@ test.describe('abono en el flujo de reserva', () => {
     expect(inserts).toHaveLength(1)
   })
 
+  test('servicio sin abono: se puede pagar el total con Webpay', async ({ page }) => {
+    const { inserts, cobros, formularios } = await simularApi(page)
+    await llegarAConfirmar(page, 'Corte de Pelo')
+    await expect(page.getByRole('radio', { name: /Pagar en el estudio/ })).toBeChecked()
+    await llenarContacto(page)
+    await page.getByRole('radio', { name: /Pagar ahora con Webpay/ }).check()
+    await expect(page.getByText('Total a pagar ahora')).toBeVisible()
+    await page.getByRole('button', { name: 'Pagar $20.000 con Webpay' }).click()
+    await esperarWebpay(page, formularios)
+    expect(inserts).toHaveLength(1)
+    const fila = inserts[0].postDataJSON()
+    expect(cuerpoCobro(cobros[0])).toEqual({ reservaCodigo: (Array.isArray(fila) ? fila[0] : fila).codigo })
+  })
+
+  test('si Webpay no abre, la hora queda guardada y reintentar no crea otra reserva', async ({ page }) => {
+    const { inserts, cobros, formularios } = await simularApi(page, {
+      webpay: [
+        { status: 502, body: { error: 'La pasarela no respondió.' } },
+        { status: 200, body: { token: TOKEN_WEBPAY, url: URL_WEBPAY, buyOrder: 'RS1-abc', monto: 5000 } },
+      ],
+    })
+    await llegarAConfirmar(page, 'Manicura Completa')
+    await llenarContacto(page)
+    await page.getByRole('button', { name: 'Continuar al abono' }).click()
+    await pagar(page).click()
+
+    const alerta = page.getByRole('alert')
+    await expect(alerta).toContainText('La pasarela no respondió.')
+    await expect(alerta).toContainText('Tu hora quedó registrada')
+    await expect(alerta).not.toContainText('No se realizó ningún cobro.')
+
+    await page.getByRole('button', { name: 'Reintentar el pago del abono' }).click()
+    await esperarWebpay(page, formularios)
+    expect(inserts).toHaveLength(1)
+    expect(cobros).toHaveLength(2)
+    expect(cuerpoCobro(cobros[1])).toEqual(cuerpoCobro(cobros[0]))
+  })
+
   test('variante de 20.000 con abono 4.000: saldo 16.000', async ({ page }) => {
     await simularApi(page)
     await llegarAConfirmar(page, 'Esmaltado con retiro', 'Con retiro')
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await expect(page.locator('aside')).toContainText('Saldo a pagar en el estudio$16.000')
-    await expect(page.locator('aside')).toContainText('Abono hoy$4.000')
-  })
-
-  test('validaciones de tarjeta: vencida, 15 digitos, CVV corto y titular vacio no crean reserva', async ({ page }) => {
-    const { inserts } = await simularApi(page)
-    await llegarAConfirmar(page, 'Manicura Completa')
-    await llenarContacto(page)
-    await page.getByRole('button', { name: 'Continuar al abono' }).click()
-
-    await llenarTarjeta(page, { titular: ' ', numero: '4242 4242 4242 424', vencimiento: '09/26', cvv: '98' })
-    await pagar(page).click()
-    await expect(page.getByText('Escribe el nombre como aparece en la tarjeta.')).toBeVisible()
-    await expect(page.getByText('El número de tarjeta debe tener 16 dígitos.')).toBeVisible()
-    await expect(page.getByText('La tarjeta está vencida.')).toBeVisible()
-    await expect(page.getByText('El CVV tiene 3 dígitos.')).toBeVisible()
-    await expect(page.getByLabel('Nombre del titular')).toBeFocused()
-    expect(inserts).toHaveLength(0)
-
-    // El mes en curso todavia vale.
-    await llenarTarjeta(page, { vencimiento: '10/26' })
-    await expect(page.getByText('La tarjeta está vencida.')).toHaveCount(0)
-    // Mes 13 y letras en el CVV.
-    await page.getByLabel('Vencimiento').fill('13/27')
-    await page.getByLabel('CVV').fill('a1b')
-    await pagar(page).click()
-    await expect(page.getByText('El mes debe estar entre 01 y 12.')).toBeVisible()
-    await expect(page.getByLabel('CVV')).toHaveValue('1')
-    expect(inserts).toHaveLength(0)
+    await expect(page.locator('aside')).toContainText('Saldo a pagar en el local$16.000')
+    await expect(page.locator('aside')).toContainText('Abono hoy con Webpay$4.000')
   })
 
   test('volver desde Abono conserva servicio, hora y contacto, sin crear reserva', async ({ page }) => {
@@ -331,7 +342,6 @@ test.describe('abono en el flujo de reserva', () => {
     const hora = await llegarAConfirmar(page, 'Manicura Completa')
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await llenarTarjeta(page)
     await page.getByRole('button', { name: '← Volver a la confirmación' }).click()
 
     await expect(page.getByRole('heading', { name: 'Revisa y confirma' })).toBeVisible()
@@ -341,10 +351,6 @@ test.describe('abono en el flujo de reserva', () => {
     await expect(page.getByText('Manicura Completa').first()).toBeVisible()
     await expect(page.getByText(new RegExp(hora)).first()).toBeVisible()
     expect(inserts).toHaveLength(0)
-
-    // Al volver a entrar, la tarjeta no se conserva (vive solo en el paso).
-    await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await expect(page.getByLabel('Número de tarjeta')).toHaveValue('')
   })
 
   test('tras un fallo en Abono, Nuria cambia el borrador y Confirmar no arrastra el error', async ({ page }) => {
@@ -352,7 +358,6 @@ test.describe('abono en el flujo de reserva', () => {
     await llegarAConfirmar(page, 'Manicura Completa')
     await llenarContacto(page)
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
-    await llenarTarjeta(page)
     await pagar(page).click()
     await expect(page.getByRole('alert')).toContainText('No se realizó ningún cobro.')
 
@@ -372,7 +377,7 @@ test.describe('abono en el flujo de reserva', () => {
   })
 
   test('flujo iniciado desde Nuria pasa por el paso Abono', async ({ page }) => {
-    const { inserts } = await simularApi(page)
+    const { inserts, formularios } = await simularApi(page)
     await page.goto('/')
     await page.getByRole('button', { name: 'Pregúntale a Nuria, asistente de compras y reservas' }).click()
     await page.getByLabel('Mensaje para Nuria').fill('quiero reservar una manicure')
@@ -387,9 +392,8 @@ test.describe('abono en el flujo de reserva', () => {
     await page.getByRole('button', { name: 'Continuar al abono' }).click()
     await expect(page.getByRole('heading', { name: 'Abono', exact: true })).toBeVisible()
     expect(inserts).toHaveLength(0)
-    await llenarTarjeta(page)
     await pagar(page).click()
-    await expect(page.getByText('Abono pagado')).toBeVisible()
+    await esperarWebpay(page, formularios)
     expect(inserts).toHaveLength(1)
   })
 
@@ -402,8 +406,6 @@ test.describe('abono en el flujo de reserva', () => {
     // El indicador compacto dice en que paso se esta; la fila completa no cabe.
     await expect(page.getByText(/Paso 6 de 6/)).toBeVisible()
     await expect(page.getByText(/Paso 6 de 6/)).toContainText('Abono')
-    await llenarTarjeta(page, { vencimiento: '09/26' })
-    await pagar(page).click()
     const anchos = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, body: document.body.scrollWidth, vista: window.innerWidth }))
     await page.screenshot({ path: `${QA_DIR}/abono-movil.png`, fullPage: true })
     expect(anchos.doc).toBeLessThanOrEqual(anchos.vista)

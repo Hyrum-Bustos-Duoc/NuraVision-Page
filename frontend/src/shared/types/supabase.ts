@@ -70,14 +70,6 @@ export interface Database {
            * que, si no es null, hay pregunta y al menos una opcion.
            */
           variantes: Json | null
-          /** boolean not null (0016). Si al reservar se cobra solo el abono. */
-          cobrar_abono: boolean
-          /**
-           * integer nullable (0016). Abono en pesos. El check
-           * `servicios_abono_necesita_monto` impide que sea NULL cuando
-           * `cobrar_abono` es true.
-           */
-          monto_abono: number | null
           /** integer */
           duracion_minutos: number
           /** numeric */
@@ -99,8 +91,6 @@ export interface Database {
           descripcion_larga?: string | null
           incluye?: Json
           variantes?: Json | null
-          cobrar_abono?: boolean
-          monto_abono?: number | null
           duracion_minutos: number
           precio_base: number
           activo?: boolean
@@ -115,8 +105,6 @@ export interface Database {
           descripcion_larga?: string | null
           incluye?: Json
           variantes?: Json | null
-          cobrar_abono?: boolean
-          monto_abono?: number | null
           duracion_minutos?: number
           precio_base?: number
           activo?: boolean

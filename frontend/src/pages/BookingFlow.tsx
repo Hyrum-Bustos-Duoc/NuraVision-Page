@@ -12,6 +12,7 @@ import { useDisponibilidad } from '@/modules/profesionales/ui/useDisponibilidad'
 import { getMonthDays, getSlotsForDate, minutesToTime, timeToMinutes } from '@/shared/lib/availability'
 import { useCrearReserva } from '@/modules/reservas/ui/useCrearReserva'
 import { PasoAbono } from '@/modules/reservas/ui/PasoAbono'
+import { usePagoWebpay } from '@/modules/pagos/ui/usePagoWebpay'
 import { saldoTrasAbono } from '@/shared/lib/abono'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { Stepper } from '@/shared/ui/Stepper'
@@ -52,7 +53,11 @@ interface ServicioReservaVista {
    * tarjeta nunca cae en el marcador a rayas.
    */
   imagenUrl: string
-  /** CLP; > 0 agrega el paso «Abono» tras «Confirmar». Ver `Servicio.abono`. */
+  /**
+   * CLP; > 0 agrega el paso «Abono» tras «Confirmar», que se paga con Webpay
+   * sin alternativa. Con 0 la clienta elige entre pagar todo con Webpay o en el
+   * estudio. Ver `Servicio.abono`.
+   */
   abono: number
 }
 
@@ -119,6 +124,7 @@ export default function BookingFlow() {
       ? { name: currentUser.name, email: currentUser.email, phone: currentUser.phone }
       : null
   const reserva = useCrearReserva()
+  const webpay = usePagoWebpay()
   const [calendarView, setCalendarView] = useState({ year: 2026, month: 8 })
   // Los nombres se guardan junto a la reserva porque la pantalla final ya no
   // puede resolverlos: la reserva referencia ids de la base y los datos de
@@ -151,6 +157,27 @@ export default function BookingFlow() {
    * evita tener que limpiar el error en cada camino que cambia el borrador.
    */
   const [fallidoPara, setFallidoPara] = useState<string | null>(null)
+  /**
+   * La reserva que ya se guardo para un borrador cuyo cobro no llego a abrirse.
+   *
+   * El cobro va DESPUES de crear la reserva (Webpay la identifica por su
+   * codigo), asi que puede fallar con la reserva ya en la base. Reintentar debe
+   * cobrar esa misma reserva, no crear otra por la misma hora. Va atada a la
+   * clave del borrador por la misma razon que `fallidoPara`: si el borrador
+   * cambia, ese codigo ya no corresponde a lo que se ve.
+   */
+  const [reservaGuardada, setReservaGuardada] = useState<{
+    clave: string
+    codigo: string
+  } | null>(null)
+  /**
+   * Sin abono: si se paga ahora con Webpay o en el estudio.
+   *
+   * Vive aqui y no en `ConfirmStep` porque ese paso se desmonta cuando la
+   * disponibilidad se recarga, y la eleccion se perderia en silencio. Por
+   * defecto, en el estudio: es como funciona hoy el salon.
+   */
+  const [pagarAhora, setPagarAhora] = useState(false)
 
   // Servicio, profesionales y horario salen de la base, no de los seeds.
   const servicioState = useServicioDetalle(bookingDraft.serviceId)
@@ -239,6 +266,9 @@ export default function BookingFlow() {
   ].join('|')
   const enPagoAbono = step === 'confirm' && conAbono && pagoPara === claveBorrador
   const errorVigente = fallidoPara === claveBorrador ? reserva.error : null
+  const codigoGuardado = reservaGuardada?.clave === claveBorrador ? reservaGuardada.codigo : null
+  // El error de Webpay solo existe tras guardar la reserva de ESTE borrador.
+  const errorDePago = codigoGuardado !== null ? webpay.error : null
 
   // Cada paso del asistente vuelve al inicio de la pantalla.
   useScrollToTopOnChange(confirmado ? 'success' : enPagoAbono ? 'abono' : step)
@@ -312,102 +342,134 @@ export default function BookingFlow() {
     (disponibilidad.cargando || disponibilidad.error !== null || disponibilidad.sinHorario)
 
   /**
-   * Crea la reserva con el mecanismo de siempre. Lo llama «Confirmar» si el
-   * servicio no tiene abono, y «Pagar abono y reservar» si lo tiene.
+   * Guarda la reserva del borrador y devuelve su codigo, o `null` si la base la
+   * rechazo (el error queda en `reserva.error` y lo muestra el paso que la
+   * pidio, conservando lo elegido para reintentar).
+   *
+   * Si ya hay una guardada para este borrador —el cobro fallo despues— se
+   * devuelve esa y no se crea otra.
+   *
+   * `conCorreo` es falso en el camino de Webpay: el aviso sale al aprobarse el
+   * pago, no al guardar una reserva que todavia no esta pagada.
    */
-  function reservar(contact: Contact) {
+  async function guardarReserva(contact: Contact, conCorreo: boolean): Promise<string | null> {
+    if (codigoGuardado !== null) return codigoGuardado
     const fecha = bookingDraft.dateISO
     const horaInicio = bookingDraft.time
-    if (!service || !professional || !fecha || !horaInicio) return
+    if (!service || !professional || !fecha || !horaInicio) return null
 
     const codigo = generateCode(fecha)
     // La del momento de pedirla: si el borrador cambia mientras viaja, el
-    // error no se le atribuye al nuevo.
+    // resultado no se le atribuye al nuevo.
     const clave = claveBorrador
     // La hora de término se calcula al reservar y se guarda: si mañana
     // cambia la duración del servicio, esta reserva conserva el bloque
     // que realmente se tomó.
     const horaFin = minutesToTime(timeToMinutes(horaInicio) + service.duracionMinutos)
 
-    void (async () => {
-      const guardada = await reserva.crear({
-        servicioId: service.id,
-        profesionalId: professional.id,
-        fecha,
-        horaInicio,
-        horaFin,
-        clienteNombre: contact.name,
-        clienteEmail: contact.email,
-        clienteTelefono: contact.phone,
-        codigo,
-        // Con sesión la reserva queda asociada a la cuenta, y es lo
-        // único que después permite leerla: la política de RLS
-        // entrega las filas cuyo cliente_id coincide con auth.uid().
-        // Sin sesión va NULL, que es lo que la política de inserción
-        // exige del rol anónimo.
-        clienteId: usuario?.id ?? null,
-        /**
-         * COPIA de lo elegido, no su id. El estudio va a editar estas
-         * opciones: guardar solo el id dejaria que un cambio de precio
-         * reescribiera lo cobrado en reservas ya hechas. Y pesa mas
-         * porque `reservas` no tiene columna de precio.
-         *
-         * `null` cuando el servicio no pregunta nada, que es el caso de
-         * los 17 actuales.
-         */
-        varianteElegida: opcionElegida
-          ? {
-              pregunta: service.variantes?.pregunta ?? '',
-              opcionId: opcionElegida.id,
-              etiqueta: opcionElegida.etiqueta,
-              precio: opcionElegida.precio,
-            }
-          : null,
-      })
+    const guardada = await reserva.crear({
+      servicioId: service.id,
+      profesionalId: professional.id,
+      fecha,
+      horaInicio,
+      horaFin,
+      clienteNombre: contact.name,
+      clienteEmail: contact.email,
+      clienteTelefono: contact.phone,
+      codigo,
+      // Con sesión la reserva queda asociada a la cuenta, y es lo
+      // único que después permite leerla: la política de RLS
+      // entrega las filas cuyo cliente_id coincide con auth.uid().
+      // Sin sesión va NULL, que es lo que la política de inserción
+      // exige del rol anónimo.
+      clienteId: usuario?.id ?? null,
+      /**
+       * COPIA de lo elegido, no su id. El estudio va a editar estas
+       * opciones: guardar solo el id dejaria que un cambio de precio
+       * reescribiera lo cobrado en reservas ya hechas. Y pesa mas
+       * porque `reservas` no tiene columna de precio.
+       *
+       * `null` cuando el servicio no pregunta nada, que es el caso de
+       * los 17 actuales.
+       */
+      varianteElegida: opcionElegida
+        ? {
+            pregunta: service.variantes?.pregunta ?? '',
+            opcionId: opcionElegida.id,
+            etiqueta: opcionElegida.etiqueta,
+            precio: opcionElegida.precio,
+          }
+        : null,
+    }, { conCorreo })
 
-      // Si la base la rechazó no se avanza: el paso que la pidió
-      // —confirmación o abono— muestra el error y conserva lo elegido
-      // (y la tarjeta) para reintentar.
-      if (!guardada) {
-        setFallidoPara(clave)
-        return
-      }
+    if (!guardada) {
+      setFallidoPara(clave)
+      return null
+    }
+    setReservaGuardada({ clave, codigo })
+    return codigo
+  }
 
-      const booking: Booking = {
-        id: `b-${Date.now()}`,
-        code: codigo,
-        serviceId: service.id,
-        professionalId: professional.id,
-        clientName: contact.name,
-        clientEmail: contact.email,
-        clientPhone: contact.phone,
-        // Invitada es quien reserva sin cuenta de Supabase: solo esa
-        // sesión deja la reserva asociada a un perfil. El usuario de
-        // demostración no crea ninguna.
-        guest: usuario === null,
-        dateISO: fecha,
-        time: horaInicio,
-        durationMin: service.duracionMinutos,
-        price: precioTotal,
-        // El que se mostró al pagar. La invitada no puede leer su fila para
-        // conocer el que fijó la base (ver riesgos en design.md).
-        abono: service.abono,
-        // La base la guarda como 'pendiente': confirmarla es decisión
-        // del estudio, no de quien reserva.
-        status: 'confirmada',
-      }
+  /**
+   * Reserva y lleva a Webpay. Es el unico camino con abono, y el de «pagar
+   * ahora» sin el.
+   *
+   * Se manda solo el codigo: el monto (abono o total) lo decide el servidor
+   * con la reserva. No se limpia el borrador ni se pinta la pantalla de exito:
+   * eso lo hace /confirmacion-pago al volver. Si el cobro no llega a abrirse,
+   * el paso sigue en pantalla con el aviso y el boton reintenta solo el cobro.
+   */
+  async function pagarConWebpay(contact: Contact) {
+    const codigo = await guardarReserva(contact, false)
+    if (codigo === null) return
+    await webpay.pagar({ tipo: 'reserva', codigo })
+  }
 
-      // El estado local sigue siendo el modelo de LECTURA: las
-      // políticas no otorgan SELECT sobre `reservas`, así que
-      // "mis reservas" no puede leerlas de la base todavía.
-      addBooking(booking)
-      setBookingDraft(() => ({}))
-      setConfirmado({
-        booking,
-        servicioNombre: service.nombre,
-        profesionalNombre: professional.name,
-      })
-    })()
+  /** Reserva sin cobrar nada: solo para servicios sin abono. */
+  async function reservarYPagarEnEstudio(contact: Contact) {
+    const fecha = bookingDraft.dateISO
+    const horaInicio = bookingDraft.time
+    if (!service || !professional || !fecha || !horaInicio) return
+    // Si ya quedo guardada camino a Webpay, se guardo sin aviso: se manda ahora.
+    const veniaDeWebpay = codigoGuardado !== null
+    const codigo = await guardarReserva(contact, true)
+    if (codigo === null) return
+    if (veniaDeWebpay) reserva.avisar(codigo)
+
+    const booking: Booking = {
+      id: `b-${Date.now()}`,
+      code: codigo,
+      serviceId: service.id,
+      professionalId: professional.id,
+      clientName: contact.name,
+      clientEmail: contact.email,
+      clientPhone: contact.phone,
+      // Invitada es quien reserva sin cuenta de Supabase: solo esa
+      // sesión deja la reserva asociada a un perfil. El usuario de
+      // demostración no crea ninguna.
+      guest: usuario === null,
+      dateISO: fecha,
+      time: horaInicio,
+      durationMin: service.duracionMinutos,
+      price: precioTotal,
+      // Este camino solo existe sin abono: con abono se paga en Webpay y el
+      // comprobante lo muestra /confirmacion-pago.
+      abono: 0,
+      // La base la guarda como 'pendiente': confirmarla es decisión
+      // del estudio, no de quien reserva.
+      status: 'confirmada',
+    }
+
+    // El estado local sigue siendo el modelo de LECTURA: las
+    // políticas no otorgan SELECT sobre `reservas`, así que
+    // "mis reservas" no puede leerlas de la base todavía.
+    addBooking(booking)
+    setBookingDraft(() => ({}))
+    setConfirmado({
+      booking,
+      servicioNombre: service.nombre,
+      profesionalNombre: professional.name,
+    })
   }
 
   return (
@@ -540,19 +602,24 @@ export default function BookingFlow() {
           conSesion={usuario !== null}
           onBack={() => clearFrom('time')}
           guardando={reserva.guardando}
-          // Con abono este paso no crea nada: un fallo del pago se vio en el
+          abriendoPago={webpay.enviando}
+          // Con abono este paso no crea nada ni cobra: un fallo se vio en el
           // paso «Abono» y repetirlo aqui al volver confundiria.
           errorAlGuardar={conAbono ? null : errorVigente}
+          errorDePago={conAbono ? null : errorDePago}
+          pagarAhora={pagarAhora}
+          onPagarAhora={setPagarAhora}
           onConfirm={(contact) => {
             setContactoEscrito(contact)
-            // Con abono, «Continuar al abono» no crea nada: la reserva nace al
-            // aprobar el pago (decision 7). El error de un intento anterior se
-            // limpia: el paso vuelve a montarse con la tarjeta vacia, y avisar
-            // de un fallo que no corresponde a lo que se ve confunde.
+            // Con abono, «Continuar al abono» no crea nada: la reserva se crea
+            // al pulsar pagar en el paso «Abono», justo antes de ir a Webpay.
+            // El error de un intento anterior se limpia: avisar de un fallo
+            // que no corresponde a lo que se ve confunde.
             if (conAbono) {
               reserva.limpiarError()
               setPagoPara(claveBorrador)
-            } else reservar(contact)
+            } else if (pagarAhora) void pagarConWebpay(contact)
+            else void reservarYPagarEnEstudio(contact)
           }}
         />
       )}
@@ -566,12 +633,14 @@ export default function BookingFlow() {
           precio={precioTotal}
           abono={service.abono}
           guardando={reserva.guardando}
+          abriendoPago={webpay.enviando}
           errorAlGuardar={errorVigente}
+          errorDePago={errorDePago}
           onBack={() => {
             reserva.limpiarError()
             setPagoPara(null)
           }}
-          onPagar={() => reservar(contactoEscrito)}
+          onPagar={() => void pagarConWebpay(contactoEscrito)}
         />
       )}
     </div>
@@ -892,6 +961,10 @@ function ConfirmStep({
   onConfirm,
   guardando,
   errorAlGuardar,
+  abriendoPago,
+  errorDePago,
+  pagarAhora,
+  onPagarAhora,
 }: {
   service: ServicioReservaVista
   /** Precio ya resuelto. Ver la nota en `DateStep`. */
@@ -918,7 +991,15 @@ function ConfirmStep({
   onConfirm: (contact: Contact) => void
   guardando: boolean
   errorAlGuardar: string | null
+  /** Se esta abriendo Webpay: la pagina esta a punto de cambiar sola. */
+  abriendoPago: boolean
+  /** El cobro no se pudo abrir. La reserva SI quedo guardada. */
+  errorDePago: string | null
+  /** Sin abono: si se paga ahora con Webpay. Con abono no se usa. */
+  pagarAhora: boolean
+  onPagarAhora: (valor: boolean) => void
 }) {
+  const conAbono = service.abono > 0
   const [contact, setContact] = useState<Contact>(
     () => contactoEscrito ?? cuenta ?? { name: '', email: '', phone: '' },
   )
@@ -1009,20 +1090,24 @@ function ConfirmStep({
 
         <div className="h-fit rounded-2xl bg-line-soft/60 p-6">
           <p className="text-sm text-muted">
-            {service.abono > 0 ? 'Total del servicio' : 'Total a pagar en el salón'}
+            {conAbono
+              ? 'Total del servicio'
+              : pagarAhora
+                ? 'Total a pagar ahora'
+                : 'Total a pagar en el salón'}
           </p>
           <p className="mt-1 font-serif-display text-4xl text-ink">
             {formatPrice(precio)}
           </p>
 
-          {service.abono > 0 && (
+          {conAbono && (
             <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted">Abono al reservar</dt>
+                <dt className="text-muted">Abono hoy con Webpay</dt>
                 <dd className="text-ink">{formatPrice(service.abono)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted">Saldo en el estudio</dt>
+                <dt className="text-muted">Saldo en el local</dt>
                 <dd className="text-ink">{formatPrice(saldoTrasAbono(precio, service.abono))}</dd>
               </div>
             </dl>
@@ -1042,10 +1127,34 @@ function ConfirmStep({
               </div>
             </div>
           )}
+          {/* Solo sin abono hay eleccion: con abono el pago en linea es
+              obligatorio y se hace en el paso siguiente. */}
+          {!conAbono && (
+            <fieldset className="mt-6 border-t border-line pt-5">
+              <legend className="text-xs uppercase tracking-[0.12em] text-muted">
+                Cómo quieres pagar
+              </legend>
+              <div className="mt-3 space-y-2">
+                <OpcionPago
+                  activa={!pagarAhora}
+                  onElegir={() => onPagarAhora(false)}
+                  titulo="Pagar en el estudio"
+                  detalle="El día de tu hora, en efectivo o tarjeta"
+                />
+                <OpcionPago
+                  activa={pagarAhora}
+                  onElegir={() => onPagarAhora(true)}
+                  titulo="Pagar ahora con Webpay"
+                  detalle={`${formatPrice(precio)} con tarjeta de débito, crédito o prepago`}
+                />
+              </div>
+            </fieldset>
+          )}
+
           <Button
             full
             className="mt-6"
-            disabled={guardando}
+            disabled={guardando || abriendoPago}
             onClick={() => {
               setShowErrors(true)
               if (Object.keys(errors).length > 0) return
@@ -1056,12 +1165,28 @@ function ConfirmStep({
               })
             }}
           >
-            {service.abono > 0
+            {conAbono
               ? 'Continuar al abono'
-              : guardando
-                ? 'Guardando…'
-                : 'Confirmar reserva'}
+              : abriendoPago
+                ? 'Redirigiendo a Webpay…'
+                : guardando
+                  ? 'Guardando…'
+                  : pagarAhora
+                    ? `Pagar ${formatPrice(precio)} con Webpay`
+                    : 'Confirmar reserva'}
           </Button>
+
+          {/* La reserva YA quedo guardada: si no se dice, parecera que se
+              perdio y se intentara reservar otra vez. Sin abono, pagar en el
+              estudio sigue siendo valido: la reserva no guarda medio de pago. */}
+          {errorDePago && (
+            <p role="alert" className="mt-3 rounded-xl border border-line px-4 py-3 text-sm text-ink">
+              {errorDePago}
+              <span className="mt-1 block text-xs text-muted">
+                Tu hora quedó reservada. Puedes reintentar el pago o elegir pagar en el estudio.
+              </span>
+            </p>
+          )}
 
           {/* La reserva no quedó guardada: se informa aquí y el botón sigue
               disponible para reintentar, sin perder lo que ya se eligió. */}
@@ -1095,6 +1220,44 @@ function ConfirmStep({
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Una opcion de pago: radio nativo envuelto en su etiqueta. El navegador se
+ * encarga de la exclusion mutua, el foco y las flechas del teclado, y de esta
+ * eleccion depende que se cobre o no: cuanto menos comportamiento propio,
+ * menos puede fallar.
+ */
+function OpcionPago({
+  activa,
+  onElegir,
+  titulo,
+  detalle,
+}: {
+  activa: boolean
+  onElegir: () => void
+  titulo: string
+  detalle: string
+}) {
+  return (
+    <label
+      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
+        activa ? 'border-ink bg-ink/[0.03]' : 'border-line-soft hover:border-line'
+      }`}
+    >
+      <input
+        type="radio"
+        name="pago-reserva"
+        checked={activa}
+        onChange={onElegir}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-ink">{titulo}</span>
+        <span className="mt-0.5 block text-xs text-muted">{detalle}</span>
+      </span>
+    </label>
   )
 }
 
@@ -1159,15 +1322,6 @@ function SuccessScreen({
           <Row label="Hora" value={`${booking.time} h`} />
           <Row label="Duración" value={`${booking.durationMin} min`} />
           <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
-          {booking.abono > 0 && (
-            <>
-              <Row label="Abono pagado" value={formatPrice(booking.abono)} />
-              <Row
-                label="Saldo en el estudio"
-                value={formatPrice(saldoTrasAbono(booking.price, booking.abono))}
-              />
-            </>
-          )}
         </div>
       </div>
 

@@ -45,8 +45,11 @@ export interface Comprobante {
    * que nos escribe, asi que es el que va mas visible en el comprobante.
    */
   codigo: string | null
-  /** Lo que se cobro ahora. Con abono, no es el precio del servicio. */
-  monto: number
+  /**
+   * Lo que se cobro ahora. Con abono, no es el precio del servicio. `null`
+   * cuando la respuesta no lo trae (un abandono responde sin comprobante).
+   */
+  monto: number | null
   /**
    * Total del servicio cuando solo se cobro un abono (0016), o `null` cuando se
    * cobro todo.
@@ -67,6 +70,13 @@ export interface Comprobante {
   motivo?: string
   /** La confirmacion ya se habia hecho: es una recarga de la pantalla. */
   repetida?: boolean
+  /**
+   * Otra peticion tiene el cobro reclamado y aun no termina de cerrarlo con
+   * Transbank. NO es un rechazo: el resultado todavia no se sabe y hay que
+   * volver a preguntar. Pasa, por ejemplo, con el doble montaje de StrictMode o
+   * con una recarga mientras la primera confirmacion sigue en vuelo.
+   */
+  procesando?: boolean
 }
 
 /**

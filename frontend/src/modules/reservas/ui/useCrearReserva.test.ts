@@ -8,8 +8,10 @@ const crear = vi.fn<(nueva: NuevaReserva) => Promise<void>>()
 vi.mock('../infrastructure/supabase-reserva.repository', () => ({
   reservaRepository: { crear: (nueva: NuevaReserva) => crear(nueva) },
 }))
+const pedirEnvio = vi.fn<(codigo: string) => Promise<boolean>>(() => Promise.resolve(true))
+
 vi.mock('../infrastructure/supabase-confirmacion.repository', () => ({
-  confirmacionRepository: { pedirEnvio: () => Promise.resolve(true) },
+  confirmacionRepository: { pedirEnvio: (codigo: string) => pedirEnvio(codigo) },
 }))
 
 const NUEVA: NuevaReserva = {
@@ -27,7 +29,36 @@ const NUEVA: NuevaReserva = {
 }
 
 describe('useCrearReserva', () => {
-  beforeEach(() => crear.mockReset())
+  beforeEach(() => {
+    crear.mockReset()
+    pedirEnvio.mockClear()
+  })
+
+  it('camino a Webpay guarda sin correo, y avisar lo manda despues', async () => {
+    crear.mockResolvedValue()
+    const { result } = renderHook(() => useCrearReserva())
+
+    await act(async () => {
+      expect(await result.current.crear(NUEVA, { conCorreo: false })).toBe(true)
+    })
+    expect(pedirEnvio).not.toHaveBeenCalled()
+
+    await act(async () => {
+      result.current.avisar(NUEVA.codigo)
+    })
+    expect(pedirEnvio).toHaveBeenCalledWith(NUEVA.codigo)
+    expect(result.current.correoEnviado).toBe(true)
+  })
+
+  it('sin opciones manda el correo al guardar', async () => {
+    crear.mockResolvedValue()
+    const { result } = renderHook(() => useCrearReserva())
+
+    await act(async () => {
+      await result.current.crear(NUEVA)
+    })
+    expect(pedirEnvio).toHaveBeenCalledTimes(1)
+  })
 
   it('dos envios seguidos crean una sola reserva', async () => {
     let terminar: () => void = () => {}

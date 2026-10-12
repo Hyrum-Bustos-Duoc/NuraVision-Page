@@ -35,6 +35,16 @@ type Estado =
   | { fase: 'confirmando' }
   | { fase: 'resuelto'; comprobante: Comprobante }
   | { fase: 'fallo'; motivo: string }
+  /** Se agotaron los reintentos con la respuesta aun en `procesando`. */
+  | { fase: 'demorado' }
+
+/**
+ * Cada cuanto se vuelve a preguntar mientras el servidor responde `procesando`,
+ * y cuantas veces. 15 x 2 s = 30 s: mas que lo que tarda Transbank en un dia
+ * normal, y no tanto como para dejar a la clienta mirando un spinner sin fin.
+ */
+const INTERVALO_REINTENTO_MS = 2000
+const MAX_CONSULTAS = 15
 
 export default function ConfirmacionPago() {
   const { search } = useLocation()
@@ -50,29 +60,55 @@ export default function ConfirmacionPago() {
 
   const [estado, setEstado] = useState<Estado>({ fase: 'confirmando' })
 
+  /**
+   * Sincroniza con la Edge Function: confirma y, si responde `procesando`,
+   * vuelve a preguntar hasta tener el resultado.
+   *
+   * STRICTMODE: en desarrollo el efecto se monta, se limpia y se vuelve a
+   * montar, asi que salen DOS peticiones. La primera reclama el cobro; la
+   * segunda suele llegar mientras tanto y recibe `procesando`. Por eso:
+   *   · `vivo` es de cada ejecucion del efecto: la respuesta de la ejecucion
+   *     descartada no toca el estado, y la viva no depende de ella.
+   *   · `procesando` nunca se pinta como rechazo: se reintenta, y la ejecucion
+   *     viva acaba recibiendo el comprobante guardado (`repetida`).
+   *   · La limpieza cancela el temporizador pendiente, de modo que la ejecucion
+   *     descartada no sigue consultando por su cuenta.
+   */
   useEffect(() => {
     if (nadaQueConfirmar) return
-    // Guarda de cancelacion: si la clienta se va antes de que responda, no se
-    // escribe en un componente desmontado.
     let vivo = true
-    confirmarPago(pagoRepository, retorno)
-      .then((comprobante) => {
-        if (!vivo) return
-        setEstado(
-          comprobante
-            ? { fase: 'resuelto', comprobante }
-            : { fase: 'fallo', motivo: 'No encontramos datos del pago en esta dirección.' },
-        )
-      })
-      .catch((e: unknown) => {
-        if (!vivo) return
-        setEstado({
-          fase: 'fallo',
-          motivo: e instanceof Error ? e.message : 'No pudimos confirmar el pago.',
+    let temporizador: ReturnType<typeof setTimeout> | undefined
+    let consultas = 0
+
+    const consultar = () => {
+      consultas += 1
+      confirmarPago(pagoRepository, retorno)
+        .then((comprobante) => {
+          if (!vivo) return
+          if (!comprobante) {
+            setEstado({ fase: 'fallo', motivo: 'No encontramos datos del pago en esta dirección.' })
+            return
+          }
+          if (comprobante.procesando) {
+            if (consultas >= MAX_CONSULTAS) setEstado({ fase: 'demorado' })
+            else temporizador = setTimeout(consultar, INTERVALO_REINTENTO_MS)
+            return
+          }
+          setEstado({ fase: 'resuelto', comprobante })
         })
-      })
+        .catch((e: unknown) => {
+          if (!vivo) return
+          setEstado({
+            fase: 'fallo',
+            motivo: e instanceof Error ? e.message : 'No pudimos confirmar el pago.',
+          })
+        })
+    }
+
+    consultar()
     return () => {
       vivo = false
+      clearTimeout(temporizador)
     }
   }, [retorno, nadaQueConfirmar])
 
@@ -126,6 +162,26 @@ export default function ConfirmacionPago() {
     )
   }
 
+  // No es un fallo ni un rechazo: el servidor sigue cerrando el cobro. Decir
+  // "rechazado" o "no se te cobró" aqui podria ser falso.
+  if (estado.fase === 'demorado') {
+    return (
+      <Marco>
+        <h1 className="font-serif text-3xl font-light text-nv-ink">
+          Seguimos verificando tu pago
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-nv-muted1">
+          Transbank está tardando más de lo normal en confirmarlo. No vuelvas a pagar: revisa tu
+          correo en unos minutos, te enviaremos el resultado. Si no llega, escríbenos con tu código.
+        </p>
+        {retorno.ordenCompra && (
+          <p className="mt-2 text-xs text-nv-soft1">Orden {retorno.ordenCompra}</p>
+        )}
+        <Acciones />
+      </Marco>
+    )
+  }
+
   if (estado.fase === 'fallo') {
     return (
       <Marco>
@@ -156,11 +212,10 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
    * Se exigen las dos cifras y que el saldo sea positivo: un "saldo $0" no
    * aporta nada y tres filas para decir una sola cifra solo confunden.
    */
-  const hayAbono =
-    c.aprobado &&
-    typeof c.montoTotal === 'number' &&
-    typeof c.saldo === 'number' &&
-    c.saldo > 0
+  const desglose =
+    c.aprobado && c.monto !== null && c.montoTotal !== null && c.saldo !== null && c.saldo > 0
+      ? { total: c.montoTotal, abonado: c.monto, saldo: c.saldo }
+      : null
 
   const titulo = c.aprobado
     ? '¡Pago aprobado!'
@@ -169,7 +224,7 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
       : 'Pago rechazado'
 
   const bajada = c.aprobado
-    ? hayAbono
+    ? desglose
       ? // Con abono, lo primero que hay que decir es que queda algo por pagar:
         // enterarse en el local de que se debe el resto seria una sorpresa.
         'Tu hora quedó confirmada con el abono. El saldo se paga en el estudio el día de tu cita.'
@@ -193,22 +248,21 @@ function Voucher({ comprobante: c }: { comprobante: Comprobante }) {
         {/* Se comprueba el tipo antes de formatear: `formatPrice` de un valor
             ausente pinta "NaN", y un comprobante que dice NaN en el monto es
             peor que uno que no lo muestra. */}
-        {hayAbono ? (
+        {desglose ? (
           <>
             {/* Las tres cifras del abono (0016). Van en este orden —total,
                 pagado, saldo— porque es como se lee una cuenta: cuanto cuesta,
                 cuanto llevas, cuanto falta. */}
-            <Dato etiqueta="Total del servicio" valor={formatPrice(c.montoTotal!)} />
-            <Dato etiqueta="Abonado hoy con Webpay" valor={formatPrice(c.monto)} destacado />
+            <Dato etiqueta="Total del servicio" valor={formatPrice(desglose.total)} />
+            <Dato etiqueta="Abonado hoy con Webpay" valor={formatPrice(desglose.abonado)} destacado />
             <Dato
               etiqueta="Saldo a pagar en el local"
-              valor={formatPrice(c.saldo!)}
+              valor={formatPrice(desglose.saldo)}
               destacado
             />
           </>
         ) : (
-          typeof c.monto === 'number' &&
-          Number.isFinite(c.monto) && (
+          c.monto !== null && (
             <Dato etiqueta="Monto" valor={formatPrice(c.monto)} destacado />
           )
         )}

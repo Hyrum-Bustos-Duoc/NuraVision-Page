@@ -5,8 +5,16 @@ import { reservaRepository } from '../infrastructure/supabase-reserva.repository
 import { confirmacionRepository } from '../infrastructure/supabase-confirmacion.repository'
 
 interface EstadoCrearReserva {
-  /** Resuelve a `true` si la reserva quedo guardada. */
-  crear: (nueva: NuevaReserva) => Promise<boolean>
+  /**
+   * Resuelve a `true` si la reserva quedo guardada.
+   *
+   * `conCorreo: false` la guarda sin avisar por correo: es el camino de Webpay,
+   * donde el aviso lo manda `webpay-confirmar-transaccion` al aprobarse el pago.
+   * Avisar al crearla le diria a la clienta que tiene hora antes de pagar.
+   */
+  crear: (nueva: NuevaReserva, opciones?: { conCorreo?: boolean }) => Promise<boolean>
+  /** Pide el correo de una reserva ya guardada sin aviso (la clienta dejo Webpay y paga en el estudio). */
+  avisar: (codigo: string) => void
   guardando: boolean
   error: string | null
   /**
@@ -44,7 +52,15 @@ export function useCrearReserva(): EstadoCrearReserva {
    */
   const enCurso = useRef(false)
 
-  const crear = useCallback(async (nueva: NuevaReserva): Promise<boolean> => {
+  const avisar = useCallback((codigo: string) => {
+    setCorreoEnviado(null)
+    void enviarConfirmacion(confirmacionRepository, codigo).then(setCorreoEnviado)
+  }, [])
+
+  const crear = useCallback(async (
+    nueva: NuevaReserva,
+    { conCorreo = true }: { conCorreo?: boolean } = {},
+  ): Promise<boolean> => {
     if (enCurso.current) return false
     enCurso.current = true
     setGuardando(true)
@@ -68,7 +84,7 @@ export function useCrearReserva(): EstadoCrearReserva {
        * `pedirEnvio` nunca lanza, de modo que esta promesa sin esperar no puede
        * acabar en un rechazo no capturado.
        */
-      void enviarConfirmacion(confirmacionRepository, nueva.codigo).then(setCorreoEnviado)
+      if (conCorreo) avisar(nueva.codigo)
 
       return true
     } catch (e: unknown) {
@@ -78,9 +94,9 @@ export function useCrearReserva(): EstadoCrearReserva {
       enCurso.current = false
       setGuardando(false)
     }
-  }, [])
+  }, [avisar])
 
   const limpiarError = useCallback(() => setError(null), [])
 
-  return { crear, guardando, error, correoEnviado, limpiarError }
+  return { crear, avisar, guardando, error, correoEnviado, limpiarError }
 }

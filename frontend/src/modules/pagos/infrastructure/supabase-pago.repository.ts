@@ -2,6 +2,7 @@ import { supabase } from '@/shared/infrastructure/supabase/client'
 import { cuerpoDeFuncion, motivoDeFuncion } from '@/shared/infrastructure/supabase/funciones'
 import { ErrorDePago, type PagoRepository } from '../domain/pago.repository'
 import type { Comprobante, DestinoPago, InicioPago, RetornoWebpay } from '../domain/pago.types'
+import { toComprobante, type RespuestaConfirmacion } from './comprobante.mapper'
 
 /**
  * Habla con las dos Edge Functions de Webpay.
@@ -57,10 +58,15 @@ class EdgePagoRepository implements PagoRepository {
   }
 
   async confirmar(retorno: RetornoWebpay): Promise<Comprobante> {
-    const { data, error } = await supabase.functions.invoke<Comprobante & { error?: string }>(
-      CONFIRMAR,
-      { body: { tokenWs: retorno.tokenWs, tbkToken: retorno.tbkToken } },
-    )
+    // `ordenCompra` hace falta en el abandono: sin ella el servidor no sabe
+    // que intento marcar como 'anulado'.
+    const { data, error } = await supabase.functions.invoke<RespuestaConfirmacion>(CONFIRMAR, {
+      body: {
+        tokenWs: retorno.tokenWs,
+        tbkToken: retorno.tbkToken,
+        ordenCompra: retorno.ordenCompra,
+      },
+    })
 
     if (error) {
       const motivo = (await motivoDeFuncion(error)) || data?.error || error.message
@@ -69,7 +75,7 @@ class EdgePagoRepository implements PagoRepository {
 
     if (!data) throw new ErrorDePago('La pasarela no devolvio el resultado del pago.')
 
-    return data
+    return toComprobante(data)
   }
 }
 
