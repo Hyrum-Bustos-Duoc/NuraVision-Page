@@ -25,8 +25,11 @@
 // ----------------------------------------------------------------------------
 // Un segundo PUT sobre el mismo token responde con error, no con el resultado
 // anterior. Por eso quien llama tiene que reclamar el intento en la base antes
-// de llamar aqui (`pagos.confirmado_en`, ver 0015) y guardar la respuesta: es
-// la unica oportunidad de leerla.
+// de llamar aqui (`pagos.confirmado_en`, ver 0018) y guardar la respuesta.
+//
+// Si el commit no responde (timeout, red), NO se sabe si se ejecuto. Para eso
+// esta `estadoTransaccion`: la consulta de estado se puede repetir sin efectos
+// y dice si Transbank dejo el cobro autorizado.
 // ============================================================================
 
 /** Entorno de Transbank. Cambia la URL base y las credenciales. */
@@ -37,7 +40,20 @@ const BASE: Record<EntornoTransbank, string> = {
   produccion: 'https://webpay3g.transbank.cl',
 }
 
-const RUTA = '/rswebpaytransaction/api/webpay/v1.0/transactions'
+// v1.2 es la version vigente de la API REST de Webpay Plus. Crear, confirmar y
+// consultar van por la MISMA version: mezclar versiones dentro de una misma
+// transaccion es una variable mas que nadie quiere depurar.
+const RUTA = '/rswebpaytransaction/api/webpay/v1.2/transactions'
+
+/**
+ * Tope de cada llamada a Transbank.
+ *
+ * Sin tope, un Transbank colgado deja la Edge Function esperando hasta que la
+ * plataforma la mata, y la clienta ve una pantalla cargando sin fin despues de
+ * haber pagado. 15 s es holgado para una API que responde en menos de uno, y
+ * deja margen para la consulta de estado que sigue a un commit sin respuesta.
+ */
+const TIEMPO_MAXIMO_MS = 15_000
 
 /**
  * Credenciales publicas del entorno de INTEGRACION de Transbank.
@@ -147,6 +163,7 @@ export async function crearTransaccion(datos: {
   const res = await fetch(`${cfg.base}${RUTA}`, {
     method: 'POST',
     headers: cabeceras(cfg),
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
     body: JSON.stringify({
       buy_order: datos.buyOrder,
       session_id: datos.sessionId,
@@ -166,7 +183,7 @@ export async function crearTransaccion(datos: {
   return { token: cuerpo.token, url: cuerpo.url }
 }
 
-/** La respuesta del commit, tal como la documenta Transbank. */
+/** La respuesta del commit (y de la consulta de estado, que tiene la misma forma). */
 export interface RespuestaCommit {
   vci?: string
   amount?: number
@@ -194,10 +211,34 @@ export async function confirmarTransaccion(token: string): Promise<RespuestaComm
   const res = await fetch(`${cfg.base}${RUTA}/${encodeURIComponent(token)}`, {
     method: 'PUT',
     headers: cabeceras(cfg),
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
   })
 
   if (!res.ok) {
     throw new Error(`Transbank rechazo la confirmacion: ${await motivo(res)}`)
+  }
+
+  return (await res.json()) as RespuestaCommit
+}
+
+/**
+ * Consulta el estado de una transaccion (GET, sin efectos).
+ *
+ * Se usa cuando el commit lanzo: un timeout no dice si Transbank alcanzo a
+ * ejecutarlo. Si lo ejecuto, el estado es AUTHORIZED con response_code 0 y el
+ * cobro es real; tratarlo como error dejaria a la clienta pagada y sin hora.
+ */
+export async function estadoTransaccion(token: string): Promise<RespuestaCommit> {
+  const cfg = configuracion()
+
+  const res = await fetch(`${cfg.base}${RUTA}/${encodeURIComponent(token)}`, {
+    method: 'GET',
+    headers: cabeceras(cfg),
+    signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+  })
+
+  if (!res.ok) {
+    throw new Error(`Transbank no informo el estado: ${await motivo(res)}`)
   }
 
   return (await res.json()) as RespuestaCommit

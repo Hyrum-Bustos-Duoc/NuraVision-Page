@@ -25,10 +25,27 @@
 // abre dos veces con toda normalidad.
 //
 // Por eso el intento se RECLAMA antes de llamar a Transbank, con un UPDATE
-// condicional sobre `confirmado_en` (0015) — el mismo patron que 0012 usa para
+// condicional sobre `confirmado_en` (0018) — el mismo patron que 0012 usa para
 // el correo. Si no toca ninguna fila, el commit ya se hizo y se devuelve lo que
 // quedo guardado. Esa respuesta guardada es lo que hace que recargar la pantalla
 // muestre el comprobante en vez de un error.
+//
+// Si quedo reclamado pero aun en 'iniciado', OTRA llamada esta haciendo el
+// commit en este momento: se responde `procesando: true`, nunca "rechazado".
+// Decirle "rechazado" a quien si pago termina en un segundo pago o un reclamo.
+//
+// Las respuestas repetidas (`repetida: true`) llevan `codigo: null`. El
+// `token_ws` queda en el historial del navegador y en registros; quien lo
+// reutilice no debe obtener el codigo de la reserva, que para quien reservo sin
+// cuenta es su unica credencial.
+//
+// ----------------------------------------------------------------------------
+// SI EL COMMIT NO RESPONDE
+// ----------------------------------------------------------------------------
+// Un timeout no dice si Transbank ejecuto el commit. Se consulta el estado de
+// la transaccion (GET, repetible) y se registra lo que diga: si quedo
+// AUTHORIZED, el cobro es real y sigue el camino normal de un pago aprobado.
+// Solo si tampoco responde la consulta queda en 'error' para revisar a mano.
 //
 // ----------------------------------------------------------------------------
 // NO SE CREE LO QUE DICE TRANSBANK SIN COMPROBARLO
@@ -42,6 +59,11 @@
 // Las dos ultimas parecen redundantes. No lo son: son la ultima linea que
 // detecta que se confirmo un token que no era de este intento.
 //
+// Y la base acepta UN solo pago autorizado por reserva o pedido (0018). Si dos
+// intentos paralelos se pagaron los dos, el segundo choca con ese indice (23505)
+// y queda en 'error': Transbank si lo cobro, y hay que devolverlo a mano desde
+// su portal.
+//
 // ----------------------------------------------------------------------------
 // EL ESTADO QUE SE ESCRIBE
 // ----------------------------------------------------------------------------
@@ -49,7 +71,8 @@
 //   · reservas -> 'confirmada'. `estado_reserva` (0003) NO TIENE "pagada", y no
 //     se le agrega: el estado de una reserva habla de la cita, no del dinero.
 //     Que se pago, y cuanto, lo dice `pagos`. Pagar confirma la hora, que es el
-//     significado que la clienta espera.
+//     significado que la clienta espera. SOLO desde 'pendiente': una reserva
+//     'completada' o 'cancelada' no cambia de estado por un pago.
 //
 // ----------------------------------------------------------------------------
 // DESPLIEGUE
@@ -63,6 +86,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 import {
   confirmarTransaccion,
+  estadoTransaccion,
   fueAprobada,
   type RespuestaCommit,
 } from '../_shared/transbank.ts'
@@ -89,7 +113,7 @@ interface FilaPago {
   id: number
   buy_order: string
   monto: number
-  /** Total del servicio cuando solo se cobro un abono (0016). */
+  /** Precio efectivo cuando solo se cobro un abono menor (0018). */
   monto_total: number | null
   estado: string
   pedido_id: number | null
@@ -107,7 +131,7 @@ interface FilaPago {
  *
  * `codigo` es el del pedido o la reserva —no la orden de compra de Transbank—
  * porque es el que la clienta reconoce y con el que nos escribe. Llega como
- * parametro porque vive en otra tabla.
+ * parametro porque vive en otra tabla, y es `null` en las respuestas repetidas.
  */
 function comprobante(pago: FilaPago, estado: string, codigo: string | null) {
   return {
@@ -117,15 +141,15 @@ function comprobante(pago: FilaPago, estado: string, codigo: string | null) {
     codigo,
     monto: pago.monto,
     /**
-     * El desglose del abono (0016).
+     * El desglose del abono (0018).
      *
      * `montoTotal` es lo que costaba el servicio el dia del cobro, guardado
      * entonces y no recalculado: el estudio edita sus precios y un comprobante
      * viejo mostraria un saldo que nadie acordo.
      *
      * Los dos van en null cuando se cobro el total, que es el caso de los
-     * pedidos de la tienda y de los servicios sin abono: ahi no hay nada que
-     * desglosar y la pantalla muestra una sola cifra.
+     * pedidos de la tienda y de las reservas sin abono (o con un abono igual al
+     * precio): ahi no hay nada que desglosar y la pantalla muestra una sola cifra.
      */
     montoTotal: pago.monto_total,
     saldo: pago.monto_total === null ? null : pago.monto_total - pago.monto,
@@ -157,9 +181,10 @@ Deno.serve(async (req: Request) => {
 
   const tokenWs = comoTexto(cuerpo.tokenWs)
   // Cuando la clienta abandona el formulario de Webpay, Transbank NO manda
-  // `token_ws`: manda `TBK_TOKEN` junto a la orden y la sesion. Es un abandono,
-  // no un fallo, y se registra como tal.
+  // `token_ws`: manda `TBK_TOKEN` junto a la orden (`TBK_ORDEN_COMPRA`) y la
+  // sesion. Es un abandono, no un fallo, y se registra como tal.
   const tbkToken = comoTexto(cuerpo.tbkToken)
+  const ordenCompra = comoTexto(cuerpo.ordenCompra)
 
   const admin = createClient(urlSupabase, serviceRole, {
     auth: { persistSession: false },
@@ -185,7 +210,25 @@ Deno.serve(async (req: Request) => {
     return ((data as { codigo?: string } | null)?.codigo ?? null) as string | null
   }
 
+  /**
+   * El intento ya estaba reclamado: se devuelve lo guardado, sin `codigo`.
+   * Con 'iniciado', el commit de otra llamada sigue en curso y la pantalla
+   * tiene que volver a preguntar, no mostrar un rechazo.
+   */
+  const yaReclamado = (p: FilaPago): Response =>
+    respuesta(
+      {
+        ...comprobante(p, p.estado, null),
+        repetida: true,
+        ...(p.estado === 'iniciado' ? { procesando: true } : {}),
+      },
+      200,
+    )
+
   // --- Abandono -------------------------------------------------------------
+  // Se exigen el token Y la orden de compra. Con solo el token, cualquiera que
+  // lo viera pasar podria anular un pago ajeno que aun esta en curso. La
+  // respuesta es la misma coincidan o no: no confirma si el intento existe.
   if (!tokenWs && tbkToken) {
     const { data: pago } = await admin
       .from('pagos')
@@ -193,7 +236,7 @@ Deno.serve(async (req: Request) => {
       .eq('token_ws', tbkToken)
       .maybeSingle<FilaPago>()
 
-    if (pago && pago.confirmado_en === null) {
+    if (pago && pago.confirmado_en === null && ordenCompra === pago.buy_order) {
       await admin
         .from('pagos')
         .update({ estado: 'anulado', confirmado_en: new Date().toISOString() })
@@ -230,12 +273,7 @@ Deno.serve(async (req: Request) => {
 
   // Ya confirmado: se devuelve lo guardado. Es lo que hace que recargar la
   // pantalla funcione, en vez de pedirle a Transbank un commit que daria error.
-  if (pago.confirmado_en !== null) {
-    return respuesta(
-      { ...comprobante(pago, pago.estado, await codigoDe(pago)), repetida: true },
-      200,
-    )
-  }
+  if (pago.confirmado_en !== null) return yaReclamado(pago)
 
   // --- Se reclama el commit -------------------------------------------------
   // `is('confirmado_en', null)` es la condicion que lo vuelve irrepetible: si
@@ -258,13 +296,7 @@ Deno.serve(async (req: Request) => {
       .select(COLUMNAS)
       .eq('id', pago.id)
       .maybeSingle<FilaPago>()
-    return respuesta(
-      {
-        ...comprobante(actual ?? pago, actual?.estado ?? pago.estado, await codigoDe(actual ?? pago)),
-        repetida: true,
-      },
-      200,
-    )
+    return yaReclamado(actual ?? pago)
   }
 
   // --- Commit contra Transbank ---------------------------------------------
@@ -273,15 +305,23 @@ Deno.serve(async (req: Request) => {
     commit = await confirmarTransaccion(tokenWs)
   } catch (e: unknown) {
     const detalle = e instanceof Error ? e.message : String(e)
-    console.error('El commit fallo:', detalle)
-    // Queda en 'error' con `confirmado_en` puesto: no se reintenta solo, porque
-    // un segundo commit tampoco funcionaria. Es un caso para revisar a mano
-    // contra el portal de Transbank, y la fila deja constancia de que paso.
-    await admin
-      .from('pagos')
-      .update({ estado: 'error', respuesta: { error: detalle } })
-      .eq('id', pago.id)
-    return respuesta({ error: 'La pasarela de pago no respondio.', estado: 'error' }, 502)
+    console.error('El commit fallo, se consulta el estado:', detalle)
+    try {
+      // La respuesta tiene la misma forma que la del commit y pasa por las
+      // mismas comprobaciones de abajo.
+      commit = await estadoTransaccion(tokenWs)
+    } catch (e2: unknown) {
+      const detalleEstado = e2 instanceof Error ? e2.message : String(e2)
+      console.error('Tampoco se pudo consultar el estado:', detalleEstado)
+      // Queda en 'error' con `confirmado_en` puesto: no se reintenta solo,
+      // porque un segundo commit tampoco funcionaria. Es un caso para revisar a
+      // mano contra el portal de Transbank, y la fila deja constancia.
+      await admin
+        .from('pagos')
+        .update({ estado: 'error', respuesta: { error: detalle, estado: detalleEstado } })
+        .eq('id', pago.id)
+      return respuesta({ error: 'La pasarela de pago no respondio.', estado: 'error' }, 502)
+    }
   }
 
   // --- Se comprueba lo que respondio ---------------------------------------
@@ -299,28 +339,61 @@ Deno.serve(async (req: Request) => {
     )
   }
 
+  // 'rechazado' solo cuando el banco dijo que no. Lo demas —una consulta de
+  // estado que dice INITIALIZED (el commit nunca llego) o un aprobado que no
+  // cuadra— es 'error': un fallo tecnico, no una tarjeta rechazada.
+  const rechazoDelBanco =
+    commit.status === 'FAILED' ||
+    (typeof commit.response_code === 'number' && commit.response_code !== 0)
   const estadoFinal = aprobado
     ? 'autorizado'
-    : fueAprobada(commit)
-      ? 'error'
-      : 'rechazado'
+    : !fueAprobada(commit) && rechazoDelBanco
+      ? 'rechazado'
+      : 'error'
+
+  const resultado = {
+    response_code: commit.response_code ?? null,
+    authorization_code: commit.authorization_code ?? null,
+    payment_type_code: commit.payment_type_code ?? null,
+    cuotas: commit.installments_number ?? null,
+    // Transbank entrega solo los ultimos digitos, y aqui se recortan otra vez
+    // por si algun dia mandara mas: la columna no admite mas de 4.
+    tarjeta_final: (commit.card_detail?.card_number ?? '').slice(-4) || null,
+    respuesta: commit as unknown as Record<string, unknown>,
+  }
 
   const { data: guardado, error: errorGuardar } = await admin
     .from('pagos')
-    .update({
-      estado: estadoFinal,
-      response_code: commit.response_code ?? null,
-      authorization_code: commit.authorization_code ?? null,
-      payment_type_code: commit.payment_type_code ?? null,
-      cuotas: commit.installments_number ?? null,
-      // Transbank entrega solo los ultimos digitos, y aqui se recortan otra vez
-      // por si algun dia mandara mas: la columna no admite mas de 4.
-      tarjeta_final: (commit.card_detail?.card_number ?? '').slice(-4) || null,
-      respuesta: commit as unknown as Record<string, unknown>,
-    })
+    .update({ estado: estadoFinal, ...resultado })
     .eq('id', pago.id)
     .select(COLUMNAS)
     .maybeSingle<FilaPago>()
+
+  if (errorGuardar?.code === '23505') {
+    // Ya habia otro pago autorizado para lo mismo (0018): dos intentos en
+    // paralelo y los dos pagados. Transbank cobro este tambien, asi que se
+    // guarda todo lo que respondio, pero como 'error', y se avisa.
+    console.error(
+      `Cobro duplicado: el pago ${pago.id} se autorizo en Transbank pero ya habia ` +
+        'otro autorizado. Hay que devolverlo desde el portal de Transbank.',
+    )
+    const { data: duplicado } = await admin
+      .from('pagos')
+      .update({ estado: 'error', ...resultado })
+      .eq('id', pago.id)
+      .select(COLUMNAS)
+      .maybeSingle<FilaPago>()
+    const fila = duplicado ?? pago
+    return respuesta(
+      {
+        ...comprobante(fila, 'error', await codigoDe(fila)),
+        motivo:
+          'Esto ya estaba pagado y este cobro quedo duplicado. El estudio lo ' +
+          'revisara para devolverlo.',
+      },
+      200,
+    )
+  }
 
   if (errorGuardar) {
     console.error('No se pudo guardar el resultado:', errorGuardar.message)
@@ -357,25 +430,30 @@ Deno.serve(async (req: Request) => {
       .from('reservas')
       .update({ estado: 'confirmada' })
       .eq('id', filaFinal.reserva_id)
-      .neq('estado', 'cancelada')
+      .eq('estado', 'pendiente')
     if (error) console.error('Pago autorizado pero la reserva no se marco:', error.message)
   }
 
   // --- Aviso por correo -----------------------------------------------------
   /**
-   * Se pide el correo SIN ESPERARLO y sin dejar que un fallo tumbe la respuesta:
-   * el cobro ya esta hecho y el comprobante tiene que llegar a la pantalla pase
-   * lo que pase con el correo.
+   * Un fallo del correo no tumba la respuesta: el cobro ya esta hecho y el
+   * comprobante tiene que llegar a la pantalla pase lo que pase con el correo.
    *
    * Solo para RESERVAS. No existe una funcion de correo para pedidos de la
    * tienda —`enviar-confirmacion-reserva` es la unica que hay—, asi que de una
    * compra no se manda nada: queda anotado como pendiente, no disimulado con una
    * invocacion a algo que no esta desplegado.
+   *
+   * Se identifica la reserva por su `codigo`, no por su id. Este cliente llama
+   * con la service_role key como Bearer, que `enviar-confirmacion-reserva` no
+   * reconoce como sesion (getUser falla); con solo el id respondia 403. El
+   * codigo es la via que esa funcion ya acepta sin sesion, y aqui se tiene.
    */
-  if (filaFinal.reserva_id !== null) {
+  const codigo = await codigoDe(filaFinal)
+  if (filaFinal.reserva_id !== null && codigo !== null) {
     try {
       const { error } = await admin.functions.invoke('enviar-confirmacion-reserva', {
-        body: { reservaId: filaFinal.reserva_id },
+        body: { codigo },
       })
       if (error) console.error('El correo de confirmacion no salio:', error.message)
     } catch (e: unknown) {
@@ -383,5 +461,5 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return respuesta(comprobante(filaFinal, 'autorizado', await codigoDe(filaFinal)), 200)
+  return respuesta(comprobante(filaFinal, 'autorizado', codigo), 200)
 })

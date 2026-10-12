@@ -28,6 +28,11 @@
 //     que solo aparece en su pantalla. Sin esta via, una invitada no podria
 //     pagar lo que acaba de pedir, que es el caso mas comun de la tienda.
 //
+// El permiso se comprueba JUSTO despues de leer la fila, y "no existe" y "no es
+// tuyo" responden el mismo 403 con el mismo texto. Si respondieran distinto,
+// probar ids correlativos diria cuales existen, y el estado de un pedido o una
+// reserva ajena (pagado, cancelada) solo se cuenta a quien puede pagarlo.
+//
 // ----------------------------------------------------------------------------
 // LO QUE NO SE COBRA DOS VECES
 // ----------------------------------------------------------------------------
@@ -35,6 +40,11 @@
 // ese pedido o esa reserva. Un reintento tras una tarjeta rechazada SI esta
 // permitido —y crea una orden de compra nueva, porque Transbank rechaza las
 // repetidas—, pero un segundo cobro de algo ya pagado, no.
+//
+// Esa pregunta tiene una ventana: dos pestanas pueden iniciar dos intentos y
+// pagar los dos en Transbank. La garantia final esta en la base (indices unicos
+// parciales de 0018) y salta al CONFIRMAR, no aqui: aqui solo se insertan
+// intentos 'iniciado', que esos indices no restringen.
 //
 // ----------------------------------------------------------------------------
 // EL NAVEGADOR TIENE QUE HACER UN POST
@@ -91,56 +101,31 @@ function unoDe<T>(valor: T | T[] | null): T | null {
   return Array.isArray(valor) ? (valor[0] ?? null) : valor
 }
 
+/** La fecha de hoy en Chile, 'YYYY-MM-DD', comparable con `reservas.fecha`. */
+function hoyEnChile(): string {
+  // en-CA formatea como YYYY-MM-DD. La zona importa: en UTC, desde las 20:00 o
+  // 21:00 de Chile ya es "mañana" y una reserva de hoy pareceria pasada.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date())
+}
+
 interface Cobrable {
   tipo: 'pedido' | 'reserva'
   id: string
-  codigo: string
-  clienteId: string | null
   /** Lo que se cobra AHORA. Con abono, no es el precio del servicio. */
   monto: number
   /**
-   * El total del servicio cuando solo se cobra un abono, o `null` cuando se
-   * cobra todo.
+   * El precio efectivo cuando se cobra un abono MENOR que ese precio, o `null`
+   * cuando se cobra todo (pedidos y reservas sin abono).
    *
-   * Se guarda en `pagos.monto_total` (0016) para que el comprobante pueda decir
+   * Se guarda en `pagos.monto_total` (0018) para que el comprobante pueda decir
    * el saldo pendiente sin recalcularlo: el estudio edita sus precios, y un
    * comprobante de hace dos meses mostraria una deuda que nadie acordo.
    */
   montoTotal: number | null
 }
 
-/**
- * Reparte el precio entre lo que se cobra ahora y lo que queda para el local.
- *
- * Es la copia en Deno de `desglosarPago` del frontend, y la regla esta escrita
- * igual en los dos lados a proposito: la pantalla tiene que anunciar lo mismo
- * que se va a cobrar. ESTA es la version que manda, porque es la unica que el
- * navegador no puede alterar.
- *
- * El abono NUNCA supera el total: el estudio configura una cifra fija por
- * servicio, pero con variantes el total varia, y un abono de $15.000 sobre una
- * opcion de $10.000 cobraria mas que el servicio. En ese caso se cobra el total.
- */
-function repartir(
-  total: number,
-  cobrarAbono: boolean,
-  montoAbono: number | null,
-): { aCobrar: number; montoTotal: number | null } {
-  const totalEntero = Math.round(total)
-
-  const abonoValido =
-    cobrarAbono &&
-    typeof montoAbono === 'number' &&
-    Number.isFinite(montoAbono) &&
-    montoAbono > 0
-
-  if (!abonoValido) return { aCobrar: totalEntero, montoTotal: null }
-
-  const aCobrar = Math.min(Math.round(montoAbono as number), totalEntero)
-  // Sin saldo no hay abono que explicar: se deja `montoTotal` en null para que
-  // el comprobante no muestre un desglose de cero.
-  return { aCobrar, montoTotal: aCobrar < totalEntero ? totalEntero : null }
-}
+/** Mismo texto y mismo codigo para "no existe" y "no es tuyo". */
+const SIN_PERMISO = { error: 'No puedes pagar esto.' }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CABECERAS_CORS })
@@ -209,6 +194,13 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  const codigoRecibido = esPedido ? pedidoCodigo : reservaCodigo
+  /** Staff, dueña con sesion o quien trae el codigo. */
+  const puedePagar = (fila: { codigo: string; cliente_id: string | null }): boolean =>
+    esStaff ||
+    (uid !== null && fila.cliente_id === uid) ||
+    (codigoRecibido !== null && codigoRecibido === fila.codigo)
+
   // --- Se lee el monto de la base -------------------------------------------
   let cobrable: Cobrable
 
@@ -226,7 +218,7 @@ Deno.serve(async (req: Request) => {
       console.error('No se pudo leer el pedido:', error.message)
       return respuesta({ error: 'No se pudo leer el pedido.' }, 500)
     }
-    if (!pedido) return respuesta({ error: 'El pedido no existe.' }, 404)
+    if (!pedido || !puedePagar(pedido)) return respuesta(SIN_PERMISO, 403)
 
     // Un pedido ya pagado, preparandose o entregado no se vuelve a cobrar. Y uno
     // cancelado tampoco: cobrarlo dejaria dinero cobrado por algo que no se va a
@@ -241,8 +233,6 @@ Deno.serve(async (req: Request) => {
     cobrable = {
       tipo: 'pedido',
       id: String(pedido.id),
-      codigo: pedido.codigo as string,
-      clienteId: (pedido.cliente_id as string | null) ?? null,
       monto: Number(pedido.total),
       // El abono es una regla de los SERVICIOS. Un pedido de la tienda se paga
       // completo: no hay nada que ir a terminar de pagar al local.
@@ -251,10 +241,9 @@ Deno.serve(async (req: Request) => {
   } else {
     const lectura = admin
       .from('reservas')
-      .select(
-        'id, codigo, cliente_id, estado, detalles_extra, ' +
-          'servicios ( precio_base, cobrar_abono, monto_abono )',
-      )
+      // Una sola cadena literal: concatenada, supabase-js no puede inferir el
+      // tipo de la fila y la tipa como error.
+      .select('id, codigo, cliente_id, estado, fecha, abono, detalles_extra, servicios ( precio_base )')
     const { data: reserva, error } =
       await (reservaId !== null
         ? lectura.eq('id', reservaId)
@@ -265,65 +254,48 @@ Deno.serve(async (req: Request) => {
       console.error('No se pudo leer la reserva:', error.message)
       return respuesta({ error: 'No se pudo leer la reserva.' }, 500)
     }
-    if (!reserva) return respuesta({ error: 'La reserva no existe.' }, 404)
+    if (!reserva || !puedePagar(reserva)) return respuesta(SIN_PERMISO, 403)
 
-    if (reserva.estado === 'cancelada') {
-      return respuesta({ error: 'Esta reserva esta cancelada.' }, 409)
+    // Una cita ya atendida o cancelada no se cobra: el dinero no compraria
+    // nada. Una de un dia que ya paso tampoco, aunque siga 'pendiente': pagarla
+    // no recupera la hora.
+    if (reserva.estado === 'completada' || reserva.estado === 'cancelada') {
+      return respuesta(
+        { error: `Esta reserva ya no se puede pagar (esta ${reserva.estado}).` },
+        409,
+      )
+    }
+    if ((reserva.fecha as string) < hoyEnChile()) {
+      return respuesta({ error: 'Esta reserva es de una fecha que ya paso.' }, 409)
     }
 
     /**
-     * El precio de una reserva se calcula, no se lee: `reservas` NO TIENE
-     * COLUMNA DE PRECIO (ver 0011).
+     * Precio efectivo: la variante guardada en `detalles_extra` o, sin ella, el
+     * `precio_base` del servicio. Desde 0019 la variante la escribe la BASE
+     * desde el catalogo (el navegador solo elige la opcion), asi que leerla aqui
+     * ya no es creerle al navegador. Es la misma regla que usa el correo de
+     * confirmacion, para que lo cobrado y lo anunciado no discrepen.
      *
-     * Se prefiere la copia inmutable de la variante elegida —que si quedo
-     * guardada en `detalles_extra` el dia de la reserva— y se cae al
-     * `precio_base` del servicio. Es exactamente la misma regla que usa el
-     * correo de confirmacion, para que el monto cobrado y el anunciado no puedan
-     * discrepar.
+     * `reservas.abono` tambien lo fija la base (0019), ya topado al precio
+     * efectivo. > 0: se cobra el abono. 0: se cobra el precio completo.
      */
-    const servicio = unoDe(
-      reserva.servicios as
-        | { precio_base: number; cobrar_abono: boolean; monto_abono: number | null }
-        | null,
-    )
+    const servicio = unoDe<{ precio_base: number }>(reserva.servicios)
     const variante = (reserva.detalles_extra as
       | { variante?: { precio?: number } }
       | null)?.variante
-
-    const total =
-      typeof variante?.precio === 'number' ? variante.precio : (servicio?.precio_base ?? 0)
-
-    /**
-     * Si se cobra todo o solo el abono lo dice EL SERVICIO (0016), no la
-     * peticion.
-     *
-     * Es el mismo principio que el monto: el navegador manda un identificador y
-     * el servidor decide cuanto se cobra. Si el cuerpo pudiera pedir "cobrame
-     * solo el abono", cualquiera reservaria cualquier servicio por $5.000.
-     */
-    const { aCobrar, montoTotal } = repartir(
-      Number(total),
-      servicio?.cobrar_abono === true,
-      typeof servicio?.monto_abono === 'number' ? servicio.monto_abono : null,
+    const precio = Math.round(
+      Number(typeof variante?.precio === 'number' ? variante.precio : (servicio?.precio_base ?? 0)),
     )
+    const abono = Number(reserva.abono ?? 0)
+    const monto = abono > 0 ? abono : precio
 
     cobrable = {
       tipo: 'reserva',
       id: String(reserva.id),
-      codigo: reserva.codigo as string,
-      clienteId: (reserva.cliente_id as string | null) ?? null,
-      monto: aCobrar,
-      montoTotal,
+      monto,
+      // Solo hay saldo que explicar si el abono es menor que el precio.
+      montoTotal: monto < precio ? precio : null,
     }
-  }
-
-  // --- Permiso --------------------------------------------------------------
-  const codigoRecibido = esPedido ? pedidoCodigo : reservaCodigo
-  const esDueno = uid !== null && cobrable.clienteId !== null && uid === cobrable.clienteId
-  const pruebaConCodigo = codigoRecibido !== null && codigoRecibido === cobrable.codigo
-
-  if (!esStaff && !esDueno && !pruebaConCodigo) {
-    return respuesta({ error: 'No puedes pagar esto.' }, 403)
   }
 
   // --- Monto utilizable -----------------------------------------------------
@@ -357,7 +329,10 @@ Deno.serve(async (req: Request) => {
   // despues, existiria un cobro en Transbank del que no habria rastro, y el
   // commit seria imposible porque el token no estaria guardado en ninguna parte.
   const buyOrder = nuevaOrdenDeCompra(cobrable.tipo, cobrable.id)
-  const sessionId = `${cobrable.codigo}-${crypto.randomUUID().slice(0, 8)}`
+  // Sin el `codigo`: Transbank devuelve la sesion en la URL de abandono
+  // (TBK_ID_SESION), que queda en el historial y en los registros, y el codigo
+  // de una reserva sin cuenta es la credencial de quien la hizo.
+  const sessionId = crypto.randomUUID()
 
   const { data: intento, error: errorIntento } = await admin
     .from('pagos')
