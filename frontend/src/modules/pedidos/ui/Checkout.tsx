@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useCarrito } from '@/modules/carrito/ui/useCarrito'
+import { usePagoWebpay } from '@/modules/pagos/ui/usePagoWebpay'
 import { useIniciarReserva } from '@/modules/reservas/ui/useIniciarReserva'
 import { ProductoImagen } from '@/modules/tienda/ui/ProductoImagen'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -36,10 +37,19 @@ export default function Checkout() {
   const carrito = useCarrito()
   const { toast } = useToast()
   const pedido = useCrearPedido()
+  const webpay = usePagoWebpay()
   const { citas, cargando: cargandoCitas } = useProximasCitas(usuario?.id ?? null)
 
   const [paso, setPaso] = useState<Paso>(1)
   const [confirmado, setConfirmado] = useState<Confirmado | null>(null)
+  /**
+   * El pedido ya registrado, cuando el cobro con Webpay no llego a empezar.
+   *
+   * Existe para que el boton REINTENTE EL PAGO y no vuelva a crear el pedido:
+   * sin esto, un segundo clic tras un fallo de la pasarela dejaria dos pedidos
+   * en la base por una sola compra.
+   */
+  const [pedidoPendiente, setPedidoPendiente] = useState<PedidoCreado | null>(null)
   // `null` = la persona no ha elegido: rige el valor por defecto, que depende
   // de si tiene citas (y estas llegan despues del primer render).
   const [entregaElegida, setEntregaElegida] = useState<EntregaPedido | null>(null)
@@ -77,7 +87,10 @@ export default function Checkout() {
 
   if (confirmado) return <Confirmacion {...confirmado} />
 
-  if (carrito.items.length === 0) {
+  // Con un pedido pendiente de pago NO se muestra el carrito vacio: el carrito
+  // ya se vacio al registrarlo, y echar de aqui a la clienta le quitaria la
+  // unica pantalla desde la que puede reintentar el cobro.
+  if (carrito.items.length === 0 && pedidoPendiente === null) {
     return (
       <div className="mx-auto max-w-[560px] px-4 py-24 text-center">
         <h1 className="font-serif text-4xl font-light text-nv-ink">Tu carrito está vacío</h1>
@@ -95,7 +108,9 @@ export default function Checkout() {
   }
 
   async function pagar() {
-    const creado = await pedido.crear({
+    // Si un intento anterior ya registro el pedido, se reutiliza. Crear otro
+    // seria cobrar dos veces lo mismo.
+    const creado = pedidoPendiente ?? (await pedido.crear({
       items: carrito.lineas,
       nombre,
       email,
@@ -104,8 +119,21 @@ export default function Checkout() {
       comuna,
       reservaId: cita?.id,
       metodoPago: pago,
-    })
+    }))
     if (!creado) return
+
+    if (pago === 'webpay') {
+      setPedidoPendiente(creado)
+      // El pedido ya vive en la base, asi que el carrito dejo de ser la fuente
+      // de la verdad: se vacia antes de salir para que volver atras no lo
+      // duplique.
+      carrito.vaciar()
+      // Si sale bien, el navegador se va a Webpay y esto no continua. Si falla,
+      // se queda aqui mostrando `webpay.error` y el boton reintenta el COBRO.
+      await webpay.pagar({ tipo: 'pedido', codigo: creado.codigo })
+      return
+    }
+
     setConfirmado({ pedido: creado, entrega, cita })
     carrito.vaciar()
     setPaso(3)
@@ -290,22 +318,35 @@ export default function Checkout() {
                 />
               </fieldset>
 
-              {pedido.error && (
+              {(pedido.error ?? webpay.error) && (
                 <p
                   role="alert"
                   className="mt-6 rounded-lg border border-nv-error-line bg-nv-error-bg px-4 py-3 text-sm text-nv-error"
                 >
-                  {pedido.error}
+                  {pedido.error ?? webpay.error}
+                  {/* El pedido quedo guardado: hay que decirlo, o parecera que
+                      se perdio y volvera a empezar la compra. */}
+                  {webpay.error && pedidoPendiente && (
+                    <span className="mt-1 block text-nv-soft1">
+                      Tu pedido {pedidoPendiente.codigo} quedó registrado. Puedes reintentar el
+                      pago sin volver a armar el carrito.
+                    </span>
+                  )}
                 </p>
               )}
 
               <button
                 type="button"
                 onClick={() => void pagar()}
-                disabled={pedido.enviando}
+                disabled={pedido.enviando || webpay.enviando}
                 className={`${boton.acento} mt-8 w-full px-8 py-[15px] text-[14.5px] sm:w-auto`}
               >
-                {pedido.enviando ? 'Procesando…' : `Pagar ${formatPrice(totales.total)}`}
+                {textoBotonPagar({
+                  creandoPedido: pedido.enviando,
+                  abriendoPago: webpay.enviando,
+                  reintento: pago === 'webpay' && pedidoPendiente !== null,
+                  total: totales.total,
+                })}
               </button>
               <p className="mt-4 max-w-lg text-xs leading-relaxed text-nv-soft1">{NOTA_PAGO[pago]}</p>
             </>
@@ -327,13 +368,12 @@ export default function Checkout() {
 /**
  * Lo que se dice bajo el boton de pagar, segun el medio.
  *
- * La integracion con Webpay todavia no existe (necesita las credenciales de
- * Transbank). Prometer una redireccion que no ocurre seria mentir en el peor
- * momento posible, asi que se dice lo que de verdad pasa.
+ * Describe lo que de verdad pasa al pulsar: con Webpay se sale del sitio, y
+ * conviene avisarlo antes de que la pagina cambie sola.
  */
 const NOTA_PAGO: Record<MetodoPagoPedido, string> = {
   webpay:
-    'Registraremos tu pedido y te enviaremos el enlace de pago por correo. El pago en línea con Webpay se habilitará pronto.',
+    'Te llevaremos al portal de Webpay para pagar con tarjeta. Al terminar volverás aquí con tu comprobante.',
   transferencia: 'Te enviaremos los datos para transferir. Confirmamos el pedido al recibir el pago.',
   estudio: 'Pagas al retirar o en tu cita. Te avisaremos cuando esté listo.',
 }
@@ -540,4 +580,29 @@ function Confirmacion({ pedido, entrega, cita }: Confirmado) {
       </div>
     </div>
   )
+}
+
+/**
+ * Lo que dice el boton de pagar.
+ *
+ * Son cuatro estados y cada uno importa: "Procesando" mientras se guarda el
+ * pedido, "Redirigiendo" mientras se abre la pasarela —ahi la pagina esta a
+ * punto de cambiar sola—, y "Reintentar" cuando el pedido YA existe y lo unico
+ * que falta es el cobro, para que nadie crea que esta comprando otra vez.
+ */
+function textoBotonPagar({
+  creandoPedido,
+  abriendoPago,
+  reintento,
+  total,
+}: {
+  creandoPedido: boolean
+  abriendoPago: boolean
+  reintento: boolean
+  total: number
+}): string {
+  if (abriendoPago) return 'Redirigiendo a Webpay…'
+  if (creandoPedido) return 'Procesando…'
+  if (reintento) return `Reintentar el pago de ${formatPrice(total)}`
+  return `Pagar ${formatPrice(total)}`
 }
