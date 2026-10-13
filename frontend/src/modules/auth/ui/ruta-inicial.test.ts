@@ -6,6 +6,7 @@ const clienta: UsuarioAuth = {
   email: 'ana@correo.cl',
   nombre: 'Ana',
   telefono: null,
+  fechaNacimiento: null,
   esStaff: false,
   profesionalId: null,
 }

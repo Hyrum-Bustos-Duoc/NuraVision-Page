@@ -8,11 +8,6 @@ import type { SiteContent } from '@/shared/types'
  * otro. Una tabla de una sola fila para esto habria pedido migracion, RLS y un
  * modulo entero a cambio de nada.
  *
- * Antes salia de `seed.ts` a traves de `useAppState`, lo que tenia un efecto
- * que no se buscaba: en modo "solo Supabase" el estado se vaciaba entero y con
- * el se iban tambien estos textos, asi que la portada perdia el pie de la foto
- * y el analisis de IA se quedaba sin sus opciones de enfoque.
- *
  * Las imagenes son opcionales: un hueco sin imagen muestra su marcador a
  * rayas. Las de la portada son fotos de Unsplash (licencia libre, uso
  * comercial sin atribucion) mientras el estudio no tenga fotos propias;
@@ -26,10 +21,6 @@ function fotoUnsplash(id: string, ancho: number): string {
 }
 
 export const CONTENIDO_SITIO: SiteContent = {
-  // Salon en tonos beige con espejos en arco.
-  heroImage: fotoUnsplash('photo-1706629505300-168aa1604912', 700),
-  // Repisas minimalistas con productos de cuidado.
-  shopImage: fotoUnsplash('photo-1760862652442-e8ff7ebdd2f8', 700),
   // Mano con manicura nude: la foto de ejemplo de la banda de NuraVision IA.
   aiTeaserImage: fotoUnsplash('photo-1610992015762-45dca7fa3a85', 1000),
   // Recepcion con flores secas: el panel derecho del login, a media pantalla y

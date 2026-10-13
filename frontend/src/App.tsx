@@ -21,11 +21,12 @@ import { ToastProvider } from '@/shared/state/Toast'
 import { CatalogoProvider } from '@/modules/tienda/ui/CatalogoProvider'
 import { ContenidoProvider } from '@/modules/contenido/ui/ContenidoProvider'
 import { CarritoProvider } from '@/modules/carrito/ui/CarritoProvider'
-import { NuvaProvider } from '@/modules/nuva/ui/NuvaProvider'
+import { NuriaProvider } from '@/modules/nuria/ui/NuriaProvider'
 import { ClientLayout } from '@/shared/components/ClientChrome'
 import { DashboardShell, type NavItem } from '@/shared/components/DashboardChrome'
 import { RequireRole } from '@/shared/components/RequireRole'
 import { ScrollToTop } from '@/shared/components/ScrollToTop'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 
 import Landing from '@/pages/Landing'
 import { SiYaTienePanel } from '@/shared/components/SiYaTienePanel'
@@ -42,6 +43,7 @@ import AIAnalysis from '@/pages/AIAnalysis'
 import Tienda from '@/modules/tienda/ui/Tienda'
 import DetalleProducto from '@/modules/tienda/ui/DetalleProducto'
 import Checkout from '@/modules/pedidos/ui/Checkout'
+import ConfirmacionPago from '@/modules/pagos/ui/ConfirmacionPago'
 import AdminPedidos from '@/modules/pedidos/ui/AdminPedidos'
 import AdminProductos from '@/modules/tienda/ui/AdminProductos'
 import Profile from '@/pages/Profile'
@@ -101,7 +103,7 @@ export default function App() {
           <ContenidoProvider>
           <CatalogoProvider>
           <CarritoProvider>
-          <NuvaProvider>
+          <NuriaProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Routes>
@@ -132,6 +134,25 @@ export default function App() {
                 <Route path="tienda" element={<Tienda />} />
                 <Route path="tienda/:slug" element={<DetalleProducto />} />
                 <Route path="checkout" element={<Checkout />} />
+                {/* El destino al que rebota `webpay-retorno`. Va dentro del
+                    layout de cliente para que la clienta vuelva del banco al
+                    sitio de siempre, con su cabecera y su carrito.
+
+                    Envuelta en ErrorBoundary porque es la unica pantalla donde
+                    un error de render tiene coste real: quien acaba de pagar y
+                    ve una pagina en blanco no sabe si le cobraron, y volvera a
+                    pagar. */}
+                <Route
+                  path="confirmacion-pago"
+                  element={
+                    <ErrorBoundary
+                      titulo="No pudimos mostrar tu comprobante"
+                      mensaje="Tu pago sí pudo haberse procesado. Vuelve a intentar para verlo, o escríbenos con tu código de pedido antes de pagar de nuevo."
+                    >
+                      <ConfirmacionPago />
+                    </ErrorBoundary>
+                  }
+                />
                 <Route path="profesionales" element={<Professionals />} />
                 <Route path="profesionales/:id" element={<ProfessionalDetail />} />
                 <Route path="reservar" element={<BookingFlow />} />
@@ -187,7 +208,7 @@ export default function App() {
               <Route path="*" element={<Landing />} />
             </Routes>
           </BrowserRouter>
-          </NuvaProvider>
+          </NuriaProvider>
           </CarritoProvider>
           </CatalogoProvider>
           </ContenidoProvider>

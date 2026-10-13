@@ -1,4 +1,5 @@
-import type { DatosServicio } from './servicio.types'
+import { formatPrice } from '@/shared/lib/format'
+import { precioDesde, type DatosServicio } from './servicio.types'
 
 /**
  * Se valida aqui, en el dominio, y no en el formulario.
@@ -27,7 +28,35 @@ export function motivoParaNoGuardarServicio(datos: DatosServicio): string | null
     return 'El precio no puede ser negativo.'
   }
 
-  return motivoParaNoGuardarVariantes(datos.variantes)
+  return motivoParaNoGuardarVariantes(datos.variantes) ?? motivoParaNoGuardarAbono(datos)
+}
+
+/**
+ * Valida el abono del servicio (cambio abono-servicios-unas, decisiones 2 y 3).
+ *
+ * El tope es `precioDesde` y no `precioBase`: con variantes, la opcion mas
+ * barata puede costar menos que el precio base, y un abono mayor que lo cobrado
+ * dejaria un saldo negativo. Por eso se comprueba DESPUES de las variantes: con
+ * variantes mal formadas el "desde" no significa nada.
+ *
+ * La exigencia de uñas vive aqui y no en un check SQL porque la categoria es
+ * texto libre en la base y su normalizacion es del frontend; el panel siempre
+ * escribe el id canonico (`fromDatosServicio`), asi que aqui la regla es exacta.
+ */
+export function motivoParaNoGuardarAbono(
+  datos: Pick<DatosServicio, 'abono' | 'categoria' | 'precioBase' | 'variantes'>,
+): string | null {
+  if (!Number.isInteger(datos.abono) || datos.abono < 0) {
+    return 'El abono debe ser un monto entero en pesos, sin decimales ni negativos.'
+  }
+  if (datos.categoria === 'unas' && datos.abono === 0) {
+    return 'Los servicios de uñas requieren un abono mayor que $0.'
+  }
+  const desde = precioDesde(datos)
+  if (datos.abono > desde) {
+    return `El abono no puede superar el precio del servicio (${formatPrice(desde)}).`
+  }
+  return null
 }
 
 /**

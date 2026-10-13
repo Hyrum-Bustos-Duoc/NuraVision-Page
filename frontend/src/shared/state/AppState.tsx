@@ -16,7 +16,6 @@ import type {
   CurrentUser,
   NextSlotsOptions,
   Professional,
-  Role,
   Service,
   SiteContent,
 } from '@/shared/types'
@@ -25,38 +24,6 @@ import { CONTENIDO_SITIO } from '@/shared/content/sitio'
 import { clearStoredData, loadStoredData, saveStoredData } from '@/shared/lib/storage'
 import { createId } from '@/shared/lib/id'
 import { getNextAvailableSlots, type NextSlot } from '@/shared/lib/availability'
-
-const DEMO_USERS: Record<Role, CurrentUser> = {
-  cliente: {
-    role: 'cliente',
-    name: 'Camila Torres',
-    firstName: 'Camila',
-    lastName: 'Torres',
-    email: 'camila.torres@correo.cl',
-    phone: '+56 9 8765 4321',
-    initials: 'CT',
-    clientSince: 'marzo 2025',
-  },
-  profesional: {
-    role: 'profesional',
-    name: 'Camila Reyes',
-    firstName: 'Camila',
-    lastName: 'Reyes',
-    email: 'camila.reyes@estudionura.cl',
-    phone: '+56 9 1122 3344',
-    initials: 'CR',
-    professionalId: 'camila-reyes',
-  },
-  administrador: {
-    role: 'administrador',
-    name: 'Paulina Nura',
-    firstName: 'Paulina',
-    lastName: 'Nura',
-    email: 'paulina@estudionura.cl',
-    phone: '+56 9 5566 7788',
-    initials: 'PN',
-  },
-}
 
 interface AppStateValue {
   // Usuarios registrados
@@ -69,7 +36,6 @@ interface AppStateValue {
 
   // Sesión
   currentUser: CurrentUser | null
-  login: (role: Role) => void
   logout: () => void
 
   // Catálogo
@@ -108,43 +74,20 @@ interface AppStateValue {
   // Prototipo
   storageWarning: string | null
   resetDemoData: () => void
-
-  /** Cuando está activo solo se muestra lo que vive en Supabase. */
-  realDataOnly: boolean
-  setRealDataOnly: (value: boolean) => void
 }
 
-/**
- * Modo "solo Supabase": oculta todo lo que no provenga de la base de datos.
- *
- * Mientras la migración esté a medias, buena parte de la aplicación (reservas,
- * usuarios, contenido del sitio) se alimenta de datos de muestra. Activar este
- * modo los vacía, de forma que en pantalla quede únicamente lo que existe de
- * verdad en Supabase. Sirve para mostrar el avance real sin confundirlo con la
- * demostración.
- */
-const REAL_DATA_KEY = 'nuravision:solo-supabase'
-
-const EMPTY_DATA: AppData = {
-  users: [],
-  services: [],
-  professionals: [],
-  bookings: [],
-}
-
-function readRealDataFlag(): boolean {
-  try {
-    return window.localStorage.getItem(REAL_DATA_KEY) === '1'
-  } catch {
-    return false
-  }
+// El interruptor "Solo datos de Supabase" ya no existe. Quien lo dejo activado
+// tiene la marca guardada; se borra una vez al cargar para no dejar basura.
+try {
+  window.localStorage.removeItem('nuravision:solo-supabase')
+} catch {
+  // Sin almacenamiento no hay nada que limpiar.
 }
 
 const AppStateContext = createContext<AppStateValue | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(() => loadStoredData(createSeedData()))
-  const [realDataOnly, setRealDataOnlyState] = useState<boolean>(readRealDataFlag)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [bookingDraft, setBookingDraftState] = useState<BookingDraft>({})
   const [storageWarning, setStorageWarning] = useState<string | null>(null)
@@ -162,7 +105,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, [data])
 
-  const login = useCallback((role: Role) => setCurrentUser(DEMO_USERS[role]), [])
   const logout = useCallback(() => setCurrentUser(null), [])
 
   // --- Usuarios ---
@@ -269,61 +211,47 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setBookingDraftState({})
   }, [])
 
-  const setRealDataOnly = useCallback((value: boolean) => {
-    setRealDataOnlyState(value)
-    try {
-      window.localStorage.setItem(REAL_DATA_KEY, value ? '1' : '0')
-    } catch {
-      // Sin almacenamiento el modo dura lo que dure la pestaña.
-    }
-  }, [])
-
   const value = useMemo<AppStateValue>(() => {
-    // En modo "solo Supabase" la aplicación no ve los datos de muestra.
-    const visible = realDataOnly ? EMPTY_DATA : data
-
-    const getService = (id: string) => visible.services.find((s) => s.id === id)
-    const getProfessional = (id: string) => visible.professionals.find((p) => p.id === id)
+    const getService = (id: string) => data.services.find((s) => s.id === id)
+    const getProfessional = (id: string) => data.professionals.find((p) => p.id === id)
 
     return {
-      users: visible.users,
+      users: data.users,
       addUser,
       updateUser,
       deleteUser,
       findUserByEmail: (email, exceptId) =>
-        visible.users.find(
+        data.users.find(
           (u) => u.id !== exceptId && u.email.trim().toLowerCase() === email.trim().toLowerCase(),
         ),
 
       currentUser,
-      login,
       logout,
 
-      services: visible.services,
-      activeServices: visible.services.filter((s) => s.active),
+      services: data.services,
+      activeServices: data.services.filter((s) => s.active),
       getService,
       addService,
       updateService,
       deleteService,
 
-      professionals: visible.professionals,
+      professionals: data.professionals,
       getProfessional,
       professionalsForService: (serviceId: string) =>
-        visible.professionals.filter((p) => p.serviceIds.includes(serviceId)),
+        data.professionals.filter((p) => p.serviceIds.includes(serviceId)),
       addProfessional,
       updateProfessional,
       deleteProfessional,
 
-      // Constante versionada, no estado: no depende de `visible`, asi que el
-      // modo "solo Supabase" ya no se lleva por delante los textos del sitio.
+      // Constante versionada, no estado: ver `shared/content/sitio.ts`.
       siteContent: CONTENIDO_SITIO,
 
-      bookings: visible.bookings,
+      bookings: data.bookings,
       addBooking,
       updateBookingStatus,
       rescheduleBooking,
       nextSlotsFor: (professional, options) =>
-        getNextAvailableSlots(professional, visible.bookings, options?.count ?? 3, options?.fromISO),
+        getNextAvailableSlots(professional, data.bookings, options?.count ?? 3, options?.fromISO),
 
       bookingDraft,
       setBookingDraft,
@@ -331,16 +259,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       storageWarning,
       resetDemoData,
-
-      realDataOnly,
-      setRealDataOnly,
     }
   }, [
     data,
-    realDataOnly,
-    setRealDataOnly,
     currentUser,
-    login,
     logout,
     addUser,
     updateUser,

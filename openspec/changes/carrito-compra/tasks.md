@@ -23,8 +23,8 @@
 - [x] 4.3 Login con ruta de retorno
 - [x] 4.4 Listado de pedidos en el panel de administración
 
-## 5. Landing, análisis y Nuva
+## 5. Landing, análisis y Nuria
 
 - [x] 5.1 Landing modificada
 - [x] 5.2 Bloque «Y para continuar en casa» en el análisis IA
-- [x] 5.3 Motor de intenciones de Nuva con tests y panel de chat
+- [x] 5.3 Motor de intenciones de Nuria con tests y panel de chat

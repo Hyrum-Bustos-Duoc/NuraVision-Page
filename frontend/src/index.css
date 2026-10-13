@@ -484,7 +484,7 @@ body {
   animation: fade-in 0.2s ease both;
 }
 
-/* Panel de Nuva: crece desde la esquina del launcher. */
+/* Panel de Nuria: crece desde la esquina del launcher. */
 .animate-nv-pop {
   transform-origin: bottom right;
   animation: nv-pop 0.34s var(--ease-nv) both;

@@ -2,7 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 
 /**
  * Comportamiento comun de una capa que se abre sobre la pagina (drawer del
- * carrito, panel de Nuva):
+ * carrito, panel de Nuria):
  *
  *   · Escape la cierra.
  *   · Al abrir, el foco va al elemento indicado; al cerrar, vuelve a donde

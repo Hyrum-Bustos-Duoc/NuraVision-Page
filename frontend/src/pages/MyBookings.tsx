@@ -10,6 +10,7 @@ import { useProfesionalesPorIds } from '@/modules/profesionales/ui/useProfesiona
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useMisReservas } from '@/modules/reservas/ui/useMisReservas'
 import type { Reserva } from '@/modules/reservas/domain/reserva.types'
+import { POLITICA_ABONO } from '@/modules/reservas/ui/politica-abono'
 import type { Booking } from '@/shared/types'
 
 type Tab = 'proximas' | 'completadas' | 'canceladas'
@@ -38,6 +39,8 @@ interface FilaReserva {
   /** `null` cuando no se puede saber: la base no guarda el precio cobrado. */
   precio: number | null
   estado: BadgeStatus
+  /** CLP; 0 = sin abono y sin linea. Cancelar o reprogramar no lo cambia. */
+  abono: number
   /**
    * Si la reserva se puede cambiar. Desde 0005 la base acepta cancelar y
    * reprogramar lo propio, asi que las dos fuentes tienen pantalla de detalle;
@@ -68,6 +71,7 @@ function desdeReserva(reserva: Reserva, precio: number | null): FilaReserva {
     duracionMin: timeToMinutes(reserva.horaFin) - timeToMinutes(reserva.horaInicio),
     precio,
     estado: reserva.estado,
+    abono: reserva.abono,
     // Cancelar y reprogramar solo tienen sentido mientras la reserva sigue
     // viva; es la misma condicion que aplica la politica de 0005.
     editable: reserva.estado === 'pendiente' || reserva.estado === 'confirmada',
@@ -85,6 +89,7 @@ function desdeBooking(booking: Booking): FilaReserva {
     duracionMin: booking.durationMin,
     precio: booking.price,
     estado: booking.status,
+    abono: booking.abono,
     editable: booking.status === 'confirmada' || booking.status === 'en_curso',
   }
 }
@@ -248,6 +253,7 @@ export default function MyBookings() {
                   <p className="mt-1 text-sm text-muted">
                     {nombreProfesional(f.profesionalId)} · {f.hora} · {f.duracionMin} min
                     {f.precio !== null && <> · {formatPrice(f.precio)}</>}
+                    {f.abono > 0 && <> · Abono {formatPrice(f.abono)}</>}
                   </p>
                   <p className="mt-1 text-xs tracking-wide text-muted-light">{f.codigo}</p>
                 </div>
@@ -270,6 +276,11 @@ export default function MyBookings() {
               </div>
             )
           })}
+
+        {/* Una vez por listado y no por fila: es la misma politica para todas. */}
+        {!cargando && !deLaBase.error && filtradas.some((f) => f.abono > 0) && (
+          <p className="px-1 pt-2 text-xs leading-relaxed text-muted">{POLITICA_ABONO}</p>
+        )}
       </div>
     </div>
   )

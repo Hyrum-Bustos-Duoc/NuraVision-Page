@@ -1,9 +1,11 @@
-import type { ContenidoSitio } from './contenido.types'
+import type { CarruselesSitio, ContenidoSitio } from './contenido.types'
 
 /** Topes de largo: evitan que un texto pegado por error rompa el diseño. */
 export const MAX_TEXTO_CORTO = 120
 export const MAX_TEXTO_LARGO = 600
 export const MAX_ANUNCIOS = 10
+/** Fotos por carrusel: mas no se ven en una visita y cada URL pesa en el JSON. */
+export const MAX_FOTOS_CARRUSEL = 30
 
 type Plano = Record<string, unknown>
 
@@ -89,8 +91,29 @@ export function contenidoDesdeGuardado(
   return {
     ...base,
     imagenes,
+    carruseles: mezclarCarruseles(defecto.carruseles, esObjeto(guardado) ? guardado.carruseles : undefined, imagenPermitida),
     analisis: mezclarAnalisis(defecto.analisis, esObjeto(guardado) ? guardado.analisis : undefined),
   }
+}
+
+/**
+ * Cada carrusel guardado se respeta tal cual (tambien vacio), quitando lo que
+ * no sea texto o venga de un origen no permitido. No pasa por
+ * `mezclarContenido`: esa cambiaria un elemento invalido por la primera foto
+ * del defecto, y la foto saldria repetida.
+ */
+function mezclarCarruseles(
+  defecto: CarruselesSitio,
+  guardado: unknown,
+  imagenPermitida: (url: string) => boolean,
+): CarruselesSitio {
+  const guardados = esObjeto(guardado) ? guardado : {}
+  const lista = (clave: keyof CarruselesSitio): string[] => {
+    const valor = guardados[clave]
+    if (!Array.isArray(valor)) return defecto[clave]
+    return valor.filter((url): url is string => typeof url === 'string' && imagenPermitida(url))
+  }
+  return { estudio: lista('estudio'), tienda: lista('tienda') }
 }
 
 /** Correo simple, sin parametros: `?bcc=` en un mailto copiaria a terceros. */
@@ -98,10 +121,32 @@ export function esCorreoSimple(correo: string): boolean {
   return /^[^\s@?&#]+@[^\s@?&#]+\.[^\s@?&#]+$/.test(correo)
 }
 
-/** Origenes de foto aceptados: el bucket del proyecto y Unsplash (los originales). */
+/**
+ * Fotos del propio sitio bajo `/carrusel/`. Lista blanca de caracteres en vez
+ * de buscar lo prohibido: asi quedan fuera `//otro.com` (otro origen), `..` y
+ * su forma codificada `%2e%2e`, esquemas y parametros.
+ */
+const RUTA_LOCAL = /^\/carrusel\/(?:[\w-]+\/)*[\w-]+\.(?:jpe?g|png|webp|avif)$/i
+
+/**
+ * Origenes de foto aceptados: el bucket del proyecto, Unsplash y las fotos locales del carrusel.
+ *
+ * Las remotas se comparan ya normalizadas por `URL`, que es lo que pide el
+ * navegador: `contenido/../otro/x.jpg` (o `%2e%2e`, o con tabuladores en
+ * medio) prefija bien como texto pero se resuelve fuera del bucket. Ademas se
+ * rechaza `%2e`, `%2f` y `%5c` que sobrevivan en la ruta: el navegador no los
+ * toca, pero un servidor o CDN que los decodifique si los trataria como `.`, `/`
+ * y `\`. Unsplash lleva parametros, por eso aqui no sirve una lista blanca de
+ * caracteres como en `RUTA_LOCAL`.
+ */
 export function crearFiltroImagenes(urlSupabase: string): (url: string) => boolean {
   const origenes = [`${urlSupabase.replace(/\/$/, '')}/storage/v1/object/public/contenido/`, 'https://images.unsplash.com/']
-  return (url) => origenes.some((o) => url.startsWith(o))
+  const remotaPermitida = (url: string) => {
+    if (!URL.canParse(url)) return false
+    const { href, pathname } = new URL(url)
+    return origenes.some((o) => href.startsWith(o)) && !/%2e|%2f|%5c/i.test(pathname)
+  }
+  return (url) => RUTA_LOCAL.test(url) || remotaPermitida(url)
 }
 
 export interface Fragmento {
@@ -149,6 +194,9 @@ export function motivoParaNoGuardarContenido(c: ContenidoSitio): string | null {
   if (c.anuncios.length > MAX_ANUNCIOS) return `La barra admite hasta ${MAX_ANUNCIOS} anuncios.`
   if (c.anuncios.some((a) => a.length > MAX_TEXTO_CORTO)) {
     return `Cada anuncio admite hasta ${MAX_TEXTO_CORTO} caracteres.`
+  }
+  if (c.carruseles.estudio.length > MAX_FOTOS_CARRUSEL || c.carruseles.tienda.length > MAX_FOTOS_CARRUSEL) {
+    return `Cada carrusel admite hasta ${MAX_FOTOS_CARRUSEL} fotos.`
   }
   return null
 }

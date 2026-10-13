@@ -204,7 +204,7 @@ export default function ServiceDetail() {
                 Reservar este servicio
               </Button>
               <p className="mt-3 text-center text-xs text-muted">
-                Cancelación gratuita hasta 12 h antes
+                Cancelación gratuita hasta 24 h antes
               </p>
             </>
           ) : (

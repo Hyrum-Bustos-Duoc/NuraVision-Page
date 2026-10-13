@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { ClaveImagen, ContenidoSitio } from '../domain/contenido.types'
+import type { ContenidoSitio, DestinoFoto } from '../domain/contenido.types'
 
 export interface ContenidoValue {
   contenido: ContenidoSitio
@@ -10,7 +10,7 @@ export interface ContenidoValue {
   actualizadoEn: string | null
   /** Guarda y publica. Lanza con un mensaje listo para mostrar. */
   guardar: (contenido: ContenidoSitio) => Promise<void>
-  subirImagen: (clave: ClaveImagen, archivo: File) => Promise<string>
+  subirImagen: (destino: DestinoFoto, archivo: File) => Promise<string>
 }
 
 /** Vive aparte del proveedor por la regla react/only-export-components. */

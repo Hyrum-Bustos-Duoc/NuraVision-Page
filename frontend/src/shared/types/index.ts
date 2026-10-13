@@ -73,6 +73,12 @@ export interface Booking {
   time: string
   durationMin: number
   price: number
+  /**
+   * Abono pagado al reservar, en CLP; 0 = sin abono. Es el que se mostro en el
+   * paso de pago: la invitada no puede leer su fila para saber el que fijo la
+   * base. Lo guardado antes de este campo se lee como 0 en `loadStoredData`.
+   */
+  abono: number
   status: BookingStatus
 }
 
@@ -100,11 +106,7 @@ export interface AiFocusOption {
 }
 
 export interface SiteContent {
-  /** Portada: tarjeta "El estudio". */
-  heroImage?: string
   heroCaption: string
-  /** Portada: tarjeta "La tienda". */
-  shopImage?: string
   aiTeaserImage?: string
   aiTeaserCaption: string
   loginImage?: string

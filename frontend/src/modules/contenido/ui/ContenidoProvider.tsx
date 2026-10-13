@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CONTENIDO_POR_DEFECTO, contenidoDesdeGuardado, crearFiltroImagenes } from '../application'
-import type { ClaveImagen, ContenidoSitio } from '../domain/contenido.types'
+import type { ContenidoSitio, DestinoFoto } from '../domain/contenido.types'
 import { contenidoRepository, SIN_MIGRACION } from '../infrastructure/supabase-contenido.repository'
 import { ContenidoContext, type ContenidoValue } from './contenido.context'
 
@@ -80,7 +80,7 @@ export function ContenidoProvider({ children }: { children: ReactNode }) {
   )
 
   const subirImagen = useCallback(
-    (clave: ClaveImagen, archivo: File) => contenidoRepository.subirImagen(clave, archivo),
+    (destino: DestinoFoto, archivo: File) => contenidoRepository.subirImagen(destino, archivo),
     [],
   )
 

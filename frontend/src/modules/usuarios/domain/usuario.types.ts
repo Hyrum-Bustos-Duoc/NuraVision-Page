@@ -32,6 +32,12 @@ export interface Usuario {
    * corresponde una cuenta que no es la propia.
    */
   profesionalId: string | null
+  /**
+   * Cumpleaños declarado al registrarse, 'YYYY-MM-DD', o `null` si no lo dio o
+   * era invalido. Replica validada de `user_metadata` (0016). El panel solo
+   * muestra dia y mes: el año y la edad no se pidieron.
+   */
+  fechaNacimiento: string | null
   /** ISO. Cuando se creo la cuenta. */
   creadoEn: string
 }

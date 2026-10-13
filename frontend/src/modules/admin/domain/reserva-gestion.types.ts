@@ -39,6 +39,8 @@ export interface ReservaGestion {
    * mostraria el precio que el servicio tenga HOY.
    */
   varianteElegida: VarianteElegida | null
+  /** Abono exigido al reservar, copiado por la base (0015); 0 = sin abono. */
+  abono: number
 }
 
 /**

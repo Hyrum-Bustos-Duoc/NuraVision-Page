@@ -23,7 +23,7 @@
 **Non-Goals:**
 - Integración real con Webpay (requiere credenciales de Transbank). El pedido
   queda en `pendiente_pago` y la pantalla lo dice.
-- Modelo de lenguaje real para Nuva (la spec lo deja para producción).
+- Modelo de lenguaje real para Nuria (la spec lo deja para producción).
 - «Mis pedidos» de la clienta (la spec indica que aún no está diseñado).
 - Switch de tema y «mapa del prototipo» (la spec los marca como solo prototipo).
 
@@ -50,7 +50,7 @@
    función lo descuenta con bloqueo de fila y rechaza la compra si no alcanza.
 8. **Carrito local** en `localStorage` (`nv-carrito`), solo con `{slug, qty}`.
    Al leerlo se descartan productos que ya no existen o están inactivos.
-9. **Nuva reserva de verdad**: elegir horario rellena el borrador del flujo de
+9. **Nuria reserva de verdad**: elegir horario rellena el borrador del flujo de
    reserva (servicio, profesional, fecha, hora) y lleva al paso de confirmación,
    donde se crea la reserva con el mecanismo existente.
 10. **Tema**: tokens `--nv-*` con Oliva por defecto y Arcilla bajo
@@ -62,7 +62,7 @@
 
 - Hasta aplicar `0013_tienda.sql`, la tienda muestra un error explícito que
   nombra la migración. Se prefirió eso a un catálogo local que oculte el fallo.
-- Las horas que sugiere Nuva no conocen las reservas de otras clientas (la RLS
+- Las horas que sugiere Nuria no conocen las reservas de otras clientas (la RLS
   las oculta). El paso de confirmación es la última palabra.
 - Pedidos de invitadas quedan con `cliente_id` nulo, igual que las reservas: su
   vínculo es el código del pedido y el correo.

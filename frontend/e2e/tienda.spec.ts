@@ -17,6 +17,9 @@ test.describe('tienda', () => {
     await page.getByLabel('Correo', { exact: true }).fill('ana@correo.cl')
     await page.getByRole('button', { name: 'Continuar al pago' }).click()
 
+    // Webpay es el medio por defecto y saca del sitio; pagar en el estudio es
+    // el que termina en la confirmacion local.
+    await page.getByText('Pagar en el estudio').click()
     await page.getByRole('button', { name: /^Pagar \$9\.900$/ }).click()
     await expect(page.getByRole('heading', { name: 'Pedido confirmado' })).toBeVisible()
     await expect(page.getByText('Pedido NV-P-000123 · $9.900')).toBeVisible()
@@ -26,7 +29,7 @@ test.describe('tienda', () => {
     const cuerpo = pedidos[0].postDataJSON()
     expect(cuerpo.p_items).toEqual([{ slug: 'aceite-de-cuticula-nura', cantidad: 1 }])
     expect(JSON.stringify(cuerpo)).not.toContain('9900')
-    expect(cuerpo).toMatchObject({ p_entrega: 'retiro', p_metodo_pago: 'webpay', p_direccion: null })
+    expect(cuerpo).toMatchObject({ p_entrega: 'retiro', p_metodo_pago: 'estudio', p_direccion: null })
   })
 
   test('el despacho exige una comuna con cobertura', async ({ page }) => {
@@ -62,13 +65,13 @@ test.describe('tienda', () => {
   })
 })
 
-test.describe('nuva', () => {
+test.describe('nuria', () => {
   test('recomienda y agrega todo al carrito', async ({ page }) => {
     await simularTienda(page)
     await page.goto('/')
     await page.getByRole('button', { name: '“Mis uñas se quiebran, ¿qué uso?”' }).first().click()
 
-    const panel = page.getByRole('dialog', { name: /Nuva/ })
+    const panel = page.getByRole('dialog', { name: /Nuria/ })
     await expect(panel.getByText('Aceite de cutícula Nura')).toBeVisible()
     await panel.getByRole('button', { name: 'Agregar todo al carrito' }).click()
     await expect(panel.getByText(/Listo, agregué 3 productos/)).toBeVisible()

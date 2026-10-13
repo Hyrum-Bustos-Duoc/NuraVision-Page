@@ -9,3 +9,9 @@ export { eliminarUsuario } from './eliminar-usuario.usecase'
 
 export type { Usuario, DatosPerfil, NuevaCuenta, UsuarioRol } from '../domain/usuario.types'
 export { ETIQUETA_ROL, ROLES } from '../domain/usuario.types'
+export {
+  VENTANA_CUMPLEANOS_DIAS,
+  diasHastaCumpleanos,
+  etiquetaDiasRestantes,
+  proximosCumpleanos,
+} from '../domain/cumpleanos'

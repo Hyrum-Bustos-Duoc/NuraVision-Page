@@ -234,6 +234,7 @@ export const seedBookings: Booking[] = [
     time: '10:00',
     durationMin: 60,
     price: 18000,
+    abono: 0,
     status: 'completada',
   },
   {
@@ -246,6 +247,7 @@ export const seedBookings: Booking[] = [
     time: '11:00',
     durationMin: 120,
     price: 35000,
+    abono: 0,
     status: 'en_curso',
   },
   {
@@ -258,6 +260,7 @@ export const seedBookings: Booking[] = [
     time: '14:00',
     durationMin: 75,
     price: 22000,
+    abono: 0,
     status: 'confirmada',
   },
   {
@@ -270,6 +273,7 @@ export const seedBookings: Booking[] = [
     time: '15:30',
     durationMin: 60,
     price: 18000,
+    abono: 0,
     status: 'confirmada',
   },
   {
@@ -282,6 +286,7 @@ export const seedBookings: Booking[] = [
     time: '17:00',
     durationMin: 120,
     price: 35000,
+    abono: 0,
     status: 'confirmada',
   },
   {
@@ -294,6 +299,7 @@ export const seedBookings: Booking[] = [
     time: '11:00',
     durationMin: 45,
     price: 15000,
+    abono: 0,
     status: 'confirmada',
   },
   {
@@ -306,6 +312,7 @@ export const seedBookings: Booking[] = [
     time: '10:00',
     durationMin: 60,
     price: 25000,
+    abono: 0,
     status: 'cancelada',
   },
   {
@@ -318,6 +325,7 @@ export const seedBookings: Booking[] = [
     time: '10:00',
     durationMin: 150,
     price: 52000,
+    abono: 0,
     status: 'cancelada',
   },
   {
@@ -330,6 +338,7 @@ export const seedBookings: Booking[] = [
     time: '12:00',
     durationMin: 45,
     price: 15000,
+    abono: 0,
     status: 'confirmada',
   },
 ]
@@ -405,6 +414,7 @@ function generateHistoricalBookings(): Booking[] {
         }`,
         durationMin: service.durationMin,
         price: service.price,
+        abono: 0,
         // Una minoría se cancela; el resto se completó.
         status: roll < 0.07 ? 'cancelada' : 'completada',
       })
