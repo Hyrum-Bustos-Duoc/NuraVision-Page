@@ -109,6 +109,23 @@ hace a mano. **El orden importa:**
    `pagos.monto_total`: desplegadas antes que las migraciones, fallan.
    Peor aún: sin `0019` el precio de la variante lo sigue escribiendo el
    navegador, y la función cobraría lo que este diga.
+
+   **En el proyecto actual (producción)** ya están aplicados a mano el
+   `0015_pagos_webpay.sql` y el `0016_reserva_abono.sql` del PR #28: existen
+   `pagos` (con pagos de prueba) y `servicios.cobrar_abono` / `monto_abono`.
+   No hay que hacer nada distinto: en el SQL Editor, una query nueva por
+   archivo, pega y **Run** `0015_abono_servicios.sql`,
+   `0016_cumpleanos_perfiles.sql`, `0017_perfiles_sin_autoedicion.sql`,
+   `0018_pagos_webpay.sql` y `0019_reservas_precio_variante.sql`, en ese
+   orden. `0018` detecta la tabla existente y la ajusta sin borrar filas (FKs a
+   `on delete restrict`, índices, política), copia el `monto_abono` de los
+   servicios con `cobrar_abono` a `servicios.abono` y borra esas dos columnas.
+   Al terminar, la comprobación de `0018` debe mostrar los pagos previos y
+   `fk_restrict = 2`, y Brushing y los tres alisados con `abono = 5000`.
+
+   Las funciones y el front del PR #28, si siguen desplegados, leen
+   `cobrar_abono` y dejan de funcionar al aplicar `0018`: despliega las de
+   este repo (punto 4) y el front justo después.
 2. Reservas previas a `0019`. El trigger solo actúa al insertar, así que una
    reserva creada antes puede traer un `variante.precio` manipulado, y si el
    servicio no tiene abono la función lo cobraría. Ejecuta la consulta de
