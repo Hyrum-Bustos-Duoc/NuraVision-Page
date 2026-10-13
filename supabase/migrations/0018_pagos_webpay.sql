@@ -75,7 +75,15 @@
 -- contra de la regla de 0015–0017. El riesgo que esa regla evita —seguir de
 -- largo sobre un esquema desconocido— no aplica: el esquema previo es uno
 -- concreto y leido (git show origin/feature/abono-reserva), y donde podria no
--- coincidir (los valores del enum) el archivo falla en vez de suponer.
+-- coincidir el archivo falla en vez de suponer (politicas no previstas, un
+-- valor nuestro que falte en el enum).
+--
+-- El enum de produccion resulto ademas tener cuatro valores creados a mano
+-- antes del PR #28 y que no estan en ningun archivo del repo: 'pendiente',
+-- 'pagado', 'fallido' y 'reembolsado' (la primera aplicacion de 0018, el
+-- 2026-10-13, se detuvo ahi al exigir el enum exacto). Se dejan donde estan:
+-- Postgres no permite quitar un valor de un enum sin recrear el tipo. Ver el
+-- bloque del enum.
 --
 -- ----------------------------------------------------------------------------
 -- QUIEN ESCRIBE AQUI: NADIE, SALVO LAS EDGE FUNCTIONS
@@ -101,15 +109,25 @@
 -- 'rechazado' y 'error' se distinguen a proposito: el primero es una respuesta
 -- del negocio y el segundo un fallo tecnico que puede necesitar revision.
 --
--- Si el tipo ya existe (PR #28) se exige que tenga exactamente estos valores en
--- este orden, que es lo que aquel archivo creaba. No se agregan valores que
--- falten: un enum distinto del esperado es un estado que nadie ha leido, y
--- `alter type ... add value` no deja usar el valor nuevo en la misma
--- transaccion. Mejor que falle y se mire.
+-- Si el tipo ya existe (produccion) se acepta si CONTIENE estos cinco valores,
+-- en cualquier orden y con otros de mas:
+--   · Falta uno de los nuestros: falla. No se agrega con `add value`, porque
+--     un enum distinto del esperado es un estado que nadie ha leido, y el valor
+--     nuevo no se podria usar en la misma transaccion.
+--   · Sobran valores (en produccion: pendiente, pagado, fallido, reembolsado):
+--     se dejan, porque quitarlos exige recrear el tipo y reescribir la columna.
+--     Pero ninguna fila de `pagos` puede estar en uno de ellos: las Edge
+--     Functions solo conocen los cinco de aqui, y una fila en 'pagado' seria un
+--     cobro que nadie ve. Si la hay, falla para conciliarla a mano. Si no, un
+--     NOTICE deja constancia de los valores que sobran.
+-- El orden no importa: nada en el repo compara estados con `<` ni `>`.
 do $$
 declare
-  v_esperado constant text[] :=
+  v_nuestros constant text[] :=
     array['iniciado', 'autorizado', 'rechazado', 'anulado', 'error'];
+  v_actuales text[];
+  v_sobran   text[];
+  v_filas    bigint;
 begin
   if to_regtype('public.estado_pago') is null then
     create type public.estado_pago as enum (
@@ -119,10 +137,36 @@ begin
       'anulado',
       'error'
     );
-  elsif enum_range(null::public.estado_pago)::text[] is distinct from v_esperado then
-    raise exception 'public.estado_pago ya existe con valores %, se esperaba %',
-      enum_range(null::public.estado_pago)::text[], v_esperado;
+    return;
   end if;
+
+  v_actuales := enum_range(null::public.estado_pago)::text[];
+
+  if not v_actuales @> v_nuestros then
+    raise exception 'public.estado_pago ya existe con valores % y le falta alguno de %',
+      v_actuales, v_nuestros;
+  end if;
+
+  select array_agg(v) into v_sobran
+  from unnest(v_actuales) as v
+  where v <> all (v_nuestros);
+
+  if v_sobran is null then
+    return;
+  end if;
+
+  if to_regclass('public.pagos') is not null then
+    select count(*) into v_filas
+    from public.pagos
+    where estado::text <> all (v_nuestros);
+
+    if v_filas > 0 then
+      raise exception 'public.pagos tiene % fila(s) con un estado fuera de %. '
+        'Conciliarlas a mano antes de aplicar 0018.', v_filas, v_nuestros;
+    end if;
+  end if;
+
+  raise notice 'public.estado_pago conserva valores que 0018 no usa: %', v_sobran;
 end
 $$;
 
