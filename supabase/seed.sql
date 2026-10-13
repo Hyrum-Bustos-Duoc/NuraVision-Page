@@ -4,7 +4,7 @@
 -- Refleja el catálogo y el equipo reales del estudio, de modo que un proyecto
 -- Supabase recién creado quede igual que el que está en uso.
 --
--- Se aplica DESPUÉS de 0001, 0002 y 0003.
+-- Se aplica DESPUÉS de todas las migraciones: `abono` viene de 0015.
 --
 -- ----------------------------------------------------------------------------
 -- ⚠  ATENCIÓN: la primera instrucción BORRA el contenido de las tablas que
@@ -26,28 +26,33 @@ restart identity cascade;
 -- formas de presentación ('Estilismo' → cabello, 'Uñas' → unas,
 -- 'Estética' → piel) como los ids del dominio en minúsculas. Una categoría
 -- vacía cae en el valor por defecto del mapper.
+--
+-- `abono` va explícito porque el truncate de arriba se lleva el relleno que
+-- hace 0015, y `db reset` corre este seed DESPUÉS de las migraciones. Los
+-- valores son los de la fórmula de 0015 (30 % del precio, al millar): si se
+-- cambia un precio de uñas aquí, hay que recalcular su abono.
 insert into public.servicios
-  (nombre, categoria, descripcion, duracion_minutos, precio_base, activo)
+  (nombre, categoria, descripcion, duracion_minutos, precio_base, abono, activo)
 values
-  ('Corte de Pelo',         'Estilismo', 'Corte personalizado según estilo y tipo de cabello.',    60, 20000, true),
-  ('Peinado',               'Estilismo', 'Peinados para eventos o uso diario.',                    60, 25000, true),
-  ('Brushing',              'Estilismo', 'Secado y modelado profesional con cepillo.',             60, 15000, true),
-  ('Coloración',            'Estilismo', 'Tinta completa o retoque de raíz (requiere 2 horas).',   60, 45000, true),
-  ('Tratamiento Capilar',   'Estilismo', 'Nutrición e hidratación profunda del cabello.',          60, 30000, true),
+  ('Corte de Pelo',         'Estilismo', 'Corte personalizado según estilo y tipo de cabello.',    60, 20000,     0, true),
+  ('Peinado',               'Estilismo', 'Peinados para eventos o uso diario.',                    60, 25000,     0, true),
+  ('Brushing',              'Estilismo', 'Secado y modelado profesional con cepillo.',             60, 15000,     0, true),
+  ('Coloración',            'Estilismo', 'Tinta completa o retoque de raíz (requiere 2 horas).',   60, 45000,     0, true),
+  ('Tratamiento Capilar',   'Estilismo', 'Nutrición e hidratación profunda del cabello.',          60, 30000,     0, true),
 
-  ('Manicura Completa',     'Uñas',      'Limpieza, limado y cuidado de cutículas.',               60, 18000, true),
-  ('Esmaltado Tradicional', 'Uñas',      'Esmaltado de secado al aire.',                           60, 12000, true),
-  ('Esmaltado Permanente',  'Uñas',      'Esmaltado de larga duración con secado LED.',            60, 22000, true),
-  ('Esculpido de Uñas',     'Uñas',      'Extensión en gel o acrílico (requiere 2 horas).',        60, 38000, true),
+  ('Manicura Completa',     'Uñas',      'Limpieza, limado y cuidado de cutículas.',               60, 18000,  5000, true),
+  ('Esmaltado Tradicional', 'Uñas',      'Esmaltado de secado al aire.',                           60, 12000,  4000, true),
+  ('Esmaltado Permanente',  'Uñas',      'Esmaltado de larga duración con secado LED.',            60, 22000,  7000, true),
+  ('Esculpido de Uñas',     'Uñas',      'Extensión en gel o acrílico (requiere 2 horas).',        60, 38000, 11000, true),
 
-  ('Tratamiento Facial',    'Estética',  'Limpieza e hidratación facial profunda.',                60, 35000, true),
-  ('Depilación',            'Estética',  'Depilación en zonas a elección.',                        60, 15000, true),
-  ('Cejas y Pestañas',      'Estética',  'Perfilado de cejas y/o lifting de pestañas.',            60, 18000, true),
-  ('Maquillaje',            'Estética',  'Maquillaje profesional para eventos.',                   60, 30000, true),
+  ('Tratamiento Facial',    'Estética',  'Limpieza e hidratación facial profunda.',                60, 35000,     0, true),
+  ('Depilación',            'Estética',  'Depilación en zonas a elección.',                        60, 15000,     0, true),
+  ('Cejas y Pestañas',      'Estética',  'Perfilado de cejas y/o lifting de pestañas.',            60, 18000,     0, true),
+  ('Maquillaje',            'Estética',  'Maquillaje profesional para eventos.',                   60, 30000,     0, true),
 
   -- Sin categoría: así está en el proyecto real, y ejercita el valor por
   -- defecto del mapper de categorías.
-  ('manicure rapida',       null,        null,                                                     30, 15000, true);
+  ('manicure rapida',       null,        null,                                                     30, 15000,  5000, true);
 
 -- ----------------------------------------------------------------------------
 -- Equipo

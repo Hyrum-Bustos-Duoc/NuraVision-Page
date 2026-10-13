@@ -7,7 +7,7 @@ import { useProfesionalesPorIds } from '@/modules/profesionales/ui/useProfesiona
 import { Button, StatusBadge } from '@/shared/ui/ui'
 import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
 import { contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
-import { formatLongDate } from '@/shared/lib/format'
+import { formatLongDate, formatPrice } from '@/shared/lib/format'
 import { ESTADOS_FILTRABLES, esConfirmable } from '../application'
 import type { EstadoReserva, FiltrosReservas } from '../domain/reserva-gestion.types'
 import { useReservasGestion } from './useReservasGestion'
@@ -234,7 +234,13 @@ export default function AdminReservas() {
                         contacto es el único vínculo con ella. */}
                     {r.clienteId === null && <p className="mt-0.5 text-xs text-muted-light">Sin cuenta</p>}
                   </td>
-                  <td className={`${tabla.td} text-ink`}>{nombreServicio(r.servicioId)}</td>
+                  <td className={tabla.td}>
+                    <p className="text-ink">{nombreServicio(r.servicioId)}</p>
+                    {/* Copia fijada por la base al reservar; con 0 no hay linea. */}
+                    {r.abono > 0 && (
+                      <p className="text-xs text-muted">Abono {formatPrice(r.abono)}</p>
+                    )}
+                  </td>
                   <td className={`${tabla.td} text-ink`}>{nombreProfesional(r.profesionalId)}</td>
                   <td className={`${tabla.td} whitespace-nowrap text-ink`}>
                     <p className="first-letter:uppercase">{formatLongDate(r.fecha)}</p>

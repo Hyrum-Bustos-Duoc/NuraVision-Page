@@ -7,7 +7,7 @@ import type {
   ResultadoRegistro,
   UsuarioAuth,
 } from '../domain/auth.types'
-import { META_NOMBRE, META_TELEFONO, toUsuarioAuth } from './auth.mapper'
+import { META_FECHA_NACIMIENTO, META_NOMBRE, META_TELEFONO, toUsuarioAuth } from './auth.mapper'
 
 /**
  * Traduce el error de Supabase a algo que se pueda mostrar en pantalla.
@@ -43,11 +43,12 @@ export class SupabaseAuthRepository implements AuthRepository {
       email: datos.email,
       password: datos.password,
       options: {
-        // Nombre y telefono no son columnas de `auth.users`. Van a
-        // `user_metadata` mientras `perfiles` no este versionada.
+        // Nombre, telefono y cumpleaños no son columnas de `auth.users`. Van
+        // a `user_metadata` mientras `perfiles` no este versionada.
         data: {
           [META_NOMBRE]: datos.nombre,
           [META_TELEFONO]: datos.telefono,
+          [META_FECHA_NACIMIENTO]: datos.fechaNacimiento,
         },
       },
     })

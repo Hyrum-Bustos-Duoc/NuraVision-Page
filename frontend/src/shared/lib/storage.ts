@@ -1,4 +1,5 @@
 import type { AppData } from '@/shared/types'
+import { aAbono } from './abono'
 
 // v2: los datos semilla incorporaron usuarios registrados, el estado activo de
 // los servicios y el historial de atenciones que alimenta la analítica. Subir
@@ -25,7 +26,10 @@ export function loadStoredData(fallback: AppData): AppData {
       professionals: Array.isArray(parsed.professionals)
         ? parsed.professionals
         : fallback.professionals,
-      bookings: Array.isArray(parsed.bookings) ? parsed.bookings : fallback.bookings,
+      // `abono` se agregó después (abono-servicios-unas): sin él, se lee como 0.
+      bookings: Array.isArray(parsed.bookings)
+        ? parsed.bookings.map((booking) => ({ ...booking, abono: aAbono(booking.abono) }))
+        : fallback.bookings,
     }
   } catch {
     return fallback

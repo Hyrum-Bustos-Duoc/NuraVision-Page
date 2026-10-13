@@ -2,6 +2,7 @@ import type { ServiceCategoryId } from '@/shared/types'
 import type { Json, Tables, TablesInsert } from '@/shared/types/supabase'
 import { serviceCategories } from '../domain/serviceCategories'
 import { normalizarTexto } from '@/shared/lib/texto'
+import { aAbono } from '@/shared/lib/abono'
 import type {
   DatosServicio,
   OpcionVariante,
@@ -76,6 +77,8 @@ export function toServicio(row: ServicioRow): Servicio {
     descripcionLarga: row.descripcion_larga ?? '',
     incluye: aListaDeTextos(row.incluye),
     variantes: aVariante(row.variantes),
+    // 0 si la base no tiene 0015: el servicio se comporta como uno sin abono.
+    abono: aAbono(row.abono),
   }
 }
 
@@ -185,6 +188,8 @@ export function fromDatosServicio(datos: DatosServicio): ServicioInsert {
      * una variante que desaparece sola tras recargar.
      */
     variantes: aFilaVariante(datos.variantes),
+    // Ya validado en el dominio (`motivoParaNoGuardarServicio`): entero >= 0.
+    abono: datos.abono,
   }
 }
 

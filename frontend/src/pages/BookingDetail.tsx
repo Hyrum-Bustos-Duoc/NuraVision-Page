@@ -15,6 +15,8 @@ import { Calendar } from '@/shared/components/Calendar'
 import { TimeSlotGrid } from '@/shared/components/TimeSlotGrid'
 import { Button, StatusBadge, type BadgeStatus } from '@/shared/ui/ui'
 import { formatLongDate, formatPrice, monthLabel } from '@/shared/lib/format'
+import { saldoTrasAbono } from '@/shared/lib/abono'
+import { POLITICA_ABONO } from '@/modules/reservas/ui/politica-abono'
 
 /**
  * La reserva que pinta esta pantalla, venga de donde venga.
@@ -35,6 +37,8 @@ interface VistaReserva {
   /** `null` cuando no se sabe: la base no guarda el precio cobrado. */
   precio: number | null
   estado: BadgeStatus
+  /** CLP; 0 = sin abono y sin linea. Cancelar o reprogramar no lo cambia. */
+  abono: number
   cancelable: boolean
   reprogramable: boolean
 }
@@ -69,8 +73,11 @@ export default function BookingDetail() {
           duracionMin:
             timeToMinutes(miReserva.detalle.reserva.horaFin) -
             timeToMinutes(miReserva.detalle.reserva.horaInicio),
-          precio: null,
+          // El acordado si hubo variante; si no, `null` y se cae al vigente
+          // del servicio mas abajo. Igual que en MyBookings.
+          precio: miReserva.detalle.reserva.varianteElegida?.precio ?? null,
           estado: miReserva.detalle.reserva.estado,
+          abono: miReserva.detalle.reserva.abono,
           cancelable: esCancelable(miReserva.detalle.reserva),
           reprogramable: esReprogramable(miReserva.detalle.reserva),
         }
@@ -86,6 +93,7 @@ export default function BookingDetail() {
             duracionMin: bookingLocal.durationMin,
             precio: bookingLocal.price,
             estado: bookingLocal.status,
+            abono: bookingLocal.abono,
             cancelable: bookingLocal.status === 'confirmada' || bookingLocal.status === 'en_curso',
             reprogramable:
               bookingLocal.status === 'confirmada' || bookingLocal.status === 'en_curso',
@@ -231,14 +239,21 @@ export default function BookingDetail() {
         <Row label="Duración" value={`${vista.duracionMin} min`} />
         <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
         {precio !== null && <Row label="Total" value={formatPrice(precio)} />}
+        {vista.abono > 0 && <Row label="Abono" value={formatPrice(vista.abono)} />}
+        {/* Aproximado si no hubo variante: `reservas` no guarda precio y el
+            respaldo es el vigente del servicio (riesgos en design.md). */}
+        {vista.abono > 0 && precio !== null && (
+          <Row label="Saldo en el estudio" value={formatPrice(saldoTrasAbono(precio, vista.abono))} />
+        )}
       </div>
 
       <div className="mt-6 rounded-2xl bg-line-soft/60 p-6">
         <Kicker>Antes de tu hora</Kicker>
         <p className="mt-2 text-sm text-muted">
-          Llega 5 minutos antes. Si necesitas cancelar, hazlo con al menos 12 horas de anticipación
+          Llega 5 minutos antes. Si necesitas cancelar, hazlo con al menos 24 horas de anticipación
           para liberar el bloque.
         </p>
+        {vista.abono > 0 && <p className="mt-2 text-sm text-muted">{POLITICA_ABONO}</p>}
       </div>
 
       {/* El fallo de un cambio se informa junto a los botones que lo

@@ -18,6 +18,11 @@ export interface UsuarioAuth {
   nombre: string | null
   telefono: string | null
   /**
+   * Cumpleaños como 'YYYY-MM-DD', sin hora ni zona horaria. `null` si no lo dio
+   * (es opcional) o si lo guardado no es una fecha valida.
+   */
+  fechaNacimiento: string | null
+  /**
    * Si la cuenta pertenece al personal del estudio.
    *
    * Sale de `app_metadata`, que solo se escribe con la service_role key: por
@@ -52,13 +57,15 @@ export interface Credenciales {
 /**
  * Datos de registro.
  *
- * El nombre y el telefono no son campos de `auth.users`, sino metadatos del
- * usuario. Se guardan ahi porque `perfiles` todavia no esta versionada (ver
+ * El nombre, el telefono y el cumpleaños no son campos de `auth.users`, sino
+ * metadatos del usuario. Se guardan ahi porque `perfiles` todavia no esta versionada (ver
  * 0003_reservas.sql) y era eso o perderlos.
  */
 export interface DatosRegistro extends Credenciales {
   nombre: string
   telefono: string
+  /** 'YYYY-MM-DD' o `null`: el cumpleaños es opcional. */
+  fechaNacimiento: string | null
 }
 
 /**

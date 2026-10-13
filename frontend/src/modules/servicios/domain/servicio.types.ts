@@ -27,6 +27,14 @@ export interface Servicio {
   incluye: string[]
   /** Pregunta que altera el precio, o `null` si el servicio no pregunta nada. */
   variantes: VarianteServicio | null
+  /**
+   * Abono en CLP enteros que se paga al reservar; 0 = sin abono.
+   *
+   * Es lo unico que decide si el flujo de reserva pide pago, no la categoria
+   * (decision 1 de abono-servicios-unas): la categoria solo interviene al
+   * guardar, en `motivoParaNoGuardarServicio`.
+   */
+  abono: number
 }
 
 /**
@@ -47,6 +55,7 @@ export interface DatosServicio {
   descripcionLarga: string
   incluye: string[]
   variantes: VarianteServicio | null
+  abono: number
 }
 
 /**

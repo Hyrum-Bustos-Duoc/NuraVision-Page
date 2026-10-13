@@ -1,12 +1,20 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { crearReserva, enviarConfirmacion } from '../application'
 import type { NuevaReserva } from '../domain/reserva.types'
 import { reservaRepository } from '../infrastructure/supabase-reserva.repository'
 import { confirmacionRepository } from '../infrastructure/supabase-confirmacion.repository'
 
 interface EstadoCrearReserva {
-  /** Resuelve a `true` si la reserva quedo guardada. */
-  crear: (nueva: NuevaReserva) => Promise<boolean>
+  /**
+   * Resuelve a `true` si la reserva quedo guardada.
+   *
+   * `conCorreo: false` la guarda sin avisar por correo: es el camino de Webpay,
+   * donde el aviso lo manda `webpay-confirmar-transaccion` al aprobarse el pago.
+   * Avisar al crearla le diria a la clienta que tiene hora antes de pagar.
+   */
+  crear: (nueva: NuevaReserva, opciones?: { conCorreo?: boolean }) => Promise<boolean>
+  /** Pide el correo de una reserva ya guardada sin aviso (la clienta dejo Webpay y paga en el estudio). */
+  avisar: (codigo: string) => void
   guardando: boolean
   error: string | null
   /**
@@ -19,6 +27,8 @@ interface EstadoCrearReserva {
    * bandeja donde no hay nada.
    */
   correoEnviado: boolean | null
+  /** Olvida el error del ultimo intento, al salir o reentrar al paso que lo mostro. */
+  limpiarError: () => void
 }
 
 /**
@@ -32,8 +42,27 @@ export function useCrearReserva(): EstadoCrearReserva {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [correoEnviado, setCorreoEnviado] = useState<boolean | null>(null)
+  /**
+   * Cerrojo contra el doble envio («Pagar abono y reservar» dos veces seguidas).
+   *
+   * El boton se deshabilita con `guardando`, pero eso es estado y llega en el
+   * siguiente render: un segundo clic que entre antes crearia otra reserva con
+   * otro codigo. La ref cambia en el acto. El segundo intento resuelve `false`
+   * sin tocar `error`, porque no fallo nada: el primero sigue en curso.
+   */
+  const enCurso = useRef(false)
 
-  const crear = useCallback(async (nueva: NuevaReserva): Promise<boolean> => {
+  const avisar = useCallback((codigo: string) => {
+    setCorreoEnviado(null)
+    void enviarConfirmacion(confirmacionRepository, codigo).then(setCorreoEnviado)
+  }, [])
+
+  const crear = useCallback(async (
+    nueva: NuevaReserva,
+    { conCorreo = true }: { conCorreo?: boolean } = {},
+  ): Promise<boolean> => {
+    if (enCurso.current) return false
+    enCurso.current = true
     setGuardando(true)
     setError(null)
     setCorreoEnviado(null)
@@ -55,16 +84,19 @@ export function useCrearReserva(): EstadoCrearReserva {
        * `pedirEnvio` nunca lanza, de modo que esta promesa sin esperar no puede
        * acabar en un rechazo no capturado.
        */
-      void enviarConfirmacion(confirmacionRepository, nueva.codigo).then(setCorreoEnviado)
+      if (conCorreo) avisar(nueva.codigo)
 
       return true
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar la reserva.')
       return false
     } finally {
+      enCurso.current = false
       setGuardando(false)
     }
-  }, [])
+  }, [avisar])
 
-  return { crear, guardando, error, correoEnviado }
+  const limpiarError = useCallback(() => setError(null), [])
+
+  return { crear, avisar, guardando, error, correoEnviado, limpiarError }
 }

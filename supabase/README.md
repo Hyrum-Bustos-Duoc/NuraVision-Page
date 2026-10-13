@@ -98,6 +98,64 @@ claves foráneas a esas mismas tablas, 0004 modifica las políticas que crea
 > que hubiera. Es lo que permite reaplicarla, pero respáldalas antes si te
 > importan.
 
+## Paso 2c · Pagos con Webpay (0015–0019 y Edge Functions)
+
+No hay `config.toml` en el repo, así que el despliegue de las funciones se
+hace a mano. **El orden importa:**
+
+1. Migraciones `0015` → `0019`, en orden. `0018` crea `pagos` y `0019`
+   reemplaza el trigger de abono de `0015` por `reservas_fijar_precio` (fija la
+   variante y topa el abono). Las funciones leen `reservas.abono` y escriben
+   `pagos.monto_total`: desplegadas antes que las migraciones, fallan.
+   Peor aún: sin `0019` el precio de la variante lo sigue escribiendo el
+   navegador, y la función cobraría lo que este diga.
+
+   **En el proyecto actual (producción)** ya están aplicados a mano el
+   `0015_pagos_webpay.sql` y el `0016_reserva_abono.sql` del PR #28: existen
+   `pagos` (con pagos de prueba) y `servicios.cobrar_abono` / `monto_abono`.
+   No hay que hacer nada distinto: en el SQL Editor, una query nueva por
+   archivo, pega y **Run** `0015_abono_servicios.sql`,
+   `0016_cumpleanos_perfiles.sql`, `0017_perfiles_sin_autoedicion.sql`,
+   `0018_pagos_webpay.sql` y `0019_reservas_precio_variante.sql`, en ese
+   orden. `0018` detecta la tabla existente y la ajusta sin borrar filas (FKs a
+   `on delete restrict`, índices, política), copia el `monto_abono` de los
+   servicios con `cobrar_abono` a `servicios.abono` y borra esas dos columnas.
+   Al terminar, la comprobación de `0018` debe mostrar los pagos previos y
+   `fk_restrict = 2`, y Brushing y los tres alisados con `abono = 5000`.
+
+   Las funciones y el front del PR #28, si siguen desplegados, leen
+   `cobrar_abono` y dejan de funcionar al aplicar `0018`: despliega las de
+   este repo (punto 4) y el front justo después.
+2. Reservas previas a `0019`. El trigger solo actúa al insertar, así que una
+   reserva creada antes puede traer un `variante.precio` manipulado, y si el
+   servicio no tiene abono la función lo cobraría. Ejecuta la consulta de
+   comprobación del final de `0019` y cancela a mano las filas que liste:
+
+   ```sql
+   update public.reservas set estado = 'cancelada' where id = any(array[/* ids listados */]);
+   ```
+
+   No despliegues las funciones hasta que esa consulta devuelva cero filas.
+3. Secretos (`supabase secrets set NOMBRE=valor`):
+   - `SITIO_URL` — URL pública del sitio, sin `/` final. Obligatorio.
+   - `WEBPAY_ENTORNO` — `produccion` para cobrar de verdad; cualquier otro
+     valor es integración.
+   - `WEBPAY_CODIGO_COMERCIO` y `WEBPAY_API_KEY` — obligatorios en
+     producción; en integración se usan las credenciales públicas de prueba.
+   - El correo de confirmación usa además los de `enviar-confirmacion-reserva`
+     (`RESEND_API_KEY`, `CORREO_REMITENTE`, `ESTUDIO_DIRECCION`).
+4. Funciones:
+
+   ```bash
+   supabase functions deploy webpay-crear-transaccion
+   supabase functions deploy webpay-confirmar-transaccion
+   supabase functions deploy webpay-retorno --no-verify-jwt
+   ```
+
+   `webpay-retorno` **tiene** que ir con `--no-verify-jwt`: a esa URL llega el
+   navegador desde el banco, sin cabecera `Authorization`, y con la
+   verificación puesta la clienta vería un 401 en vez de su comprobante.
+
 ## Paso 2b · Activar Supabase Auth
 
 `0004` solo sirve de algo si hay sesiones. En **Authentication → Providers**,
