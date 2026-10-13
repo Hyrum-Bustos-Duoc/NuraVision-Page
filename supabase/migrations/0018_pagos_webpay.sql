@@ -329,7 +329,9 @@ alter table public.pagos enable row level security;
 -- Supabase concede por defecto SELECT/INSERT/UPDATE/DELETE sobre las tablas
 -- nuevas de `public` a `anon` y `authenticated`. Hay que quitarlo
 -- explicitamente: sin esto, lo de arriba sobre "nadie escribe aqui" seria falso.
-revoke all on public.pagos from anon, authenticated;
+-- `public` (el pseudo-rol de todos) tambien: un GRANT hecho a mano en el SQL
+-- Editor sobre la tabla del PR #28 alcanzaria a anon y authenticated por ahi.
+revoke all on public.pagos from public, anon, authenticated;
 
 -- El personal del estudio ve los pagos para cuadrar caja y atender reclamos.
 -- Solo lectura: ni el estudio declara un pago a mano.
@@ -343,6 +345,28 @@ create policy "El personal consulta los pagos"
   for select
   to authenticated
   using (public.es_staff());
+
+-- Ninguna otra politica. Las politicas se suman por OR: una permisiva creada a
+-- mano en produccion sobre la tabla del PR #28 (p. ej. `using (true)`) abriria
+-- los pagos aunque la de arriba este bien. No se borra sin mirar —mismo
+-- criterio que el enum—: se falla con su nombre para revisarla a mano.
+do $$
+declare
+  v_otras text[];
+begin
+  select array_agg(policyname order by policyname)
+    into v_otras
+  from pg_policies
+  where schemaname = 'public'
+    and tablename  = 'pagos'
+    and policyname <> 'El personal consulta los pagos';
+
+  if v_otras is not null then
+    raise exception 'public.pagos tiene politicas no previstas: %. Revisarlas y '
+      'borrarlas a mano antes de aplicar 0018.', v_otras;
+  end if;
+end
+$$;
 
 grant select on public.pagos to authenticated;
 
