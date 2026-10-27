@@ -1,0 +1,72 @@
+# Configuracion del entrenamiento. Todo parametro ajustable vive aqui y lleva
+# su razon. Los rangos "a validar" NO estan probados: no existe dataset propio
+# al 2026-10-27. Se confirman con una ablacion cuando haya fotos (ver README).
+
+# Va a metadatos.json del modelo exportado (campo model.version del contrato).
+version = "0.1.0"
+# Una sola semilla para particion, tf.data, aumentos e inicializacion.
+semilla = 20261027
+
+[particion]
+# 70/15/15: con datasets pequenos (cientos de fotos) 15% es el minimo para que
+# val y test tengan varias fotos por clase. Rango razonable: 0.10-0.20.
+val = 0.15
+test = 0.15
+
+[imagen]
+# 224 es la resolucion nativa de los pesos ImageNet de MobileNetV3 y
+# EfficientNetB0: otro tamano funciona pero desalinea los pesos preentrenados.
+lado = 224
+# Fotos con el lado menor por debajo de esto se rechazan: ampliarlas inventa
+# detalle que el modelo aprenderia como senal.
+lado_minimo = 224
+
+[entrenamiento]
+# Solo arquitecturas que traen el reescalado dentro del modelo (entrada RGB
+# 0-255). Ver ARQUITECTURAS en config.py.
+arquitecturas = ["MobileNetV3Small", "EfficientNetB0"]
+lote = 32
+# 0.2 es el dropout de la cabeza original de ambas arquitecturas.
+dropout = 0.2
+# Fase 1: base congelada, solo la cabeza. LR por defecto de Adam.
+fase1_epocas = 20
+fase1_lr = 1e-3
+# Fase 2: fine-tuning. LR 100 veces menor para no destruir los pesos
+# preentrenados (guia de transfer learning de Keras). Rango a validar: 1e-5-1e-4.
+fase2_epocas = 20
+fase2_lr = 1e-5
+# Ultimas capas de la base que se descongelan. 20 es el valor del ejemplo
+# oficial de fine-tuning de EfficientNet en Keras; mismo numero para ambas
+# arquitecturas para que la comparacion sea justa. Rango a validar: 10-40.
+fase2_capas = 20
+# Epocas sin mejorar val_loss antes de parar (y restaurar el mejor peso).
+paciencia = 5
+
+[aumento]
+# Solo aumentos geometricos y de contraste. Sin cambio de tono (hue) ni
+# saturacion: alterarian el color del esmalte y de la piel, que son
+# justamente senal (esmalte_deteriorado) o fuente de sesgo (tono de piel).
+# Sin volteo vertical: las fotos reales son con los dedos hacia arriba.
+rotacion = 0.05   # fraccion de vuelta: +-18 grados
+zoom = 0.1        # +-10%
+contraste = 0.2   # +-20%
+
+[umbral]
+# Precision minima exigida a las predicciones aceptadas en validacion. Por
+# debajo del umbral calibrado el resultado es no_concluyente. 0.90 prioriza
+# no afirmar en falso sobre cobertura (limite 1 de nv-vision).
+precision_objetivo = 0.90
+
+# Una tarea = un modelo independiente. Ver README, "Decisiones".
+[tareas.forma]
+# Campo "feature" del contrato del pipeline de inferencia.
+feature = "forma_una"
+clases = ["almendra", "cuadrada", "ovalada", "redonda", "stiletto"]
+revision_profesional = []
+
+[tareas.estado]
+feature = "superficie_una"
+clases = ["cuidada", "cuticula_descuidada", "quebradiza_o_descamada", "esmalte_deteriorado"]
+# Una una quebradiza o descamada puede tener causas medicas: el resultado se
+# acompana de la recomendacion de consultar a un profesional, sin nombrar causa.
+revision_profesional = ["quebradiza_o_descamada"]

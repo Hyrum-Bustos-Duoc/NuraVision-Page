@@ -1,0 +1,7 @@
+# Fotos de manos = dato biometrico de personas reales. Nunca al repositorio.
+dataset/
+# Modelos entrenados, particiones y reportes: se generan en Colab/Drive.
+# Los pesos no se versionan (se coordinan con nv-devops).
+artifacts/
+__pycache__/
+.pytest_cache/
