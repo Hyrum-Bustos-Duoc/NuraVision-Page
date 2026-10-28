@@ -26,6 +26,19 @@ const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url')
  * que usa la prueba tambien estan simuladas.
  */
 export async function simularSesionStaff(page: Page) {
+  await simularSesion(page, { es_staff: true })
+}
+
+/**
+ * Igual, pero de una cuenta vinculada a una ficha del equipo
+ * (`app_metadata.profesional_id`) y sin `es_staff`: es la sesion que abre el
+ * panel profesional y a la que 0007 deja leer solo sus propias reservas.
+ */
+export async function simularSesionProfesional(page: Page, profesionalId: number) {
+  await simularSesion(page, { profesional_id: profesionalId })
+}
+
+async function simularSesion(page: Page, appMetadata: Record<string, unknown>) {
   const ref = new URL(urlSupabase()).hostname.split('.')[0]
   const expira = Math.floor(Date.now() / 1000) + 3600
   const usuario = {
@@ -33,7 +46,7 @@ export async function simularSesionStaff(page: Page) {
     aud: 'authenticated',
     role: 'authenticated',
     email: 'staff@nura.test',
-    app_metadata: { es_staff: true },
+    app_metadata: appMetadata,
     user_metadata: { nombre: 'Staff', apellido: 'Nura' },
     created_at: '2026-01-01T00:00:00Z',
   }

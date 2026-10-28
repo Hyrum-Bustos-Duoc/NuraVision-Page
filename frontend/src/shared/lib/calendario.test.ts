@@ -3,6 +3,7 @@ import {
   esFechaISO,
   fechaDesdePartes,
   fechaLegible,
+  hoyEnElEstudio,
   hoyISO,
   inicioDeSemana,
   limitarFecha,
@@ -125,5 +126,24 @@ describe('diasEntre', () => {
     expect(diasEntre('2026-12-20', '2027-01-05')).toBe(16)
     expect(diasEntre('2028-02-28', '2028-03-01')).toBe(2)
     expect(diasEntre('2026-10-08', '2026-10-07')).toBe(-1)
+  })
+})
+
+describe('hoyEnElEstudio', () => {
+  it('usa el calendario de Chile, no el UTC: 22:30 del 8 de octubre ya es 9 en UTC', () => {
+    expect(hoyEnElEstudio(new Date('2026-10-09T01:30:00Z'))).toBe('2026-10-08')
+  })
+
+  it('cambia de dia a medianoche de Chile y no a la de UTC', () => {
+    // Octubre es horario de verano (UTC-3): la medianoche cae a las 03:00 UTC.
+    expect(hoyEnElEstudio(new Date('2026-10-09T02:59:00Z'))).toBe('2026-10-08')
+    expect(hoyEnElEstudio(new Date('2026-10-09T03:00:00Z'))).toBe('2026-10-09')
+    // Junio es horario de invierno (UTC-4): la medianoche cae a las 04:00 UTC.
+    expect(hoyEnElEstudio(new Date('2026-06-15T03:59:00Z'))).toBe('2026-06-14')
+    expect(hoyEnElEstudio(new Date('2026-06-15T04:00:00Z'))).toBe('2026-06-15')
+  })
+
+  it('devuelve un texto que esFechaISO acepta', () => {
+    expect(esFechaISO(hoyEnElEstudio(new Date('2027-01-01T12:00:00Z')))).toBe(true)
   })
 })

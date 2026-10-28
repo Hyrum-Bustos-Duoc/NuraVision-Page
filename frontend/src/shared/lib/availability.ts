@@ -116,54 +116,6 @@ export function getMonthDays(
   return days
 }
 
-export interface ScheduleBlock {
-  start: string
-  end: string
-  minutes: number
-  type: 'libre' | 'bloqueado'
-  label: string
-}
-
-/** Agrupa los tramos libres y bloqueados de un día (para el panel del profesional). */
-export function getScheduleBlocks(
-  dateISO: string,
-  professional: Professional,
-  bookings: Booking[],
-): ScheduleBlock[] {
-  const day = getDayAvailability(professional, dateISO)
-  if (!day?.enabled) return []
-
-  const slots = getSlotsForDate(dateISO, professional, bookings).filter(
-    (s) => s.status !== 'fuera_horario' && s.status !== 'reservado',
-  )
-
-  const blocks: ScheduleBlock[] = []
-
-  for (const slot of slots) {
-    const minutes = timeToMinutes(slot.time)
-    const breakInfo = isWithinBreak(minutes, day.breaks)
-    const type: ScheduleBlock['type'] = slot.status === 'disponible' ? 'libre' : 'bloqueado'
-    const label = breakInfo?.label ?? (type === 'libre' ? 'libre' : 'Bloqueado')
-    const previous = blocks[blocks.length - 1]
-
-    if (previous && previous.label === label && timeToMinutes(previous.end) === minutes) {
-      previous.end = minutesToTime(minutes + STEP_MIN)
-      previous.minutes += STEP_MIN
-      continue
-    }
-
-    blocks.push({
-      start: slot.time,
-      end: minutesToTime(minutes + STEP_MIN),
-      minutes: STEP_MIN,
-      type,
-      label,
-    })
-  }
-
-  return blocks
-}
-
 export interface NextSlot {
   dateISO: string
   time: string
