@@ -236,4 +236,63 @@ test.describe('/perfil', () => {
     await expect(campo(page, 'Nombre y apellido')).toHaveValue('Ana Pérez')
     expect(lecturas.length).toBeGreaterThan(antes)
   })
+  // --- Casos de QA (4.1) ---------------------------------------------------
+
+  test('si refrescar la sesion falla tras guardar, el guardado sigue siendo un exito', async ({ page }) => {
+    const { llamadas } = await abrir(page)
+    // Registrada despues que la de `abrir`: Playwright atiende primero la ultima.
+    await page.route('**/auth/v1/token?grant_type=refresh_token', (route) =>
+      route.fulfill({ status: 500, json: { message: 'boom' } }),
+    )
+    await page.goto('/perfil')
+    await campo(page, 'Teléfono').fill('9 8765 4321')
+    await guardar(page).click()
+    await expect(page.getByText('Perfil actualizado')).toBeVisible()
+    await expect(campo(page, 'Teléfono')).toHaveValue('+56987654321')
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/perfil$/)
+    expect(llamadas).toHaveLength(1)
+  })
+
+  test('sesion expirada al guardar: no hay exito y termina en /login con vuelta a /perfil', async ({ page }) => {
+    // Reloj falso para caducar el token sin esperar una hora. setSystemTime no
+    // dispara los timers, asi el refresco automatico no se adelanta al clic.
+    await page.clock.install()
+    const { llamadas } = await abrir(page)
+    await page.route('**/auth/v1/token?grant_type=refresh_token', (route) =>
+      route.fulfill({
+        status: 400,
+        json: { code: 400, error_code: 'refresh_token_not_found', msg: 'Invalid Refresh Token: Refresh Token Not Found' },
+      }),
+    )
+    await page.route('**/rest/v1/rpc/actualizar_mi_perfil', (route) => {
+      llamadas.push(route.request())
+      // Sin sesion, supabase-js llama con la anon key, y 0020 le revoca execute.
+      return route.fulfill({
+        status: 401,
+        json: { code: '42501', message: 'permission denied for function actualizar_mi_perfil' },
+      })
+    })
+    await page.goto('/perfil')
+    await campo(page, 'Teléfono').fill('9 8765 4321')
+    await page.clock.setSystemTime(Date.now() + 2 * 3600 * 1000)
+    await guardar(page).click()
+
+    await expect(page).toHaveURL(/\/login\?volver=%2Fperfil$/)
+    await expect(page.getByText('Perfil actualizado')).toHaveCount(0)
+    // La llamada salio sin token de usuario: la base no la atribuye a nadie.
+    const autorizaciones = llamadas.map((r) => r.headers()['authorization'] ?? '')
+    expect(autorizaciones.length).toBeGreaterThan(0)
+    expect(autorizaciones.filter((a) => a.endsWith('.firma'))).toEqual([])
+  })
+
+  test('en movil, el nombre del menu lleva a /perfil', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await abrir(page)
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('link', { name: 'Ana Pérez' }).click()
+    await expect(page).toHaveURL(/\/perfil$/)
+    await expect(campo(page, 'Nombre y apellido')).toHaveValue('Ana Pérez')
+  })
 })

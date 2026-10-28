@@ -86,3 +86,65 @@ describe('validarPerfilPropio', () => {
     })
   })
 })
+
+/**
+ * Casos de QA (4.1). Cada uno cubre una rama que los ejemplos de design.md no
+ * tocan: los valores que la spec rechaza en la base deben salir canonicos o
+ * invalidos del front, nunca llegar sin normalizar.
+ */
+describe('normalizarTelefono: frontera con la regex de 0020', () => {
+  it.each([
+    // Los que la spec rechaza en la base salen canonicos del front.
+    ['+56 9 1234 5678', '+56912345678'],
+    ['912345678', '+56912345678'],
+    // Separadores de la lista de design.md y espacios no ASCII (\s de JS).
+    ['9.1234.5678', '+56912345678'],
+    [' 9 1234 5678\t', '+56912345678'],
+    ['+56 2 2345 6789', '+56223456789'],
+    // 9 digitos que empiezan por 56: es un numero local, no un prefijo.
+    ['562345678', '+56562345678'],
+  ])('%j -> %s', (escrito, canonico) => {
+    expect(normalizarTelefono(escrito)).toBe(canonico)
+  })
+
+  it.each([
+    '+56012345678', // primer digito 0
+    '+5491234567', // otro pais
+    '+562345678', // + con 9 digitos: no es un prefijo +56 valido
+    '++56912345678',
+    '0056912345678',
+    '+56 9 1234 56789', // 10 digitos tras el prefijo
+    '９１２３４５６７８', // digitos de ancho completo: [0-9] no los acepta, la base tampoco
+    '9 1234 5678 ext 2',
+  ])('%j es invalido', (escrito) => {
+    expect(normalizarTelefono(escrito)).toBeNull()
+  })
+
+  it('todo canonico que sale cumple la regex de la base', () => {
+    const regexBase = /^\+56[2-9][0-9]{8}$/
+    for (const escrito of ['9 1234 5678', '+56 9 1234-5678', '56912345678', '(2) 2345 6789', '562345678']) {
+      expect(normalizarTelefono(escrito)).toMatch(regexBase)
+    }
+  })
+})
+
+describe('validarPerfilPropio: nombre en el limite', () => {
+  it('121 emojis se rechazan (el limite en puntos de codigo tambien corta por arriba)', () => {
+    expect(validarPerfilPropio({ ...valido, nombre: '💅'.repeat(121) }, HOY)).toEqual({
+      ok: false,
+      errores: { nombre: MENSAJE_PERFIL.nombreLargo },
+    })
+  })
+
+  it('el largo se mide tras recortar: 120 letras con espacios alrededor se aceptan', () => {
+    const r = validarPerfilPropio({ ...valido, nombre: `  ${'a'.repeat(120)}  ` }, HOY)
+    expect(r).toEqual({ ok: true, datos: expect.objectContaining({ nombre: 'a'.repeat(120) }) })
+  })
+
+  it('un nombre de solo espacios no ASCII es vacio (el front recorta mas que btrim)', () => {
+    expect(validarPerfilPropio({ ...valido, nombre: ' \t　' }, HOY)).toEqual({
+      ok: false,
+      errores: { nombre: MENSAJE_PERFIL.nombreVacio },
+    })
+  })
+})
