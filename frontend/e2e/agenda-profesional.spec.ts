@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { simularSesionProfesional } from './fixtures/sesion'
+import { simularSesionProfesional, simularSesionStaff } from './fixtures/sesion'
 
 /**
  * Agenda del panel profesional (NURA-18) leida de la base, no de los datos de
@@ -76,11 +76,15 @@ function filtro(url: URL, columna: string, operador: 'eq' | 'in'): string | null
   return valor.slice(operador.length + 1)
 }
 
-async function simularBase(page: Page, reservas: ReturnType<typeof reservasDePrueba>) {
+async function simularBase(
+  page: Page,
+  reservas: ReturnType<typeof reservasDePrueba>,
+  sesion: (page: Page) => Promise<void> = (p) => simularSesionProfesional(p, MIA),
+) {
   const pedidasReservas: URL[] = []
   let fallarReservas = false
 
-  await simularSesionProfesional(page, MIA)
+  await sesion(page)
   // El vencimiento se calcula con la hora real de Node; con el reloj del
   // navegador fijado, la sesion podria verse vencida e intentar refrescarse.
   await page.addInitScript(() => {
@@ -222,5 +226,92 @@ test.describe('hoy es el día de Chile, no el del dispositivo', () => {
     await page.getByRole('button', { name: 'Mes' }).click()
     await expect(page.getByText('2 reservas', { exact: true })).toBeVisible()
     await expect(page.getByText('1 reserva', { exact: true })).toBeVisible()
+  })
+})
+
+/**
+ * Casos de QA de NURA-115: estados, otra ficha, horas fuera de la jornada y
+ * sesiones sin vinculo. Mismo dia fijo que el bloque anterior (miercoles 28 de
+ * octubre de 2026, jornada 10:00-19:00) para no depender del reloj real.
+ */
+test.describe('agenda: estados, otra ficha y permisos', () => {
+  test.use({ timezoneId: 'America/Santiago', locale: 'es-CL' })
+  const HOY = '2026-10-28'
+
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-28T15:00:00Z'))
+  })
+
+  test('vista día: pendiente, confirmada y completada se muestran; la cancelada no', async ({ page }) => {
+    await simularBase(page, [
+      reserva(MIA, HOY, ['10:00', '11:00'], 'Ana Pendiente', 6, 'pendiente'),
+      reserva(MIA, HOY, ['11:00', '12:00'], 'Bea Confirmada', 6, 'confirmada'),
+      reserva(MIA, HOY, ['12:00', '13:00'], 'Caro Completada', 6, 'completada'),
+      reserva(MIA, HOY, ['13:00', '14:00'], 'Dora Cancelada', 6, 'cancelada'),
+    ])
+
+    await page.goto('/profesional/agenda')
+    await expect(page.getByText('Ana Pendiente')).toBeVisible()
+    await expect(page.getByText('Bea Confirmada')).toBeVisible()
+    await expect(page.getByText('Caro Completada')).toBeVisible()
+    await expect(page.getByText('Dora Cancelada')).toHaveCount(0)
+  })
+
+  test('inicio del panel: el recuento de hoy y "por confirmar" ignoran la cancelada', async ({ page }) => {
+    await simularBase(page, [
+      reserva(MIA, HOY, ['10:00', '11:00'], 'Ana Pendiente', 6, 'pendiente'),
+      reserva(MIA, HOY, ['11:00', '12:00'], 'Bea Confirmada', 6, 'confirmada'),
+      reserva(MIA, HOY, ['13:00', '14:00'], 'Dora Cancelada', 6, 'cancelada'),
+    ])
+
+    await page.goto('/profesional')
+    await expect(page.getByText('2 atenciones programadas')).toBeVisible()
+    await expect(page.getByText('1 por confirmar')).toBeVisible()
+  })
+
+  test('sesión de otra profesional: pide y muestra solo las de su ficha', async ({ page }) => {
+    const base = await simularBase(page, reservasDePrueba(HOY, '2026-10-29'), (p) =>
+      simularSesionProfesional(p, OTRA),
+    )
+
+    await page.goto('/profesional/agenda')
+    await expect(page.getByText('Camila Fuentes')).toBeVisible()
+    await expect(page.getByText('Valentina Rojas')).toHaveCount(0)
+    await expect(page.getByText('Josefa Muñoz')).toHaveCount(0)
+    for (const url of base.pedidasReservas) {
+      expect(url.searchParams.get('profesional_id')).toBe(`eq.${OTRA}`)
+    }
+  })
+
+  test('vista día: una reserva fuera de la jornada declarada se ve igual', async ({ page }) => {
+    await simularBase(page, [
+      reserva(MIA, HOY, ['08:00', '09:00'], 'Elena Temprano', 6, 'confirmada'),
+      reserva(MIA, HOY, ['23:00', '23:59'], 'Fernanda Tarde', 6, 'confirmada'),
+    ])
+
+    await page.goto('/profesional/agenda')
+    await expect(page.getByText('Elena Temprano')).toBeVisible()
+    await expect(page.getByText('Fernanda Tarde')).toBeVisible()
+    await expect(page.getByText('23:00–23:59')).toBeVisible()
+  })
+
+  test('vista día: dos reservas solapadas (doble reserva) aparecen las dos', async ({ page }) => {
+    // Sin constraint de exclusion la base admite dos filas sobre el mismo bloque.
+    await simularBase(page, [
+      reserva(MIA, HOY, ['10:00', '11:00'], 'Gina Uno', 6, 'confirmada'),
+      reserva(MIA, HOY, ['10:00', '11:00'], 'Hilda Dos', 6, 'pendiente'),
+    ])
+
+    await page.goto('/profesional/agenda')
+    await expect(page.getByText('Gina Uno')).toBeVisible()
+    await expect(page.getByText('Hilda Dos')).toBeVisible()
+  })
+
+  test('sesión de personal sin ficha vinculada: no entra al panel profesional', async ({ page }) => {
+    const base = await simularBase(page, reservasDePrueba(HOY, '2026-10-29'), simularSesionStaff)
+
+    await page.goto('/profesional/agenda')
+    await expect(page).toHaveURL(/\/login/)
+    expect(base.pedidasReservas).toHaveLength(0)
   })
 })

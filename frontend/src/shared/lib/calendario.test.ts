@@ -147,3 +147,18 @@ describe('hoyEnElEstudio', () => {
     expect(esFechaISO(hoyEnElEstudio(new Date('2027-01-01T12:00:00Z')))).toBe(true)
   })
 })
+
+describe('hoyEnElEstudio en los cambios de horario de Chile (QA NURA-115)', () => {
+  it('inicio del horario de verano: la medianoche del 6 de septiembre de 2026 no existe', () => {
+    // A las 00:00 (UTC-4) el reloj salta a la 01:00 (UTC-3).
+    expect(hoyEnElEstudio(new Date('2026-09-06T03:59:00Z'))).toBe('2026-09-05')
+    expect(hoyEnElEstudio(new Date('2026-09-06T04:00:00Z'))).toBe('2026-09-06')
+  })
+
+  it('fin del horario de verano: la hora 23 del 4 de abril de 2026 se repite', () => {
+    // A las 00:00 (UTC-3) el reloj vuelve a las 23:00 (UTC-4) del dia anterior.
+    expect(hoyEnElEstudio(new Date('2026-04-05T02:59:00Z'))).toBe('2026-04-04')
+    expect(hoyEnElEstudio(new Date('2026-04-05T03:30:00Z'))).toBe('2026-04-04')
+    expect(hoyEnElEstudio(new Date('2026-04-05T04:00:00Z'))).toBe('2026-04-05')
+  })
+})

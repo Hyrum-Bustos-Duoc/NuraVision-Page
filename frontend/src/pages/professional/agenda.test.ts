@@ -122,3 +122,31 @@ describe('minutosDeJornada', () => {
     expect(minutosDeJornada(profesional, '2026-10-29')).toBe(0)
   })
 })
+
+describe('agenda: casos de borde (QA NURA-115)', () => {
+  const iso = '2026-10-28'
+
+  it('reservasDeAgenda conserva pendiente, confirmada y completada', () => {
+    const estados = ['pendiente', 'confirmada', 'completada'] as const
+    const reservas = estados.map((estado, i) => reserva(iso, `1${i}:00`, `1${i}:30`, { estado }))
+    expect(reservasDeAgenda(reservas).map((r) => r.estado)).toEqual([...estados])
+  })
+
+  it('una reserva que cruza el cierre ocupa la franja fuera de jornada y no deja bloque libre al final', () => {
+    // Jornada 10:00-14:00: la reserva de 13:30 a 14:30 se come el ultimo tramo.
+    const r = reserva(iso, '13:30', '14:30')
+    expect(estadoFranja(profesional, iso, '14:00', 60, [r])).toEqual({ tipo: 'reservada', reserva: r })
+    const libres = bloquesDelDia(profesional, iso, [r]).filter((b) => b.tipo === 'libre')
+    expect(libres.at(-1)).toEqual({ inicio: '13:00', fin: '13:30', minutos: 30, tipo: 'libre', etiqueta: 'libre' })
+  })
+
+  it('una reserva fuera de la jornada no altera los bloques del dia', () => {
+    const r = reserva(iso, '08:00', '09:00')
+    expect(bloquesDelDia(profesional, iso, [r])).toEqual(bloquesDelDia(profesional, iso, []))
+  })
+
+  it('las reservas de otro dia no quitan bloques', () => {
+    const r = reserva('2026-10-27', '10:00', '14:00')
+    expect(bloquesDelDia(profesional, iso, [r])).toEqual(bloquesDelDia(profesional, iso, []))
+  })
+})
