@@ -39,7 +39,7 @@ modifican nada:
 | Paso | Regla | Mensaje |
 |---|---|---|
 | 1 | `auth.uid()` es null | `Tu sesión expiró. Vuelve a iniciar sesión.` |
-| 2 | `nombre := btrim(coalesce(p_nombre, ''))`; vacío | `Necesitamos tu nombre.` |
+| 2 | `nombre := pg_catalog.btrim(coalesce(p_nombre, ''), <blancos>)`; vacío | `Necesitamos tu nombre.` |
 | 3 | `char_length(nombre) > 120` | `El nombre admite hasta 120 caracteres.` |
 | 4 | `telefono := coalesce(p_telefono, '')`; distinto de `''` y no cumple `^\+56[2-9][0-9]{8}$` | `El teléfono debe ser un número chileno de 9 dígitos.` |
 | 5 | `p_fecha_nacimiento` no null y fuera de `1920-01-01 .. current_date` | `La fecha de nacimiento no es válida.` |
@@ -52,6 +52,13 @@ modifican nada:
   navegador).
 - La función no inserta filas de `perfiles`: eso es del trigger de alta.
 - Los mensajes 2 y 5 son idénticos a los de `registrar.usecase.ts` a propósito.
+- `<blancos>` es el mismo conjunto que recorta `String.prototype.trim` en el
+  front: `\t \n \v \f \r`, espacio, U+00A0 (NBSP), U+1680, U+2000–U+200A,
+  U+2028, U+2029, U+202F, U+205F, U+3000 y U+FEFF. Así front y base rechazan y
+  guardan lo mismo. Descartado `btrim(text)` a secas (solo quita `' '`: un nombre
+  de solo tab o NBSP se guardaba; hallazgo de QA del 2026-10-28) y una regex con
+  `\s` o `[[:space:]]` (dependen del locale del servidor). Los blancos interiores
+  se conservan.
 
 ### TypeScript: `frontend/src/shared/types/supabase.ts`
 

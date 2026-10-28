@@ -62,7 +62,16 @@ create function public.actualizar_mi_perfil(
 as $$
 declare
   v_uid      uuid := auth.uid();
-  v_nombre   text := btrim(coalesce(p_nombre, ''));
+  -- Recorta el mismo conjunto que String.prototype.trim del front
+  -- (`validarPerfilPropio`), para que front y base acepten y guarden lo mismo:
+  -- \t \n \v \f \r, espacio, NBSP, U+1680, U+2000..U+200A, U+2028, U+2029,
+  -- U+202F, U+205F, U+3000 y U+FEFF. Lista explicita y no `\s`/[[:space:]]
+  -- en una regex: esas clases dependen del locale del servidor, y la lista no.
+  -- `btrim(text)` a secas solo quita ' ': un nombre de solo tab o NBSP pasaba.
+  v_nombre   text := pg_catalog.btrim(
+                       coalesce(p_nombre, ''),
+                       E'\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff'::text
+                     );
   -- Sin btrim: la base no normaliza el telefono. Lo normaliza el front y aqui
   -- solo se rechaza lo que no sea canonico. '' y no null: mismo criterio que
   -- 0010, `telefono` puede ser NOT NULL en produccion.
@@ -122,9 +131,10 @@ begin
   --   · jsonb_build_object es (variadic "any"); una
   --     `public.jsonb_build_object(text, text, text, text, text, text)` tiene
   --     mas coincidencias exactas y ganaria.
-  -- Ambas correrian como el dueño de esta funcion. btrim(text),
-  -- char_length(text) y los operadores usados si coinciden exactos en
-  -- pg_catalog; coalesce no es una funcion sino sintaxis.
+  -- Ambas correrian como el dueño de esta funcion. char_length(text) y los
+  -- operadores usados si coinciden exactos en pg_catalog; coalesce no es una
+  -- funcion sino sintaxis. btrim(text, text) tambien coincide exacto, pero va
+  -- calificado igual porque su segundo argumento es un literal.
   update auth.users u
      set raw_user_meta_data = coalesce(u.raw_user_meta_data, '{}'::jsonb)
            || pg_catalog.jsonb_build_object(

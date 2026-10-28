@@ -36,7 +36,9 @@ MUST NOT poder ejecutarla una visitante sin sesión.
 - **THEN** falla con `P0001` «No encontramos tu perfil. Escríbenos para revisarlo.» y no se inserta ninguna fila
 
 ### Requirement: Reglas de los campos
-La función SHALL recortar los espacios del nombre y SHALL rechazar con
+La función SHALL recortar del nombre, en ambos bordes, los mismos caracteres
+en blanco que `String.prototype.trim` (espacio, tab, saltos de línea, NBSP y
+demás espacios Unicode) y SHALL rechazar con
 `P0001`, sin modificar nada: un nombre vacío tras recortar o de más de 120
 caracteres; un teléfono que no sea `''` ni cumpla `^\+56[2-9][0-9]{8}$`; y una
 fecha de nacimiento no nula fuera de 1920-01-01 a la fecha actual. Un teléfono
@@ -44,11 +46,11 @@ fecha de nacimiento no nula fuera de 1920-01-01 a la fecha actual. Un teléfono
 como `null`.
 
 #### Scenario: Nombre vacío o solo espacios
-- **WHEN** se llama con `p_nombre` igual a `''`, `'   '` o `null`
+- **WHEN** se llama con `p_nombre` igual a `''`, `'   '`, `null`, `E'\t'`, `E'\n'`, `E'\r'` o `E'\u00a0'` (NBSP)
 - **THEN** falla con «Necesitamos tu nombre.» y la fila no cambia
 
 #### Scenario: Nombre con espacios alrededor
-- **WHEN** se llama con `p_nombre = '  Ana  '`
+- **WHEN** se llama con `p_nombre = '  Ana  '`, o con `'Ana'` rodeado de tab, salto de línea o NBSP
 - **THEN** se guarda `'Ana'`
 
 #### Scenario: Límite de longitud del nombre
