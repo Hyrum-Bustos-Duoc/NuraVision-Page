@@ -111,13 +111,26 @@ begin
   -- `||` mezcla y conserva las demas claves. Solo se toca raw_user_meta_data:
   -- `perfil_al_cambiar_cuenta` escucha `email` y `raw_app_meta_data`, asi que
   -- esta escritura no lo dispara. La fecha viaja como 'YYYY-MM-DD' o JSON null,
-  -- la forma que lee `fecha_nacimiento_de_metadatos` (0016).
+  -- la forma que lee `fecha_nacimiento_de_metadatos` (0016); to_char es strict,
+  -- asi que una fecha null sigue llegando como JSON null.
+  --
+  -- `pg_catalog.` explicito en estas dos llamadas, y solo en ellas: pg_catalog
+  -- se busca antes que `public`, pero eso solo protege cuando la funcion de
+  -- pg_catalog coincide EXACTAMENTE con los tipos. Aqui no ocurre:
+  --   · to_char no tiene version (date, text) en pg_catalog, solo (timestamp…)
+  --     via cast implicito; una `public.to_char(date, text)` plantada ganaria.
+  --   · jsonb_build_object es (variadic "any"); una
+  --     `public.jsonb_build_object(text, text, text, text, text, text)` tiene
+  --     mas coincidencias exactas y ganaria.
+  -- Ambas correrian como el dueño de esta funcion. btrim(text),
+  -- char_length(text) y los operadores usados si coinciden exactos en
+  -- pg_catalog; coalesce no es una funcion sino sintaxis.
   update auth.users u
      set raw_user_meta_data = coalesce(u.raw_user_meta_data, '{}'::jsonb)
-           || jsonb_build_object(
+           || pg_catalog.jsonb_build_object(
                 'nombre',           v_nombre,
                 'telefono',         v_telefono,
-                'fecha_nacimiento', to_char(p_fecha_nacimiento, 'YYYY-MM-DD')
+                'fecha_nacimiento', pg_catalog.to_char(p_fecha_nacimiento::timestamp, 'YYYY-MM-DD')
               )
    where u.id = v_uid;
 
@@ -133,6 +146,11 @@ comment on function public.actualizar_mi_perfil(text, text, date) is
 -- Supabase concede execute a `anon` por privilegios por defecto, no solo via
 -- `public`: hay que nombrarlo. Sin sesion la funcion ya fallaria por auth.uid(),
 -- pero el permiso no debe depender de eso.
+-- Dueño explicito: el supuesto de arriba (UPDATE sobre auth.users) es de
+-- `postgres`. Si quien aplica es `postgres` no cambia nada; si es otro rol, falla
+-- aqui en vez de dejar una funcion que revienta en el segundo UPDATE.
+alter function public.actualizar_mi_perfil(text, text, date) owner to postgres;
+
 revoke all on function public.actualizar_mi_perfil(text, text, date) from public, anon;
 grant execute on function public.actualizar_mi_perfil(text, text, date) to authenticated;
 

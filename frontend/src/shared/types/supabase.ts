@@ -560,6 +560,27 @@ export interface Database {
           total: number
         }[]
       }
+      /**
+       * Unica via por la que una cuenta corrige su propia fila de `perfiles`
+       * (0020). Reemplazo completo: los tres argumentos son obligatorios.
+       * Devuelve una fila; arreglo vacio es un error, no un exito.
+       */
+      actualizar_mi_perfil: {
+        Args: {
+          p_nombre: string
+          /** Canonico `+56XXXXXXXXX` o `''` (sin telefono). */
+          p_telefono: string
+          /** `'YYYY-MM-DD'` o null. */
+          p_fecha_nacimiento: string | null
+        }
+        Returns: {
+          nombre: string
+          /** `''` = sin telefono. */
+          telefono: string
+          /** `'YYYY-MM-DD'` o null. */
+          fecha_nacimiento: string | null
+        }[]
+      }
       /** Idempotente: no revela si el correo ya estaba suscrito (0013). */
       suscribir_newsletter: {
         Args: { p_email: string }
