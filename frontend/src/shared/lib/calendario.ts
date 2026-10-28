@@ -18,6 +18,13 @@ export function esFechaISO(valor: string): boolean {
   return toISODate(parseISODate(valor)) === valor
 }
 
+/**
+ * Cumpleaños mas antiguo que se acepta, en el registro y en «Mi perfil». Es el
+ * mismo minimo del check de 0016 y de `actualizar_mi_perfil` (0020): vive en
+ * shared porque lo usan dos modulos (auth y usuarios). El maximo es hoy.
+ */
+export const FECHA_NACIMIENTO_MINIMA = '1920-01-01'
+
 /** Hoy en la zona horaria de quien usa la pagina, no en UTC. */
 export function hoyISO(ahora: Date = new Date()): string {
   return toISODate(ahora)

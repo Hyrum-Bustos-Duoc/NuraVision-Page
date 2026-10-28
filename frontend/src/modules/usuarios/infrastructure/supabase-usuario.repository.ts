@@ -1,7 +1,7 @@
 import { supabase } from '@/shared/infrastructure/supabase/client'
 import type { UsuarioRepository } from '../domain/usuario.repository'
-import type { DatosPerfil, Usuario } from '../domain/usuario.types'
-import { toUsuario } from './usuario.mapper'
+import type { DatosPerfil, DatosPerfilPropio, DatosPersonales, Usuario } from '../domain/usuario.types'
+import { toArgumentosActualizarMiPerfil, toDatosPersonales, toUsuario } from './usuario.mapper'
 
 const TABLA = 'perfiles'
 
@@ -45,6 +45,39 @@ class SupabasePerfilRepository implements UsuarioRepository {
     }
 
     return toUsuario(data[0])
+  }
+
+  async obtenerPropio(id: string): Promise<Usuario> {
+    // `.eq('id', id)` sobra para la clienta —«Lectura del perfil propio» (0010)
+    // solo le devuelve su fila—, pero no para el personal, que las lee todas.
+    const { data, error } = await supabase.from(TABLA).select('*').eq('id', id)
+
+    if (error) throw new Error('No pudimos cargar tu perfil. Inténtalo de nuevo.')
+    const fila = data?.[0]
+    if (!fila) throw new Error('No encontramos tu perfil. Escríbenos para revisarlo.')
+    return toUsuario(fila)
+  }
+
+  async actualizarPropio(datos: DatosPerfilPropio): Promise<DatosPersonales> {
+    const { data, error } = await supabase.rpc(
+      'actualizar_mi_perfil',
+      toArgumentosActualizarMiPerfil(datos),
+    )
+
+    // P0001 es como la funcion rechaza (0020) y su mensaje ya esta escrito
+    // para la clienta. Cualquier otra cosa —red, permisos, la migracion sin
+    // aplicar— no le dice nada que pueda hacer, asi que va el generico.
+    if (error) {
+      throw new Error(
+        error.code === 'P0001' ? error.message : 'No pudimos guardar tus datos. Inténtalo de nuevo.',
+      )
+    }
+
+    // `returns table` llega como arreglo. Vacio no es un exito: nada confirma
+    // que se haya guardado.
+    const fila = data?.[0]
+    if (!fila) throw new Error('La base no confirmó el cambio. Inténtalo de nuevo.')
+    return toDatosPersonales(fila)
   }
 
   async eliminarPerfil(id: string): Promise<void> {

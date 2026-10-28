@@ -61,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(() => cerrarSesion(authRepository), [])
 
+  const refrescarSesion = useCallback(() => authRepository.refrescarSesion(), [])
+
   const value = useMemo<AuthValue>(
     () => ({
       usuario: sesion.fase === 'listo' ? sesion.usuario : null,
@@ -68,8 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signInWithPassword,
       signOut,
+      refrescarSesion,
     }),
-    [sesion, signUp, signInWithPassword, signOut],
+    [sesion, signUp, signInWithPassword, signOut, refrescarSesion],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

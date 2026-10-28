@@ -1,4 +1,4 @@
-import type { DatosPerfil, NuevaCuenta, Usuario } from './usuario.types'
+import type { DatosPerfil, DatosPerfilPropio, DatosPersonales, NuevaCuenta, Usuario } from './usuario.types'
 
 /** Puerto de lectura y correccion de perfiles. Todo pasa por RLS. */
 export interface UsuarioRepository {
@@ -13,6 +13,19 @@ export interface UsuarioRepository {
    * poder distinguir "guardado" de "denegado".
    */
   actualizar(id: string, datos: DatosPerfil): Promise<Usuario>
+
+  /**
+   * El perfil de la propia sesion. Lanza «No encontramos tu perfil…» si no hay
+   * fila: para la clienta no existe un estado "vacio" que mostrar.
+   */
+  obtenerPropio(id: string): Promise<Usuario>
+
+  /**
+   * Reemplaza los datos personales de la propia sesion (no recibe id: la base
+   * usa `auth.uid()`). Devuelve lo que quedo guardado. Un rechazo de la base
+   * llega como Error con un mensaje para mostrar.
+   */
+  actualizarPropio(datos: DatosPerfilPropio): Promise<DatosPersonales>
 
   /**
    * Borra la fila de `perfiles`, y solo esa.

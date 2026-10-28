@@ -1,4 +1,4 @@
-import { toUsuario, type PerfilRow } from './usuario.mapper'
+import { toArgumentosActualizarMiPerfil, toDatosPersonales, toUsuario, type PerfilRow } from './usuario.mapper'
 
 const fila: PerfilRow = {
   id: 'u1',
@@ -30,5 +30,31 @@ describe('toUsuario: fecha de nacimiento', () => {
     for (const sucio of ['1990-02-30', '1990-03-04T00:00:00Z', '04-03-1990', '']) {
       expect(toUsuario({ ...fila, fecha_nacimiento: sucio }).fechaNacimiento).toBeNull()
     }
+  })
+})
+
+describe('toArgumentosActualizarMiPerfil', () => {
+  it('devuelve exactamente los tres argumentos de la funcion, sin rol', () => {
+    expect(
+      toArgumentosActualizarMiPerfil({ nombre: 'Ana', telefono: '+56912345678', fechaNacimiento: '1990-03-04' }),
+    ).toStrictEqual({ p_nombre: 'Ana', p_telefono: '+56912345678', p_fecha_nacimiento: '1990-03-04' })
+  })
+})
+
+describe('toDatosPersonales', () => {
+  it("telefono '' es null, como en toUsuario", () => {
+    expect(toDatosPersonales({ nombre: 'Ana', telefono: '', fecha_nacimiento: null })).toEqual({
+      nombre: 'Ana',
+      telefono: null,
+      fechaNacimiento: null,
+    })
+  })
+
+  it('pasa el telefono canonico y la fecha tal cual', () => {
+    expect(toDatosPersonales({ nombre: 'Ana', telefono: '+56987654321', fecha_nacimiento: '1990-03-04' })).toEqual({
+      nombre: 'Ana',
+      telefono: '+56987654321',
+      fechaNacimiento: '1990-03-04',
+    })
   })
 })

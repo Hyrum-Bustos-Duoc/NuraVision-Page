@@ -2,7 +2,7 @@
  * Punto de entrada de la capa de aplicacion del modulo auth.
  * La UI importa desde aqui y no desde los archivos sueltos.
  */
-export { registrar, FECHA_NACIMIENTO_MINIMA } from './registrar.usecase'
+export { registrar } from './registrar.usecase'
 export { iniciarSesion } from './iniciar-sesion.usecase'
 export { cerrarSesion } from './cerrar-sesion.usecase'
 export type {

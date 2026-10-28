@@ -59,6 +59,24 @@ export interface DatosPerfil {
 }
 
 /**
+ * Lo que una cuenta corrige de si misma desde «Mi perfil», ya normalizado.
+ *
+ * No reutiliza `DatosPerfil` a proposito: ese incluye `rol`, y el objeto que
+ * viaja desde la clienta no debe poder ni representarlo. Reemplaza los tres
+ * campos en cada guardado (no es un parche). `telefono` es el canonico
+ * `+56XXXXXXXXX` o `''` (sin telefono), por lo mismo que en `DatosPerfil`.
+ */
+export interface DatosPerfilPropio {
+  nombre: string
+  telefono: string
+  /** 'YYYY-MM-DD' o `null` (sin cumpleaños). */
+  fechaNacimiento: string | null
+}
+
+/** Los tres datos personales tal como quedaron guardados, leidos como en `Usuario`. */
+export type DatosPersonales = Pick<Usuario, 'nombre' | 'telefono' | 'fechaNacimiento'>
+
+/**
  * Lo que hace falta para dar de alta una cuenta.
  *
  * No se puede hacer desde el navegador: `auth.admin.createUser` exige la

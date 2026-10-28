@@ -29,7 +29,7 @@ tarea tiene un solo dueño y toca una sola ruta. El contrato está en
     detenerse y reportar (ver «Supuesto a verificar» en `design.md`).
   Depende de: nada.
 
-- [ ] 1.2 **(nv-rls-auditor)** Auditar 1.1: `security definer` con
+- [x] 1.2 **(nv-rls-auditor)** Auditar 1.1: `security definer` con
   `search_path` fijo; la función solo escribe las tres columnas y solo la fila
   de `auth.uid()`; no hay forma de pasarle otro id; `execute` revocado a
   `public` y `anon`; la escritura en `auth.users` solo toca
@@ -41,19 +41,25 @@ tarea tiene un solo dueño y toca una sola ruta. El contrato está en
 
 ## 2. Tipos
 
-- [ ] 2.1 **(nv-contracts)** `Functions.actualizar_mi_perfil` en
+- [x] 2.1 **(nv-contracts)** `Functions.actualizar_mi_perfil` en
   `frontend/src/shared/types/supabase.ts` con los `Args` y `Returns` de
   `design.md`.
   Criterios:
   - `supabase.rpc('actualizar_mi_perfil', { p_nombre: 'x', p_telefono: '' })`
     sin `p_fecha_nacimiento` no compila.
-  - Pasar `p_rol` o cualquier argumento extra no compila.
+  - El mapper de argumentos, con tipo de retorno
+    `Database['public']['Functions']['actualizar_mi_perfil']['Args']`, no
+    compila con `p_rol` ni con otra clave de más. (Reescrito el 2026-10-28:
+    `rpc()` de supabase-js 2.109.0 infiere `Args` del objeto pasado y no
+    rechaza claves de más en una llamada directa; por eso 3.1 nunca escribe
+    el objeto literal dentro de `rpc()`. No es un riesgo de seguridad:
+    PostgREST no encuentra una función con un argumento extra.)
   - `npx tsc --noEmit -p tsconfig.app.json` en verde.
   Depende de: 1.1.
 
 ## 3. Frontend
 
-- [ ] 3.1 **(nv-frontend)** `/perfil` con la sesión real, según «Comportamiento
+- [x] 3.1 **(nv-frontend)** `/perfil` con la sesión real, según «Comportamiento
   de `/perfil`» de `design.md`: lectura de la fila propia de `perfiles`
   reutilizando `Usuario` y su mapper, guardado por la función, normalización
   del teléfono, validación con los mismos mensajes que la base, correo
