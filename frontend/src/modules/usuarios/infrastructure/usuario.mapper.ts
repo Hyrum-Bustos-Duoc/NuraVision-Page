@@ -32,6 +32,18 @@ export function toDatosPersonales(fila: ActualizarMiPerfil['Returns'][number]): 
   }
 }
 
+/**
+ * Fila propia de `perfiles` -> valores iniciales de «Mi perfil».
+ *
+ * No toma el nombre de `toUsuario`: su 'Sin nombre' es texto para pintar en un
+ * listado, y como valor de un campo editable acabaria guardado en la base. Aqui
+ * llega recortado y vacio si lo esta, para que la validacion pida el nombre.
+ */
+export function toPerfilPropio(row: PerfilRow): DatosPersonales {
+  const { telefono, fechaNacimiento } = toUsuario(row)
+  return { nombre: row.nombre.trim(), telefono, fechaNacimiento }
+}
+
 /** Fila de `perfiles` -> entidad de dominio. */
 export function toUsuario(row: PerfilRow): Usuario {
   return {

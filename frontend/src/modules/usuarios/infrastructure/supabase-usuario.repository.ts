@@ -1,7 +1,7 @@
 import { supabase } from '@/shared/infrastructure/supabase/client'
 import type { UsuarioRepository } from '../domain/usuario.repository'
 import type { DatosPerfil, DatosPerfilPropio, DatosPersonales, Usuario } from '../domain/usuario.types'
-import { toArgumentosActualizarMiPerfil, toDatosPersonales, toUsuario } from './usuario.mapper'
+import { toArgumentosActualizarMiPerfil, toDatosPersonales, toPerfilPropio, toUsuario } from './usuario.mapper'
 
 const TABLA = 'perfiles'
 
@@ -47,7 +47,7 @@ class SupabasePerfilRepository implements UsuarioRepository {
     return toUsuario(data[0])
   }
 
-  async obtenerPropio(id: string): Promise<Usuario> {
+  async obtenerPropio(id: string): Promise<DatosPersonales> {
     // `.eq('id', id)` sobra para la clienta —«Lectura del perfil propio» (0010)
     // solo le devuelve su fila—, pero no para el personal, que las lee todas.
     const { data, error } = await supabase.from(TABLA).select('*').eq('id', id)
@@ -55,7 +55,7 @@ class SupabasePerfilRepository implements UsuarioRepository {
     if (error) throw new Error('No pudimos cargar tu perfil. Inténtalo de nuevo.')
     const fila = data?.[0]
     if (!fila) throw new Error('No encontramos tu perfil. Escríbenos para revisarlo.')
-    return toUsuario(fila)
+    return toPerfilPropio(fila)
   }
 
   async actualizarPropio(datos: DatosPerfilPropio): Promise<DatosPersonales> {

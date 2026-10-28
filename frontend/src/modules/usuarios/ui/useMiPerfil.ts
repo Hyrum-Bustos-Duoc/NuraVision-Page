@@ -3,8 +3,8 @@ import {
   actualizarMiPerfil,
   obtenerMiPerfil,
   type BorradorPerfil,
+  type DatosPersonales,
   type ResultadoGuardarPerfil,
-  type Usuario,
 } from '../application'
 import { usuarioRepository } from '../infrastructure/supabase-usuario.repository'
 
@@ -15,7 +15,7 @@ import { usuarioRepository } from '../infrastructure/supabase-usuario.repository
 export type EstadoMiPerfil =
   | { fase: 'cargando' }
   | { fase: 'error'; mensaje: string }
-  | { fase: 'listo'; perfil: Usuario }
+  | { fase: 'listo'; perfil: DatosPersonales }
 
 /**
  * Perfil de la propia sesion y su guardado.

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { UsuarioRepository } from '@/modules/usuarios/domain/usuario.repository'
 import type { PerfilRow } from '@/modules/usuarios/infrastructure/usuario.mapper'
-import { toUsuario } from '@/modules/usuarios/infrastructure/usuario.mapper'
+import { toPerfilPropio } from '@/modules/usuarios/infrastructure/usuario.mapper'
 import { ToastProvider } from '@/shared/state/Toast'
 import Profile from './Profile'
 
@@ -46,7 +46,7 @@ const FILA: PerfilRow = {
 }
 
 function montar(fila: Partial<PerfilRow> = {}) {
-  obtenerPropio.mockResolvedValue(toUsuario({ ...FILA, ...fila }))
+  obtenerPropio.mockResolvedValue(toPerfilPropio({ ...FILA, ...fila }))
   render(
     <MemoryRouter>
       <ToastProvider>
@@ -133,15 +133,17 @@ describe('/perfil (componente)', () => {
   })
 
   /**
-   * FALLO ABIERTO (datos sucios). `toUsuario` pinta 'Sin nombre' cuando la fila
-   * tiene nombre vacio, y la pantalla usa ese texto de relleno como valor del
-   * campo: guardar sin tocar el nombre escribe 'Sin nombre' en `perfiles` y en
-   * `user_metadata`. Lo esperado es el campo vacio y «Necesitamos tu nombre.».
-   * `it.fails` mantiene la suite en verde mientras el fallo siga; cuando se
-   * arregle, este test empezara a fallar y habra que cambiarlo a `it`.
+   * Datos sucios: el 'Sin nombre' de `toUsuario` es relleno para listados. Si
+   * llegara al campo, guardar sin tocarlo lo escribiria en `perfiles`.
    */
-  it.fails('una fila con nombre vacio no precarga el texto de relleno "Sin nombre"', async () => {
+  it('una fila con nombre vacio no precarga el texto de relleno "Sin nombre"', async () => {
     montar({ nombre: '' })
-    expect(await campo('Nombre y apellido')).toHaveValue('')
+    const nombre = await campo('Nombre y apellido')
+    expect(nombre).toHaveValue('')
+
+    await userEvent.click(boton())
+    expect(nombre).toHaveAccessibleDescription('Necesitamos tu nombre.')
+    expect(nombre).toHaveFocus()
+    expect(actualizarPropio).not.toHaveBeenCalled()
   })
 })

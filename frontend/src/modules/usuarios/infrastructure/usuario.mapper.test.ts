@@ -1,4 +1,4 @@
-import { toArgumentosActualizarMiPerfil, toDatosPersonales, toUsuario, type PerfilRow } from './usuario.mapper'
+import { toArgumentosActualizarMiPerfil, toDatosPersonales, toPerfilPropio, toUsuario, type PerfilRow } from './usuario.mapper'
 
 const fila: PerfilRow = {
   id: 'u1',
@@ -30,6 +30,25 @@ describe('toUsuario: fecha de nacimiento', () => {
     for (const sucio of ['1990-02-30', '1990-03-04T00:00:00Z', '04-03-1990', '']) {
       expect(toUsuario({ ...fila, fecha_nacimiento: sucio }).fechaNacimiento).toBeNull()
     }
+  })
+})
+
+describe('toPerfilPropio', () => {
+  it('un nombre vacio llega vacio, sin el relleno de los listados', () => {
+    expect(toUsuario({ ...fila, nombre: '   ' }).nombre).toBe('Sin nombre')
+    expect(toPerfilPropio({ ...fila, nombre: '   ' })).toEqual({
+      nombre: '',
+      telefono: null,
+      fechaNacimiento: '1990-03-04',
+    })
+  })
+
+  it('recorta el nombre y normaliza el telefono como toUsuario', () => {
+    expect(toPerfilPropio({ ...fila, nombre: ' Ana ', telefono: '  ' })).toEqual({
+      nombre: 'Ana',
+      telefono: null,
+      fechaNacimiento: '1990-03-04',
+    })
   })
 })
 

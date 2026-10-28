@@ -1,10 +1,10 @@
 import { hoyISO } from '@/shared/lib/calendario'
 import type { UsuarioRepository } from '../domain/usuario.repository'
-import type { DatosPersonales, Usuario } from '../domain/usuario.types'
+import type { DatosPersonales } from '../domain/usuario.types'
 import { validarPerfilPropio, type BorradorPerfil, type ErroresPerfil } from '../domain/usuario.reglas'
 
 /** El perfil de la propia sesion, para «Mi perfil». */
-export async function obtenerMiPerfil(repo: UsuarioRepository, id: string): Promise<Usuario> {
+export async function obtenerMiPerfil(repo: UsuarioRepository, id: string): Promise<DatosPersonales> {
   return repo.obtenerPropio(id)
 }
 

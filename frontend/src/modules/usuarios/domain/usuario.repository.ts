@@ -17,8 +17,11 @@ export interface UsuarioRepository {
   /**
    * El perfil de la propia sesion. Lanza «No encontramos tu perfil…» si no hay
    * fila: para la clienta no existe un estado "vacio" que mostrar.
+   *
+   * Devuelve los datos editables, no un `Usuario`: el nombre llega crudo (vacio
+   * si lo esta), sin el relleno de los listados, porque es el valor del campo.
    */
-  obtenerPropio(id: string): Promise<Usuario>
+  obtenerPropio(id: string): Promise<DatosPersonales>
 
   /**
    * Reemplaza los datos personales de la propia sesion (no recibe id: la base

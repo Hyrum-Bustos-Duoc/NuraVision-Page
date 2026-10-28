@@ -8,7 +8,7 @@ export { crearCuenta } from './crear-cuenta.usecase'
 export { eliminarUsuario } from './eliminar-usuario.usecase'
 export { actualizarMiPerfil, obtenerMiPerfil, type ResultadoGuardarPerfil } from './mi-perfil.usecase'
 
-export type { Usuario, DatosPerfil, NuevaCuenta, UsuarioRol } from '../domain/usuario.types'
+export type { Usuario, DatosPerfil, DatosPersonales, NuevaCuenta, UsuarioRol } from '../domain/usuario.types'
 export type { BorradorPerfil, CampoPerfil, ErroresPerfil } from '../domain/usuario.reglas'
 export { validarPerfilPropio } from '../domain/usuario.reglas'
 export { ETIQUETA_ROL, ROLES } from '../domain/usuario.types'

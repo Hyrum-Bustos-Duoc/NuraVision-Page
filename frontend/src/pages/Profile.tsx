@@ -5,8 +5,8 @@ import {
   validarPerfilPropio,
   type BorradorPerfil,
   type CampoPerfil,
+  type DatosPersonales,
   type ErroresPerfil,
-  type Usuario,
 } from '@/modules/usuarios/application'
 import { useMiPerfil } from '@/modules/usuarios/ui/useMiPerfil'
 import { FECHA_NACIMIENTO_MINIMA, hoyISO, sumarMeses } from '@/shared/lib/calendario'
@@ -82,7 +82,7 @@ function FormularioPerfil({
   guardar,
   refrescarSesion,
 }: {
-  perfil: Usuario
+  perfil: DatosPersonales
   email: string
   guardar: ReturnType<typeof useMiPerfil>['guardar']
   refrescarSesion: () => Promise<void>
