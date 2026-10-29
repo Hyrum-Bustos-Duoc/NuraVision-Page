@@ -337,6 +337,30 @@ test.describe('/perfil', () => {
     expect(await page.evaluate(() => window.sessionStorage.getItem('nuravision:borrador-perfil'))).toBeNull()
   })
 
+  test('JWT que la base da por vencido y el navegador no (reloj atrasado): conserva lo escrito sin toast', async ({
+    page,
+  }) => {
+    // PostgREST valida `exp` con su reloj; supabase-js, con el del navegador.
+    // Con el navegador atrasado la llamada sale con el token de la clienta y
+    // vuelve 401 PGRST303, sin que supabase-js cierre la sesion: no hay
+    // desmontaje ni viaje al login, el formulario sigue en pantalla.
+    const ctx = await abrir(page, {
+      rpc: { status: 401, json: { code: 'PGRST303', message: 'JWT expired', details: null, hint: null } },
+    })
+    await page.goto('/perfil')
+    await campo(page, 'Teléfono').fill('9 8765 4321')
+    await guardar(page).click()
+
+    await expect(page.getByRole('alert')).toContainText('Tu sesión expiró. Vuelve a iniciar sesión.')
+    await expect(page.getByText('Perfil actualizado')).toHaveCount(0)
+    await expect(campo(page, 'Teléfono')).toHaveValue('9 8765 4321')
+    await expect(page).toHaveURL(/\/perfil$/)
+    expect(ctx.llamadas.map((r) => r.headers()['authorization'] ?? '').every((a) => a.endsWith('.firma'))).toBe(true)
+    // Y el borrador queda guardado para esta cuenta por si recarga o vuelve a entrar.
+    const crudo = await page.evaluate(() => window.sessionStorage.getItem('nuravision:borrador-perfil'))
+    expect(JSON.parse(crudo ?? 'null')).toMatchObject({ usuarioId: ID, borrador: { telefono: '9 8765 4321' } })
+  })
+
   test('en movil, el nombre del menu lleva a /perfil', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await abrir(page)
