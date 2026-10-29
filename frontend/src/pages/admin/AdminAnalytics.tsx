@@ -1,15 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { CalendarRange } from 'lucide-react'
-import { TODAY_ISO } from '@/shared/data/seed'
+import {
+  problemaDelRango,
+  rangoDelPreset,
+  tasaCancelacion,
+  type PresetRango,
+  type RangoFechas,
+} from '@/modules/admin/application'
+import { useIndicadores } from '@/modules/admin/ui/useIndicadores'
 import { serviceCategories } from '@/modules/servicios/domain/serviceCategories'
-import { useAppState } from '@/shared/state/AppState'
-import { Card, FilterPills } from '@/shared/ui/ui'
-import { formatLongDate, formatPrice } from '@/shared/lib/format'
+import { useServiciosGestion } from '@/modules/servicios/ui/useServiciosGestion'
+import { hoyEnElEstudio } from '@/shared/lib/calendario'
+import { formatLongDate, formatPrice, MONTHS_SHORT } from '@/shared/lib/format'
+import { Button, Card, EmptyState, FilterPills } from '@/shared/ui/ui'
 import { contenedorPanel, controlFiltro } from '@/shared/ui/nv-estilos'
 
-type PresetId = '30d' | '3m' | '6m' | 'anio' | 'personalizado'
+type Periodo = PresetRango | 'personalizado'
 
-const PRESETS: { value: PresetId; label: string }[] = [
+const PERIODOS: { value: Periodo; label: string }[] = [
   { value: '30d', label: 'Últimos 30 días' },
   { value: '3m', label: 'Últimos 3 meses' },
   { value: '6m', label: 'Últimos 6 meses' },
@@ -17,86 +25,27 @@ const PRESETS: { value: PresetId; label: string }[] = [
   { value: 'personalizado', label: 'Personalizado' },
 ]
 
-const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-
-/** Rango de fechas del preset, tomando "hoy" como el día de referencia del sistema. */
-function rangeForPreset(preset: PresetId): { from: string; to: string } {
-  const to = new Date(`${TODAY_ISO}T00:00:00`)
-  const from = new Date(to)
-  if (preset === '30d') from.setDate(from.getDate() - 30)
-  else if (preset === '3m') from.setMonth(from.getMonth() - 3)
-  else if (preset === '6m') from.setMonth(from.getMonth() - 6)
-  else if (preset === 'anio') from.setMonth(0, 1)
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
-}
-
 export default function AdminAnalytics() {
-  const { services, professionals, bookings } = useAppState()
-  const [preset, setPreset] = useState<PresetId>('6m')
-  const [custom, setCustom] = useState(() => rangeForPreset('6m'))
-
-  const range = preset === 'personalizado' ? custom : rangeForPreset(preset)
-  const invalidRange = range.from > range.to
-
-  const inRange = useMemo(
-    () =>
-      invalidRange
-        ? []
-        : bookings.filter((b) => b.dateISO >= range.from && b.dateISO <= range.to),
-    [bookings, range.from, range.to, invalidRange],
+  // El dia de Chile, no el del dispositivo: los presets terminan hoy.
+  const hoy = hoyEnElEstudio()
+  const [periodo, setPeriodo] = useState<Periodo>('6m')
+  const [personalizado, setPersonalizado] = useState<RangoFechas>(() =>
+    rangoDelPreset('6m', hoy),
   )
 
-  const stats = useMemo(() => {
-    const cancelled = inRange.filter((b) => b.status === 'cancelada')
-    const billable = inRange.filter((b) => b.status !== 'cancelada')
-    return {
-      total: inRange.length,
-      ingresos: billable.reduce((sum, b) => sum + b.price, 0),
-      clientes: new Set(inRange.map((b) => b.clientName)).size,
-      cancelacion: inRange.length ? (cancelled.length / inRange.length) * 100 : 0,
-    }
-  }, [inRange])
+  const rango = periodo === 'personalizado' ? personalizado : rangoDelPreset(periodo, hoy)
+  const problema = problemaDelRango(rango)
 
-  /** Reservas por mes dentro del rango, en orden cronológico. */
-  const trend = useMemo(() => {
-    const buckets = new Map<string, number>()
-    for (const b of inRange) {
-      const key = b.dateISO.slice(0, 7)
-      buckets.set(key, (buckets.get(key) ?? 0) + 1)
-    }
-    return [...buckets.entries()]
-      .sort(([a], [z]) => a.localeCompare(z))
-      .map(([key, value]) => ({
-        key,
-        value,
-        label: `${MONTHS_SHORT[Number(key.slice(5, 7)) - 1]} ${key.slice(2, 4)}`,
-      }))
-  }, [inRange])
+  // Con el rango invalido no se consulta: el aviso ya explica que corregir.
+  const { indicadores, cargando, error, recargar } = useIndicadores(problema ? null : rango)
+  // El catalogo no depende del rango y no pasa por la funcion: la categoria se
+  // normaliza en el mapper de servicios, y repetirla en SQL la desincronizaria.
+  const catalogo = useServiciosGestion()
 
-  const topServices = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const b of inRange) counts.set(b.serviceId, (counts.get(b.serviceId) ?? 0) + 1)
-    return [...counts.entries()]
-      .map(([id, count]) => ({ id, count, name: services.find((s) => s.id === id)?.name ?? id }))
-      .sort((a, z) => z.count - a.count)
-      .slice(0, 6)
-  }, [inRange, services])
-
-  const topProfessionals = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const b of inRange) counts.set(b.professionalId, (counts.get(b.professionalId) ?? 0) + 1)
-    return [...counts.entries()]
-      .map(([id, count]) => ({
-        id,
-        count,
-        name: professionals.find((p) => p.id === id)?.name ?? 'Profesional retirado',
-      }))
-      .sort((a, z) => z.count - a.count)
-  }, [inRange, professionals])
-
-  const maxTrend = Math.max(1, ...trend.map((m) => m.value))
-  const maxService = Math.max(1, ...topServices.map((s) => s.count))
-  const maxPro = Math.max(1, ...topProfessionals.map((p) => p.count))
+  const maxMes = Math.max(1, ...(indicadores?.porMes.map((m) => m.reservas) ?? []))
+  const topServicios = indicadores?.porServicio.slice(0, 6) ?? []
+  const maxServicio = Math.max(1, ...topServicios.map((s) => s.reservas))
+  const maxProfesional = Math.max(1, ...(indicadores?.porProfesional.map((p) => p.reservas) ?? []))
 
   return (
     <div className={contenedorPanel}>
@@ -112,25 +61,26 @@ export default function AdminAnalytics() {
         </div>
         <div className="mt-3">
           <FilterPills
-            options={PRESETS}
-            value={preset}
-            onChange={(v) => {
-              const next = v as PresetId
+            options={PERIODOS}
+            value={periodo}
+            onChange={(siguiente) => {
               // Al pasar a personalizado se parte del rango que ya se estaba viendo.
-              if (next === 'personalizado') setCustom(rangeForPreset(preset))
-              setPreset(next)
+              if (siguiente === 'personalizado' && periodo !== 'personalizado') {
+                setPersonalizado(rangoDelPreset(periodo, hoy))
+              }
+              setPeriodo(siguiente)
             }}
           />
         </div>
 
-        {preset === 'personalizado' && (
+        {periodo === 'personalizado' && (
           <div className="mt-4 flex flex-wrap items-end gap-4">
             <label className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
               Desde
               <input
                 type="date"
-                value={custom.from}
-                onChange={(e) => setCustom({ ...custom, from: e.target.value })}
+                value={personalizado.desde}
+                onChange={(e) => setPersonalizado({ ...personalizado, desde: e.target.value })}
                 className={`${controlFiltro} mt-1.5 block px-4`}
               />
             </label>
@@ -138,97 +88,149 @@ export default function AdminAnalytics() {
               Hasta
               <input
                 type="date"
-                value={custom.to}
-                onChange={(e) => setCustom({ ...custom, to: e.target.value })}
+                value={personalizado.hasta}
+                onChange={(e) => setPersonalizado({ ...personalizado, hasta: e.target.value })}
                 className={`${controlFiltro} mt-1.5 block px-4`}
               />
             </label>
           </div>
         )}
 
-        <p className="mt-3 text-xs text-muted first-letter:uppercase">
-          {invalidRange
-            ? 'La fecha inicial debe ser anterior a la final.'
-            : `${formatLongDate(range.from)} — ${formatLongDate(range.to)}`}
+        <p className="mt-3 text-xs text-muted first-letter:uppercase" aria-live="polite">
+          {problema ?? `${formatLongDate(rango.desde)} — ${formatLongDate(rango.hasta)}`}
         </p>
       </Card>
 
-      {invalidRange || stats.total === 0 ? (
+      {problema && (
         <Card className="mt-6 p-10 text-center">
-          <p className="font-medium text-ink">
-            {invalidRange ? 'El rango de fechas no es válido' : 'Sin datos en este período'}
-          </p>
+          <p className="font-medium text-ink">El rango de fechas no es válido</p>
+          <p className="mt-2 text-sm text-muted">Corrige las fechas para ver la información.</p>
+        </Card>
+      )}
+
+      {!problema && cargando && (
+        <Card className="mt-6 p-10 text-center">
+          <p className="text-sm text-muted">Cargando indicadores…</p>
+        </Card>
+      )}
+
+      {!problema && error && (
+        <div className="mt-6">
+          <EmptyState
+            title="No se pudieron cargar los indicadores"
+            description={error}
+            action={
+              <Button variant="outline" onClick={recargar}>
+                Reintentar
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      {indicadores && indicadores.reservas === 0 && (
+        <Card className="mt-6 p-10 text-center">
+          <p className="font-medium text-ink">Sin datos en este período</p>
           <p className="mt-2 text-sm text-muted">
-            {invalidRange
-              ? 'Corrige las fechas para ver la información.'
-              : 'No se registraron reservas entre las fechas seleccionadas. Prueba con un rango más amplio.'}
+            No se registraron reservas entre las fechas seleccionadas. Prueba con un rango más
+            amplio.
           </p>
         </Card>
-      ) : (
+      )}
+
+      {indicadores && indicadores.reservas > 0 && (
         <>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label="Reservas" value={String(stats.total)} />
-            <Metric label="Ingresos" value={formatPrice(stats.ingresos)} />
-            <Metric label="Clientes distintos" value={String(stats.clientes)} />
-            <Metric label="Tasa de cancelación" value={`${stats.cancelacion.toFixed(1)}%`} />
+            <Metric label="Reservas" value={String(indicadores.reservas)} />
+            <Metric label="Ingresos estimados" value={formatPrice(indicadores.ingresosEstimados)} />
+            <Metric label="Clientas distintas" value={String(indicadores.clientasDistintas)} />
+            <Metric
+              label="Tasa de cancelación"
+              value={`${tasaCancelacion(indicadores.porEstado.cancelada, indicadores.reservas).toFixed(1)}%`}
+            />
           </div>
+          <p className="mt-2 text-xs text-muted">
+            Ingresos estimados: precio acordado de las reservas no canceladas del período,
+            incluidas las pendientes y las que aún no ocurren. No es dinero cobrado.
+          </p>
 
           <Card className="mt-6 p-6">
             <h2 className="font-serif-display text-2xl text-ink">Evolución de reservas</h2>
             <div className="mt-8 flex h-52 gap-4">
-              {trend.map((m, i) => (
-                <div key={m.key} className="group flex flex-1 flex-col">
-                  <div className="flex flex-1 items-end">
-                    <div
-                      title={`${m.label}: ${m.value} reservas`}
-                      className="animate-grow-bar w-full rounded-t-md bg-olive-100 transition-colors group-hover:bg-olive-400"
-                      style={{
-                        height: `${(m.value / maxTrend) * 100}%`,
-                        animationDelay: `${i * 60}ms`,
-                      }}
-                    />
+              {indicadores.porMes.map((m, i) => {
+                const etiqueta = `${MONTHS_SHORT[Number(m.mes.slice(5, 7)) - 1]} ${m.mes.slice(2, 4)}`
+                return (
+                  <div key={m.mes} className="group flex flex-1 flex-col">
+                    <div className="flex flex-1 items-end">
+                      <div
+                        title={`${etiqueta}: ${m.reservas} reservas`}
+                        className="animate-grow-bar w-full rounded-t-md bg-olive-100 transition-colors group-hover:bg-olive-400"
+                        style={{
+                          height: `${(m.reservas / maxMes) * 100}%`,
+                          animationDelay: `${i * 60}ms`,
+                        }}
+                      />
+                    </div>
+                    <span className="mt-2 text-center text-xs text-muted">{etiqueta}</span>
                   </div>
-                  <span className="mt-2 text-center text-xs text-muted">{m.label}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <Card className="p-6">
               <h2 className="font-serif-display text-2xl text-ink">Servicios más solicitados</h2>
-              <div className="mt-6 space-y-4">
-                {topServices.map((s) => (
-                  <Bar key={s.id} label={s.name} value={s.count} max={maxService} />
-                ))}
-              </div>
+              {/* Con reservas en el rango pero todas canceladas, la lista
+                  llega vacia: las canceladas no son atenciones. */}
+              {topServicios.length === 0 ? (
+                <p className="mt-6 text-sm text-muted">Sin atenciones en este período.</p>
+              ) : (
+                <div className="mt-6 space-y-4">
+                  {topServicios.map((s) => (
+                    <Bar key={s.servicioId} label={s.nombre} value={s.reservas} max={maxServicio} />
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card className="p-6">
               <h2 className="font-serif-display text-2xl text-ink">Atenciones por profesional</h2>
-              <div className="mt-6 space-y-4">
-                {topProfessionals.map((p) => (
-                  <Bar key={p.id} label={p.name} value={p.count} max={maxPro} />
-                ))}
-              </div>
+              {indicadores.porProfesional.length === 0 ? (
+                <p className="mt-6 text-sm text-muted">Sin atenciones en este período.</p>
+              ) : (
+                <div className="mt-6 space-y-4">
+                  {indicadores.porProfesional.map((p) => (
+                    <Bar key={p.profesionalId} label={p.nombre} value={p.reservas} max={maxProfesional} />
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
 
           <Card className="mt-6 p-6">
             <h2 className="font-serif-display text-2xl text-ink">Catálogo por categoría</h2>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {serviceCategories.map((c) => {
-                const count = services.filter((s) => s.category === c.id).length
-                return (
+            {catalogo.cargando && <p className="mt-6 text-sm text-muted">Cargando servicios…</p>}
+            {!catalogo.cargando && catalogo.error && (
+              <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
+                <p className="text-ink">{catalogo.error}</p>
+                <Button variant="outline" className="px-4 py-2 text-xs" onClick={catalogo.recargar}>
+                  Reintentar
+                </Button>
+              </div>
+            )}
+            {!catalogo.cargando && !catalogo.error && (
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {serviceCategories.map((c) => (
                   <div key={c.id} className="flex items-center justify-between text-sm">
                     <span className="text-ink">{c.label}</span>
                     <span className="rounded-full bg-line-soft px-3 py-1 text-xs text-muted">
-                      {count} servicios
+                      {catalogo.servicios.filter((s) => s.categoria === c.id).length} servicios
                     </span>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </>
       )}

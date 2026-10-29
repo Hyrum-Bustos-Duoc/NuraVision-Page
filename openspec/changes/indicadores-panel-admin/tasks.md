@@ -40,7 +40,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
 
 ## 3. Frontend
 
-- [ ] 3.1 **(nv-frontend)** Dashboard sobre datos reales: lectura de
+- [x] 3.1 **(nv-frontend)** Dashboard sobre datos reales: lectura de
   `indicadores_panel` (dos llamadas, ver «Fechas» en `design.md`), las cuatro
   tarjetas, evolución y top 5, encabezado con la fecha real, y «Reservas
   recientes» reutilizando el listado de gestión del módulo `admin` limitado a 8
@@ -54,7 +54,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
   `npm run lint` y `npm test` en pass, con la salida pegada.
   Depende de: 2.1.
 
-- [ ] 3.2 **(nv-frontend)** Analítica sobre datos reales: presets desde la
+- [x] 3.2 **(nv-frontend)** Analítica sobre datos reales: presets desde la
   fecha de Chile, `indicadores_panel` con el rango elegido (sin llamada si el
   rango está invertido), las cuatro métricas con «Ingresos estimados», evolución,
   top 6 servicios, atenciones por profesional, y «Catálogo por categoría» sobre
