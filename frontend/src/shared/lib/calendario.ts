@@ -23,6 +23,28 @@ export function hoyISO(ahora: Date = new Date()): string {
   return toISODate(ahora)
 }
 
+const PARTES_EN_EL_ESTUDIO = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Santiago',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/**
+ * Hoy en Chile, sea cual sea la zona del dispositivo.
+ *
+ * Distinto de `hoyISO` a proposito: una fecha de nacimiento se valida contra el
+ * calendario de quien la escribe, pero la agenda es la del estudio. Una
+ * profesional con el telefono en otra zona (de viaje, o con la zona mal
+ * configurada) tiene que ver como "hoy" el dia en que el estudio atiende.
+ */
+export function hoyEnElEstudio(ahora: Date = new Date()): string {
+  const partes = PARTES_EN_EL_ESTUDIO.formatToParts(ahora)
+  const valor = (tipo: Intl.DateTimeFormatPartTypes) =>
+    partes.find((p) => p.type === tipo)?.value ?? ''
+  return `${valor('year')}-${valor('month')}-${valor('day')}`
+}
+
 export function partesISO(iso: string): { anio: number; mes: number; dia: number } {
   const fecha = parseISODate(iso)
   return { anio: fecha.getFullYear(), mes: fecha.getMonth(), dia: fecha.getDate() }
