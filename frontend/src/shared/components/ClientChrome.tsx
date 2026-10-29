@@ -123,11 +123,6 @@ export function ClientHeader() {
   const primerNombre = nombreVisible.split(/[\s@]/)[0]
   const inicialesVisibles = usuario ? iniciales(nombreVisible) : (currentUser?.initials ?? '')
 
-  // "/perfil" todavía se alimenta del usuario de demostración y devuelve a
-  // "/login" si no lo hay. Con sesión real pero sin ese usuario, enviar ahí
-  // sería un callejón sin salida, así que el atajo lleva a "mis reservas".
-  const destinoCuenta = currentUser ? '/perfil' : '/mis-reservas'
-
   // Se cierran las dos: la del prototipo y la real. Cerrar solo una dejaría el
   // encabezado diciendo que hay sesión iniciada.
   async function salir() {
@@ -218,17 +213,12 @@ export function ClientHeader() {
                 <span className="h-1.5 w-1.5 rounded-full bg-nv-accent" />
                 Análisis IA
               </NavLink>
-              <button
-                type="button"
-                onClick={() => navigate(destinoCuenta)}
-                className="hidden items-center gap-2 lg:flex"
-                title={currentUser ? 'Mi perfil' : 'Mis reservas'}
-              >
+              <Link to="/perfil" className="hidden items-center gap-2 lg:flex" title="Mi cuenta">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-nv-accent-wash4 text-xs text-nv-accent">
                   {inicialesVisibles}
                 </span>
                 <span className="hidden text-[13.5px] text-nv-ink xl:inline">{primerNombre}</span>
-              </button>
+              </Link>
               <button
                 type="button"
                 onClick={() => setConfirmarSalida(true)}
@@ -290,7 +280,7 @@ export function ClientHeader() {
           <div className="mt-4 flex flex-col gap-2 border-t border-nv-line1 pt-4">
             {authed ? (
               <>
-                <Link to={destinoCuenta} className="rounded-lg px-3 py-3 text-[15px] text-nv-ink hover:bg-nv-paper2">
+                <Link to="/perfil" className="rounded-lg px-3 py-3 text-[15px] text-nv-ink hover:bg-nv-paper2">
                   {nombreVisible}
                 </Link>
                 <button
