@@ -12,6 +12,10 @@ Estado al 2026-10-27: la logica pura tiene tests y pasa. El entrenamiento con
 TensorFlow todavia **no se ha ejecutado nunca** porque no hay dataset propio.
 Los hiperparametros de `config.toml` marcados "a validar" no estan probados.
 
+Datasets documentados y sus particiones: `datasets/` (una ficha por dataset).
+Desde el 2026-10-29 hay uno externo y temporal, `datasets/kaggle_nail/`, de
+clases clinicas: solo se particiona, no entrena ninguna tarea del producto.
+
 ## 1. Armar el dataset
 
 ```
