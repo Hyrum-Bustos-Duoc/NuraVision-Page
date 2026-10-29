@@ -19,7 +19,7 @@ interface EstadoReservasGestion {
 
 /** Clave estable derivada del contenido de los filtros. */
 function claveDe(filtros: FiltrosReservas): string {
-  return `${filtros.estado ?? ''}|${filtros.profesionalId ?? ''}`
+  return `${filtros.estado ?? ''}|${filtros.profesionalId ?? ''}|${filtros.limite ?? ''}`
 }
 
 /**
@@ -62,11 +62,12 @@ export function useReservasGestion(
 
     let cancelado = false
 
-    const [estado, profesionalId] = clave.split('|')
+    const [estado, profesionalId, limite] = clave.split('|')
 
     listarReservas(reservaGestionRepository, {
       estado: (estado || undefined) as FiltrosReservas['estado'],
       profesionalId: profesionalId || undefined,
+      limite: limite ? Number(limite) : undefined,
     })
       .then((reservas) => {
         if (cancelado) return

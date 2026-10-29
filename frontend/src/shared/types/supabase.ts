@@ -581,6 +581,42 @@ export interface Database {
           fecha_nacimiento: string | null
         }[]
       }
+      /**
+       * Agregados del Dashboard y la Analitica (0022). Solo personal: 42501 si
+       * no es_staff(); 22023 con hint 'rango_invalido' si falta un extremo o
+       * p_desde > p_hasta. Rango inclusivo sobre `reservas.fecha`.
+       *
+       * En SQL es `returns jsonb`: un generador pondria `Json`. Se declara la
+       * forma que construye el `jsonb_build_object` de 0022 (contrato en
+       * openspec/changes/indicadores-panel-admin/design.md); si cambia una
+       * clave alli, cambia aqui en el mismo diff. Objeto, no arreglo: la
+       * funcion devuelve un escalar. Todas las claves siempre presentes y
+       * todos los numeros enteros; los ids son bigint y viajan como numero.
+       */
+      indicadores_panel: {
+        /** `'YYYY-MM-DD'` los dos. */
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          /** Eco de p_desde, `'YYYY-MM-DD'`. */
+          desde: string
+          /** Eco de p_hasta, `'YYYY-MM-DD'`. */
+          hasta: string
+          /** Todos los estados, canceladas incluidas. */
+          reservas: number
+          por_estado: Record<EstadoReserva, number>
+          /** CLP, precio acordado de las NO canceladas. No es dinero cobrado. */
+          ingresos_estimados: number
+          clientas_distintas: number
+          /** No depende del rango. */
+          clientas_registradas: number
+          /** Un elemento por mes que toca el rango (`'YYYY-MM'`), nunca vacio. */
+          por_mes: { mes: string; reservas: number; canceladas: number }[]
+          /** Sin canceladas. Puede venir vacio. */
+          por_servicio: { servicio_id: number; nombre: string; reservas: number }[]
+          /** Sin canceladas. Puede venir vacio. */
+          por_profesional: { profesional_id: number; nombre: string; reservas: number }[]
+        }
+      }
       /** Idempotente: no revela si el correo ya estaba suscrito (0013). */
       suscribir_newsletter: {
         Args: { p_email: string }

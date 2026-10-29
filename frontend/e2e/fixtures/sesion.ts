@@ -70,3 +70,17 @@ export async function simularSesionStaff(page: Page) {
     user_metadata: { nombre: 'Staff', apellido: 'Nura' },
   })
 }
+
+/**
+ * Sesion de una cuenta vinculada a una ficha del equipo
+ * (`app_metadata.profesional_id`) y sin `es_staff`: es la sesion que abre el
+ * panel profesional y a la que 0007 deja leer solo sus propias reservas.
+ */
+export async function simularSesionProfesional(page: Page, profesionalId: number) {
+  await simularSesion(page, {
+    id: '00000000-0000-4000-8000-000000000001',
+    email: 'staff@nura.test',
+    app_metadata: { profesional_id: profesionalId },
+    user_metadata: { nombre: 'Staff', apellido: 'Nura' },
+  })
+}
