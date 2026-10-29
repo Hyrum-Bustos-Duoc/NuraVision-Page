@@ -1,25 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/ui/useAuth'
 import { useProfesionales } from '@/modules/profesionales/ui/useProfesionales'
-import { useServiciosPorIds } from '@/modules/servicios/ui/useServiciosPorIds'
-import { useProfesionalesPorIds } from '@/modules/profesionales/ui/useProfesionalesPorIds'
-import { Button, StatusBadge } from '@/shared/ui/ui'
 import { BarraFiltros, BotonActualizar, CampoBusqueda, SelectFiltro } from '@/shared/ui/controles'
-import { contenedorPanel, tabla } from '@/shared/ui/nv-estilos'
-import { formatLongDate, formatPrice } from '@/shared/lib/format'
-import { ESTADOS_FILTRABLES, esConfirmable } from '../application'
+import { contenedorPanel } from '@/shared/ui/nv-estilos'
+import { ESTADOS_FILTRABLES, ETIQUETA_ESTADO } from '../application'
 import type { EstadoReserva, FiltrosReservas } from '../domain/reserva-gestion.types'
+import { TablaReservas } from './TablaReservas'
 import { useReservasGestion } from './useReservasGestion'
 
 const TODOS = 'todos'
-
-const ETIQUETA_ESTADO: Record<EstadoReserva, string> = {
-  pendiente: 'Por confirmar',
-  confirmada: 'Confirmada',
-  completada: 'Completada',
-  cancelada: 'Cancelada',
-}
 
 /**
  * Listado de reservas del estudio, con filtros y confirmacion.
@@ -56,34 +46,7 @@ export default function AdminReservas() {
   // seria imposible porque su nombre no estaria en la lista.
   const equipo = useProfesionales()
 
-  // Una sola consulta por listado, no una por fila.
-  const servicios = useServiciosPorIds(reservas.map((r) => r.servicioId))
-  const profesionales = useProfesionalesPorIds(reservas.map((r) => r.profesionalId))
-
-  /**
-   * La busqueda por nombre si se hace en memoria, y a proposito: es un filtro
-   * de tecleo que cambia en cada pulsacion, y mandarlo a la base seria una
-   * consulta por letra. Actua sobre lo que los filtros ya acotaron.
-   */
-  const visibles = useMemo(() => {
-    const termino = busqueda.trim().toLowerCase()
-    if (!termino) return reservas
-    return reservas.filter(
-      (r) =>
-        r.clienteNombre.toLowerCase().includes(termino) ||
-        r.codigo.toLowerCase().includes(termino),
-    )
-  }, [reservas, busqueda])
-
   const pendientes = reservas.filter((r) => r.estado === 'pendiente').length
-
-  function nombreServicio(id: string): string {
-    return servicios.porId.get(id)?.nombre ?? (servicios.cargando ? 'Cargando…' : '—')
-  }
-
-  function nombreProfesional(id: string): string {
-    return profesionales.porId.get(id)?.nombre ?? (profesionales.cargando ? 'Cargando…' : '—')
-  }
 
   // Las tres salidas van despues de TODOS los hooks: su cantidad y su orden no
   // pueden cambiar entre renders.
@@ -208,71 +171,13 @@ export default function AdminReservas() {
       )}
 
       {!cargando && !error && reservas.length > 0 && (
-        <div className={`mt-6 ${tabla.contenedor}`}>
-          <table className="w-full min-w-[960px] text-sm">
-            <thead>
-              <tr className={tabla.cabecera}>
-                <th className={tabla.th}>Código</th>
-                <th className={tabla.th}>Cliente</th>
-                <th className={tabla.th}>Servicio</th>
-                <th className={tabla.th}>Profesional</th>
-                <th className={tabla.th}>Fecha y hora</th>
-                <th className={tabla.th}>Estado</th>
-                <th className={tabla.th}>
-                  <span className="sr-only">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-soft">
-              {visibles.map((r) => (
-                <tr key={r.id} className={tabla.fila}>
-                  <td className={`${tabla.td} whitespace-nowrap font-mono text-xs text-muted`}>{r.codigo}</td>
-                  <td className={tabla.td}>
-                    <p className="text-ink">{r.clienteNombre}</p>
-                    <p className="text-xs text-muted">{r.clienteEmail}</p>
-                    {/* Una reserva de invitada no tiene cuenta asociada: el
-                        contacto es el único vínculo con ella. */}
-                    {r.clienteId === null && <p className="mt-0.5 text-xs text-muted-light">Sin cuenta</p>}
-                  </td>
-                  <td className={tabla.td}>
-                    <p className="text-ink">{nombreServicio(r.servicioId)}</p>
-                    {/* Copia fijada por la base al reservar; con 0 no hay linea. */}
-                    {r.abono > 0 && (
-                      <p className="text-xs text-muted">Abono {formatPrice(r.abono)}</p>
-                    )}
-                  </td>
-                  <td className={`${tabla.td} text-ink`}>{nombreProfesional(r.profesionalId)}</td>
-                  <td className={`${tabla.td} whitespace-nowrap text-ink`}>
-                    <p className="first-letter:uppercase">{formatLongDate(r.fecha)}</p>
-                    <p className="text-xs text-muted">
-                      {r.horaInicio}–{r.horaFin} h
-                    </p>
-                  </td>
-                  <td className={tabla.td}>
-                    <StatusBadge status={r.estado} />
-                  </td>
-                  <td className={`${tabla.td} text-right`}>
-                    {esConfirmable(r) && (
-                      <Button
-                        variant="olive"
-                        className="whitespace-nowrap px-4 py-2 text-xs"
-                        disabled={confirmando === r.id}
-                        onClick={() => void confirmar(r)}
-                      >
-                        {confirmando === r.id ? 'Confirmando…' : 'Confirmar'}
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {visibles.length === 0 && (
-            <p className="px-6 py-10 text-center text-sm text-muted">
-              Ninguna reserva coincide con «{busqueda}».
-            </p>
-          )}
+        <div className="mt-6">
+          <TablaReservas
+            reservas={reservas}
+            busqueda={busqueda}
+            confirmando={confirmando}
+            onConfirmar={(r) => void confirmar(r)}
+          />
         </div>
       )}
     </div>
