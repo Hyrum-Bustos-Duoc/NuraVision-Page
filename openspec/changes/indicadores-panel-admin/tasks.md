@@ -9,7 +9,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
 
 ## 1. Base de datos
 
-- [ ] 1.1 **(nv-supabase)** Migración `0022` con la función
+- [x] 1.1 **(nv-supabase)** Migración `0022` con la función
   `indicadores_panel` exactamente según el contrato de `design.md`:
   `security invoker`, `stable`, `search_path` fijo, comprobación de
   `es_staff()` antes de leer nada (`42501`), validación del rango (`22023`,
