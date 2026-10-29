@@ -3,6 +3,7 @@ import {
   esFechaISO,
   fechaDesdePartes,
   fechaLegible,
+  hoyEnElEstudio,
   hoyISO,
   inicioDeSemana,
   limitarFecha,
@@ -125,5 +126,39 @@ describe('diasEntre', () => {
     expect(diasEntre('2026-12-20', '2027-01-05')).toBe(16)
     expect(diasEntre('2028-02-28', '2028-03-01')).toBe(2)
     expect(diasEntre('2026-10-08', '2026-10-07')).toBe(-1)
+  })
+})
+
+describe('hoyEnElEstudio', () => {
+  it('usa el calendario de Chile, no el UTC: 22:30 del 8 de octubre ya es 9 en UTC', () => {
+    expect(hoyEnElEstudio(new Date('2026-10-09T01:30:00Z'))).toBe('2026-10-08')
+  })
+
+  it('cambia de dia a medianoche de Chile y no a la de UTC', () => {
+    // Octubre es horario de verano (UTC-3): la medianoche cae a las 03:00 UTC.
+    expect(hoyEnElEstudio(new Date('2026-10-09T02:59:00Z'))).toBe('2026-10-08')
+    expect(hoyEnElEstudio(new Date('2026-10-09T03:00:00Z'))).toBe('2026-10-09')
+    // Junio es horario de invierno (UTC-4): la medianoche cae a las 04:00 UTC.
+    expect(hoyEnElEstudio(new Date('2026-06-15T03:59:00Z'))).toBe('2026-06-14')
+    expect(hoyEnElEstudio(new Date('2026-06-15T04:00:00Z'))).toBe('2026-06-15')
+  })
+
+  it('devuelve un texto que esFechaISO acepta', () => {
+    expect(esFechaISO(hoyEnElEstudio(new Date('2027-01-01T12:00:00Z')))).toBe(true)
+  })
+})
+
+describe('hoyEnElEstudio en los cambios de horario de Chile (QA NURA-115)', () => {
+  it('inicio del horario de verano: la medianoche del 6 de septiembre de 2026 no existe', () => {
+    // A las 00:00 (UTC-4) el reloj salta a la 01:00 (UTC-3).
+    expect(hoyEnElEstudio(new Date('2026-09-06T03:59:00Z'))).toBe('2026-09-05')
+    expect(hoyEnElEstudio(new Date('2026-09-06T04:00:00Z'))).toBe('2026-09-06')
+  })
+
+  it('fin del horario de verano: la hora 23 del 4 de abril de 2026 se repite', () => {
+    // A las 00:00 (UTC-3) el reloj vuelve a las 23:00 (UTC-4) del dia anterior.
+    expect(hoyEnElEstudio(new Date('2026-04-05T02:59:00Z'))).toBe('2026-04-04')
+    expect(hoyEnElEstudio(new Date('2026-04-05T03:30:00Z'))).toBe('2026-04-04')
+    expect(hoyEnElEstudio(new Date('2026-04-05T04:00:00Z'))).toBe('2026-04-05')
   })
 })

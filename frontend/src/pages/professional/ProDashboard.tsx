@@ -1,16 +1,15 @@
-import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarCheck, Clock, Coffee, TrendingUp } from 'lucide-react'
-import { useAppState } from '@/shared/state/AppState'
-import { TODAY_ISO } from '@/shared/data/seed'
-import { getDayAvailability, getScheduleBlocks, timeToMinutes } from '@/shared/lib/availability'
-import { formatWeekdayLong } from '@/shared/lib/format'
+import { hoyEnElEstudio, partesISO } from '@/shared/lib/calendario'
+import { formatWeekdayLong, monthLabel } from '@/shared/lib/format'
 import { Button, Card, StatCard, StatusBadge } from '@/shared/ui/ui'
+import { useReservasGestion } from '@/modules/admin/ui/useReservasGestion'
 import { useMiFichaProfesional } from '@/modules/profesionales/ui/useMiFichaProfesional'
 import { FichaActiva, SelectorDeFicha } from '@/modules/profesionales/ui/SelectorDeFicha'
+import { useServiciosPorIds } from '@/modules/servicios/ui/useServiciosPorIds'
+import { bloquesDelDia, duracionMin, minutosDeJornada, reservasDeAgenda } from './agenda'
 
 export default function ProDashboard() {
-  const { bookings, getService } = useAppState()
   const navigate = useNavigate()
   // La ficha sale de la base: antes se buscaba en los datos de ejemplo con el
   // `professionalId` del usuario de demostracion y, con el modo "solo
@@ -18,38 +17,15 @@ export default function ProDashboard() {
   const mia = useMiFichaProfesional()
   const professional = mia.ficha
 
-  const today = useMemo(
-    () =>
-      professional
-        ? bookings
-            .filter(
-              (b) =>
-                b.professionalId === professional.id &&
-                b.dateISO === TODAY_ISO &&
-                b.status !== 'cancelada',
-            )
-            .sort((a, b) => a.time.localeCompare(b.time))
-        : [],
-    [bookings, professional],
+  // Misma fuente que la agenda y el historial; ver ProAgenda.
+  const reservas = useReservasGestion(
+    { profesionalId: professional?.id },
+    professional !== undefined,
   )
-
-  const month = useMemo(
-    () =>
-      professional
-        ? bookings.filter(
-            (b) =>
-              b.professionalId === professional.id &&
-              b.dateISO.startsWith('2026-09') &&
-              b.status !== 'cancelada',
-          )
-        : [],
-    [bookings, professional],
-  )
-
-  const blocks = useMemo(
-    () => (professional ? getScheduleBlocks(TODAY_ISO, professional, bookings) : []),
-    [professional, bookings],
-  )
+  const agenda = reservasDeAgenda(reservas.reservas)
+  const hoy = hoyEnElEstudio()
+  const today = agenda.filter((r) => r.fecha === hoy)
+  const servicios = useServiciosPorIds(today.map((r) => r.servicioId))
 
   if (!professional) {
     return (
@@ -62,20 +38,19 @@ export default function ProDashboard() {
     )
   }
 
-  const dayAvailability = getDayAvailability(professional, TODAY_ISO)
-  const workdayMinutes = dayAvailability?.enabled
-    ? timeToMinutes(dayAvailability.end) -
-      timeToMinutes(dayAvailability.start) -
-      dayAvailability.breaks.reduce(
-        (sum, b) => sum + (timeToMinutes(b.end) - timeToMinutes(b.start)),
-        0,
-      )
-    : 0
-  const workdayHours = workdayMinutes / 60
+  // Ver ProAgenda: el horario llega en otra consulta y sin el los bloques libres
+  // y la jornada saldrian en cero.
+  const cargando = reservas.cargando || mia.cargandoAgenda
+  const error = reservas.error ?? mia.error
+  const reintentar = reservas.error ? reservas.recargar : () => navigate(0)
 
-  const freeBlocks = blocks.filter((b) => b.type === 'libre')
-  const occupiedMinutes = today.reduce((sum, b) => sum + b.durationMin, 0)
-  const inProgress = today.filter((b) => b.status === 'en_curso').length
+  const { anio, mes } = partesISO(hoy)
+  const month = agenda.filter((r) => r.fecha.startsWith(hoy.slice(0, 7)))
+  const blocks = bloquesDelDia(professional, hoy, agenda)
+  const freeBlocks = blocks.filter((b) => b.tipo === 'libre')
+  const workdayHours = minutosDeJornada(professional, hoy) / 60
+  const occupiedMinutes = today.reduce((sum, r) => sum + duracionMin(r), 0)
+  const porConfirmar = today.filter((r) => r.estado === 'pendiente').length
   const occupancy = workdayHours > 0 ? Math.round((occupiedMinutes / 60 / workdayHours) * 100) : 0
 
   return (
@@ -90,8 +65,10 @@ export default function ProDashboard() {
             Buenos días, {professional.name}
           </h1>
           <p className="mt-2 text-sm text-muted first-letter:uppercase">
-            {formatWeekdayLong(TODAY_ISO)} · {today.length}{' '}
-            {today.length === 1 ? 'atención programada' : 'atenciones programadas'}
+            {formatWeekdayLong(hoy)}
+            {!cargando &&
+              !error &&
+              ` · ${today.length} ${today.length === 1 ? 'atención programada' : 'atenciones programadas'}`}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -102,96 +79,122 @@ export default function ProDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Atenciones hoy"
-          value={String(today.length)}
-          caption={`${inProgress} en curso`}
-          icon={CalendarCheck}
-        />
-        <StatCard
-          label="Horas ocupadas"
-          value={`${(occupiedMinutes / 60).toFixed(1).replace('.', ',')} / ${workdayHours
-            .toFixed(0)
-            .replace('.', ',')}`}
-          caption={`${occupancy}% de la jornada`}
-          icon={Clock}
-        />
-        <StatCard
-          label="Este mes"
-          value={String(month.length)}
-          caption="reservas de septiembre"
-          icon={TrendingUp}
-        />
-        <StatCard
-          label="Bloques libres hoy"
-          value={String(freeBlocks.length)}
-          caption={freeBlocks.map((b) => b.start).join(' · ') || 'Sin bloques libres'}
-          icon={Coffee}
-        />
-      </div>
+      {cargando && (
+        <p className="rounded-2xl border border-dashed border-line p-10 text-center text-sm text-muted">
+          Cargando tu día…
+        </p>
+      )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 font-serif-display text-2xl text-ink">Hoy</h2>
-          <Card className="divide-y divide-line-soft">
-            {today.map((b) => {
-              const service = getService(b.serviceId)
-              return (
-                <div key={b.id} className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
-                    <span className="w-14 text-sm font-medium text-ink">{b.time}</span>
-                    <div>
-                      <p className="text-sm font-medium text-ink">{service?.name ?? '—'}</p>
-                      <p className="text-xs text-muted">{b.clientName}</p>
+      {!cargando && error && (
+        <div className="rounded-2xl border border-dashed border-line p-10 text-center">
+          <p className="text-sm text-ink">{error}</p>
+          <button
+            onClick={reintentar}
+            className="mt-4 rounded-full border border-line px-5 py-2.5 text-sm font-medium text-ink hover:bg-ivory"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!cargando && !error && (
+        <>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Atenciones hoy"
+              value={String(today.length)}
+              caption={`${porConfirmar} por confirmar`}
+              icon={CalendarCheck}
+            />
+            <StatCard
+              label="Horas ocupadas"
+              value={`${(occupiedMinutes / 60).toFixed(1).replace('.', ',')} / ${workdayHours
+                .toFixed(0)
+                .replace('.', ',')}`}
+              caption={`${occupancy}% de la jornada`}
+              icon={Clock}
+            />
+            <StatCard
+              label="Este mes"
+              value={String(month.length)}
+              caption={`reservas de ${monthLabel(anio, mes).toLowerCase()}`}
+              icon={TrendingUp}
+            />
+            <StatCard
+              label="Bloques libres hoy"
+              value={String(freeBlocks.length)}
+              caption={freeBlocks.map((b) => b.inicio).join(' · ') || 'Sin bloques libres'}
+              icon={Coffee}
+            />
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <div>
+              <h2 className="mb-3 font-serif-display text-2xl text-ink">Hoy</h2>
+              <Card className="divide-y divide-line-soft">
+                {today.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <span className="w-14 text-sm font-medium text-ink">{r.horaInicio}</span>
+                      <div>
+                        <p className="text-sm font-medium text-ink">
+                          {servicios.porId.get(r.servicioId)?.nombre ??
+                            (servicios.cargando ? 'Cargando…' : '—')}
+                        </p>
+                        <p className="text-xs text-muted">{r.clienteNombre}</p>
+                      </div>
                     </div>
+                    <StatusBadge status={r.estado} />
                   </div>
-                  {(b.status === 'completada' || b.status === 'en_curso') && (
-                    <StatusBadge status={b.status} />
+                ))}
+                {today.length === 0 && (
+                  <p className="p-4 text-sm text-muted">Sin atenciones hoy.</p>
+                )}
+              </Card>
+            </div>
+
+            <div>
+              <h2 className="mb-3 font-serif-display text-2xl text-ink">Bloques libres hoy</h2>
+              <Card className="p-4">
+                <div className="space-y-2">
+                  {blocks.map((b) => (
+                    <div
+                      key={b.inicio}
+                      className={`flex items-center justify-between rounded-lg px-4 py-3 text-sm ${
+                        b.tipo === 'libre'
+                          ? 'bg-olive-50 text-ink'
+                          : 'placeholder-stripes text-muted'
+                      }`}
+                    >
+                      <span>
+                        {b.inicio} – {b.fin}
+                      </span>
+                      <span className="text-xs">
+                        {b.tipo === 'libre' ? `${b.minutos} min libres` : b.etiqueta}
+                      </span>
+                    </div>
+                  ))}
+                  {blocks.length === 0 && (
+                    <p className="px-1 py-3 text-sm text-muted">
+                      {workdayHours > 0
+                        ? 'Toda la jornada de hoy está reservada.'
+                        : 'Hoy no atiendes.'}
+                    </p>
                   )}
                 </div>
-              )
-            })}
-            {today.length === 0 && <p className="p-4 text-sm text-muted">Sin atenciones hoy.</p>}
-          </Card>
-        </div>
-
-        <div>
-          <h2 className="mb-3 font-serif-display text-2xl text-ink">Bloques libres hoy</h2>
-          <Card className="p-4">
-            <div className="space-y-2">
-              {blocks.map((b, i) => (
-                <div
-                  key={`${b.start}-${i}`}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 text-sm ${
-                    b.type === 'libre'
-                      ? 'bg-olive-50 text-ink'
-                      : 'placeholder-stripes text-muted'
-                  }`}
+                <Button
+                  variant="outline"
+                  full
+                  className="mt-4"
+                  onClick={() => navigate('/profesional/disponibilidad')}
                 >
-                  <span>
-                    {b.start} – {b.end}
-                  </span>
-                  <span className="text-xs">
-                    {b.type === 'libre' ? `${b.minutes} min libres` : b.label}
-                  </span>
-                </div>
-              ))}
-              {blocks.length === 0 && (
-                <p className="px-1 py-3 text-sm text-muted">Hoy no atiendes.</p>
-              )}
+                  Bloquear un tramo
+                </Button>
+              </Card>
             </div>
-            <Button
-              variant="outline"
-              full
-              className="mt-4"
-              onClick={() => navigate('/profesional/disponibilidad')}
-            >
-              Bloquear un tramo
-            </Button>
-          </Card>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
