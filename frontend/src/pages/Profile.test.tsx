@@ -2,7 +2,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import type { UsuarioRepository } from '@/modules/usuarios/domain/usuario.repository'
+import { SesionExpiradaError, type UsuarioRepository } from '@/modules/usuarios/domain/usuario.repository'
 import type { PerfilRow } from '@/modules/usuarios/infrastructure/usuario.mapper'
 import { toPerfilPropio } from '@/modules/usuarios/infrastructure/usuario.mapper'
 import { ToastProvider } from '@/shared/state/Toast'
@@ -59,7 +59,18 @@ function montar(fila: Partial<PerfilRow> = {}) {
 const campo = (nombre: string) => screen.findByLabelText(nombre, { exact: true })
 const boton = () => screen.getByRole('button', { name: /Guardar cambios|Guardando/ })
 
+const CLAVE_BORRADOR = 'nuravision:borrador-perfil'
+const leerBorrador = (): unknown => JSON.parse(window.sessionStorage.getItem(CLAVE_BORRADOR) ?? 'null')
+const dejarBorrador = (usuarioId: string) =>
+  window.sessionStorage.setItem(
+    CLAVE_BORRADOR,
+    JSON.stringify({ usuarioId, borrador: { nombre: 'Beatriz Soto', telefono: '9 8765 4321', fechaNacimiento: null } }),
+  )
+const AVISO = /Recuperamos lo que escribiste antes de que expirara tu sesión/
+
 beforeEach(() => {
+  window.sessionStorage.clear()
+  vi.restoreAllMocks()
   obtenerPropio.mockReset()
   actualizarPropio.mockReset()
   refrescarSesion.mockReset()
@@ -145,5 +156,79 @@ describe('/perfil (componente)', () => {
     expect(nombre).toHaveAccessibleDescription('Necesitamos tu nombre.')
     expect(nombre).toHaveFocus()
     expect(actualizarPropio).not.toHaveBeenCalled()
+  })
+
+  describe('borrador tras sesion expirada', () => {
+    it('al expirar la sesion al guardar, lo escrito queda guardado aparte con esta cuenta', async () => {
+      actualizarPropio.mockRejectedValue(new SesionExpiradaError())
+      montar()
+      const telefono = await campo('Teléfono')
+      await userEvent.clear(telefono)
+      await userEvent.type(telefono, '9 8765 4321')
+      await userEvent.click(boton())
+      await waitFor(() =>
+        expect(leerBorrador()).toEqual({
+          usuarioId: 'u1',
+          borrador: { nombre: 'Ana Pérez', telefono: '9 8765 4321', fechaNacimiento: null },
+        }),
+      )
+      expect(screen.queryByText('Perfil actualizado')).toBeNull()
+    })
+
+    it('la misma cuenta, al volver, ve lo escrito con el aviso y no se guarda solo', async () => {
+      dejarBorrador('u1')
+      montar()
+      expect(await campo('Nombre y apellido')).toHaveValue('Beatriz Soto')
+      expect(await campo('Teléfono')).toHaveValue('9 8765 4321')
+      expect(screen.getByText(AVISO).closest('[role="status"]')).not.toBeNull()
+      expect(actualizarPropio).not.toHaveBeenCalled()
+    })
+
+    it('el borrador de otra cuenta no se muestra y se borra', async () => {
+      dejarBorrador('otra-cuenta')
+      montar()
+      expect(await campo('Nombre y apellido')).toHaveValue('Ana Pérez')
+      expect(await campo('Teléfono')).toHaveValue('+56912345678')
+      expect(screen.queryByText(AVISO)).toBeNull()
+      expect(leerBorrador()).toBeNull()
+    })
+
+    it('guardar con exito quita el aviso y borra el borrador', async () => {
+      dejarBorrador('u1')
+      montar()
+      await screen.findByText(AVISO)
+      await userEvent.click(boton())
+      await screen.findByText('Perfil actualizado')
+      expect(actualizarPropio).toHaveBeenCalledWith({ nombre: 'Beatriz Soto', telefono: '+56987654321', fechaNacimiento: null })
+      expect(screen.queryByText(AVISO)).toBeNull()
+      expect(leerBorrador()).toBeNull()
+    })
+
+    it('«Descartar cambios» vuelve a lo guardado y borra el borrador', async () => {
+      dejarBorrador('u1')
+      montar()
+      await userEvent.click(await screen.findByRole('button', { name: 'Descartar cambios' }))
+      expect(await campo('Nombre y apellido')).toHaveValue('Ana Pérez')
+      expect(await campo('Teléfono')).toHaveValue('+56912345678')
+      expect(screen.queryByText(AVISO)).toBeNull()
+      expect(leerBorrador()).toBeNull()
+      expect(actualizarPropio).not.toHaveBeenCalled()
+    })
+
+    it('un sessionStorage que lanza no rompe la pagina: carga, guarda y la sesion expirada no revienta', async () => {
+      const falla = () => {
+        throw new DOMException('cuota', 'QuotaExceededError')
+      }
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(falla)
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(falla)
+      vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(falla)
+      actualizarPropio.mockRejectedValueOnce(new SesionExpiradaError())
+      montar()
+      expect(await campo('Nombre y apellido')).toHaveValue('Ana Pérez')
+      await userEvent.click(boton())
+      expect(await screen.findByRole('alert')).toHaveTextContent('Tu sesión expiró. Vuelve a iniciar sesión.')
+      await userEvent.click(boton())
+      await screen.findByText('Perfil actualizado')
+    })
   })
 })

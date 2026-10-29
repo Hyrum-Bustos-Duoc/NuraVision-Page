@@ -1,3 +1,4 @@
+import { SesionExpiradaError } from '../domain/usuario.repository'
 import { usuarioRepository } from './supabase-usuario.repository'
 
 const rpc = vi.fn()
@@ -39,6 +40,21 @@ describe('actualizarPropio', () => {
     await expect(usuarioRepository.actualizarPropio(DATOS)).rejects.toThrow(
       /^El teléfono debe ser un número chileno de 9 dígitos\.$/,
     )
+  })
+
+  it.each([
+    ['401 (la llamada salio con la anon key)', { data: null, status: 401, error: { code: '42501', message: 'permission denied for function actualizar_mi_perfil' } }],
+    ['P0001 de auth.uid() null', { data: null, status: 400, error: { code: 'P0001', message: 'Tu sesión expiró. Vuelve a iniciar sesión.' } }],
+  ])('%s es SesionExpiradaError', async (_caso, respuesta) => {
+    rpc.mockResolvedValue(respuesta)
+    await expect(usuarioRepository.actualizarPropio(DATOS)).rejects.toBeInstanceOf(SesionExpiradaError)
+  })
+
+  it('un 403 (sesion valida sin permiso) no se confunde con sesion expirada', async () => {
+    rpc.mockResolvedValue({ data: null, status: 403, error: { code: '42501', message: 'permission denied' } })
+    const rechazo = usuarioRepository.actualizarPropio(DATOS)
+    await expect(rechazo).rejects.not.toBeInstanceOf(SesionExpiradaError)
+    await expect(rechazo).rejects.toThrow(/^No pudimos guardar tus datos\. Inténtalo de nuevo\.$/)
   })
 
   it('cualquier otro error muestra el generico', async () => {

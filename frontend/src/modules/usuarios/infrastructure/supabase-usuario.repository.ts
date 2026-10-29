@@ -1,9 +1,12 @@
 import { supabase } from '@/shared/infrastructure/supabase/client'
-import type { UsuarioRepository } from '../domain/usuario.repository'
+import { SesionExpiradaError, type UsuarioRepository } from '../domain/usuario.repository'
 import type { DatosPerfil, DatosPerfilPropio, DatosPersonales, Usuario } from '../domain/usuario.types'
 import { toArgumentosActualizarMiPerfil, toDatosPersonales, toPerfilPropio, toUsuario } from './usuario.mapper'
 
 const TABLA = 'perfiles'
+
+/** Mensaje de `actualizar_mi_perfil` cuando `auth.uid()` es null (design.md, paso 1). */
+const MENSAJE_SIN_SESION = 'Tu sesión expiró. Vuelve a iniciar sesión.'
 
 class SupabasePerfilRepository implements UsuarioRepository {
   async listar(): Promise<Usuario[]> {
@@ -59,10 +62,17 @@ class SupabasePerfilRepository implements UsuarioRepository {
   }
 
   async actualizarPropio(datos: DatosPerfilPropio): Promise<DatosPersonales> {
-    const { data, error } = await supabase.rpc(
+    const { data, error, status } = await supabase.rpc(
       'actualizar_mi_perfil',
       toArgumentosActualizarMiPerfil(datos),
     )
+
+    // Sesion caducada sin refresco posible: supabase-js cierra la sesion y
+    // llama con la anon key, a la que 0020 revoca `execute` (401). El P0001 es
+    // el paso 1 de la funcion, `auth.uid()` null; su mensaje es el contrato.
+    if (status === 401 || (error?.code === 'P0001' && error.message === MENSAJE_SIN_SESION)) {
+      throw new SesionExpiradaError()
+    }
 
     // P0001 es como la funcion rechaza (0020) y su mensaje ya esta escrito
     // para la clienta. Cualquier otra cosa —red, permisos, la migracion sin

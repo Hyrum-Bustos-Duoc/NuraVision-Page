@@ -6,7 +6,12 @@ export { listarUsuarios } from './listar-usuarios.usecase'
 export { actualizarPerfil } from './actualizar-perfil.usecase'
 export { crearCuenta } from './crear-cuenta.usecase'
 export { eliminarUsuario } from './eliminar-usuario.usecase'
-export { actualizarMiPerfil, obtenerMiPerfil, type ResultadoGuardarPerfil } from './mi-perfil.usecase'
+export {
+  actualizarMiPerfil,
+  obtenerMiPerfil,
+  recuperarBorradorPerfil,
+  type ResultadoGuardarPerfil,
+} from './mi-perfil.usecase'
 
 export type { Usuario, DatosPerfil, DatosPersonales, NuevaCuenta, UsuarioRol } from '../domain/usuario.types'
 export type { BorradorPerfil, CampoPerfil, ErroresPerfil } from '../domain/usuario.reglas'

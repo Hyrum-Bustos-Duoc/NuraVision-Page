@@ -1,3 +1,4 @@
+import type { BorradorPerfil } from './usuario.reglas'
 import type { DatosPerfil, DatosPerfilPropio, DatosPersonales, NuevaCuenta, Usuario } from './usuario.types'
 
 /** Puerto de lectura y correccion de perfiles. Todo pasa por RLS. */
@@ -26,7 +27,8 @@ export interface UsuarioRepository {
   /**
    * Reemplaza los datos personales de la propia sesion (no recibe id: la base
    * usa `auth.uid()`). Devuelve lo que quedo guardado. Un rechazo de la base
-   * llega como Error con un mensaje para mostrar.
+   * llega como Error con un mensaje para mostrar; si la base no reconoce la
+   * sesion, como `SesionExpiradaError`.
    */
   actualizarPropio(datos: DatosPerfilPropio): Promise<DatosPersonales>
 
@@ -52,4 +54,34 @@ export interface CuentasRepository {
   crear(datos: NuevaCuenta): Promise<string>
   /** Elimina la cuenta de acceso y, con ella, la posibilidad de entrar. */
   eliminar(userId: string): Promise<void>
+}
+
+/**
+ * El guardado de «Mi perfil» llego a la base sin una sesion valida.
+ *
+ * Clase propia porque hay que distinguirlo de cualquier otro rechazo: es el
+ * unico caso en que la pantalla se desmonta (la sesion se cerro y `/perfil`
+ * manda al login) y lo escrito se perderia si no se guarda aparte.
+ */
+export class SesionExpiradaError extends Error {
+  constructor() {
+    super('Tu sesión expiró. Vuelve a iniciar sesión.')
+    this.name = 'SesionExpiradaError'
+  }
+}
+
+/** Lo que una cuenta escribio en «Mi perfil» y no llego a guardarse. */
+export interface BorradorPendiente {
+  /** La cuenta que lo escribio: el borrador de otra nunca se muestra. */
+  usuarioId: string
+  borrador: BorradorPerfil
+}
+
+/** Puerto del borrador que sobrevive al viaje de ida y vuelta por el login. */
+export interface BorradorPerfilAlmacen {
+  /** Nunca lanza: sin almacenamiento o con un dato ilegible, `null`. */
+  leer(): BorradorPendiente | null
+  /** Nunca lanza: sin almacenamiento, el borrador simplemente no se conserva. */
+  recordar(pendiente: BorradorPendiente): void
+  olvidar(): void
 }

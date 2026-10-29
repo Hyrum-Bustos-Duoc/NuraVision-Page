@@ -48,7 +48,7 @@ function MiPerfil({
   email: string
   refrescarSesion: () => Promise<void>
 }) {
-  const { estado, recargar, guardar } = useMiPerfil(usuarioId)
+  const { estado, recargar, guardar, descartarPendiente } = useMiPerfil(usuarioId)
 
   if (estado.fase === 'cargando') return <Aviso texto="Cargando tu perfil…" />
 
@@ -69,30 +69,40 @@ function MiPerfil({
   return (
     <FormularioPerfil
       perfil={estado.perfil}
+      pendiente={estado.pendiente}
       email={email}
       guardar={guardar}
+      descartarPendiente={descartarPendiente}
       refrescarSesion={refrescarSesion}
     />
   )
 }
 
+/** El formulario con lo guardado: sin telefono es el campo vacio. */
+function borradorDe(perfil: DatosPersonales): BorradorPerfil {
+  return { nombre: perfil.nombre, telefono: perfil.telefono ?? '', fechaNacimiento: perfil.fechaNacimiento }
+}
+
 function FormularioPerfil({
   perfil,
+  pendiente,
   email,
   guardar,
+  descartarPendiente,
   refrescarSesion,
 }: {
   perfil: DatosPersonales
+  pendiente: BorradorPerfil | null
   email: string
   guardar: ReturnType<typeof useMiPerfil>['guardar']
+  descartarPendiente: () => void
   refrescarSesion: () => Promise<void>
 }) {
   const { toast } = useToast()
-  const [borrador, setBorrador] = useState<BorradorPerfil>(() => ({
-    nombre: perfil.nombre,
-    telefono: perfil.telefono ?? '',
-    fechaNacimiento: perfil.fechaNacimiento,
-  }))
+  // Lo que quedo sin guardar cuando expiro la sesion manda sobre lo guardado,
+  // pero no se envia solo: el aviso de abajo lo explica y deja descartarlo.
+  const [borrador, setBorrador] = useState<BorradorPerfil>(() => pendiente ?? borradorDe(perfil))
+  const [avisoPendiente, setAvisoPendiente] = useState(pendiente !== null)
   const [errores, setErrores] = useState<ErroresPerfil>({})
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -115,6 +125,14 @@ function FormularioPerfil({
     setErrores((previo) => ({ ...previo, [campo]: validacion.ok ? undefined : validacion.errores[campo] }))
   }
 
+  function descartar() {
+    descartarPendiente()
+    setBorrador(borradorDe(perfil))
+    setErrores({})
+    setErrorGuardado(null)
+    setAvisoPendiente(false)
+  }
+
   async function enviar() {
     if (enVuelo.current) return
     enVuelo.current = true
@@ -130,12 +148,9 @@ function FormularioPerfil({
       }
       // Lo que devolvio la base, no el borrador: asi se ve lo guardado (el
       // telefono ya canonico, el nombre recortado).
-      setBorrador({
-        nombre: resultado.datos.nombre,
-        telefono: resultado.datos.telefono ?? '',
-        fechaNacimiento: resultado.datos.fechaNacimiento,
-      })
+      setBorrador(borradorDe(resultado.datos))
       setErrores({})
+      setAvisoPendiente(false)
       toast({ title: 'Perfil actualizado' })
       // Ya esta en la base: si refrescar la sesion falla, el encabezado se pone
       // al dia en el siguiente refresco de token. No es un fallo del guardado.
@@ -152,6 +167,18 @@ function FormularioPerfil({
     <div className="mx-auto max-w-2xl px-6 py-14">
       <h1 className="font-serif-display text-5xl text-ink">Mi perfil</h1>
       <p className="mt-3 text-sm text-muted">Corrige tus datos de contacto y tu cumpleaños.</p>
+
+      {avisoPendiente && (
+        <div role="status" className="mt-6 rounded-xl border border-line bg-paper px-4 py-4 text-sm text-ink">
+          <p>
+            Recuperamos lo que escribiste antes de que expirara tu sesión. Todavía no está guardado: revísalo y
+            pulsa «Guardar cambios».
+          </p>
+          <Button type="button" variant="outline" className="mt-4" onClick={descartar}>
+            Descartar cambios
+          </Button>
+        </div>
+      )}
 
       <form
         className="mt-8 space-y-5"

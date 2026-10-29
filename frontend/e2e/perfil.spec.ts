@@ -201,6 +201,12 @@ test.describe('/perfil', () => {
   const fallos: [string, RespuestaRpc, string][] = [
     [
       'P0001 muestra el mensaje de la base',
+      { status: 400, json: { code: 'P0001', message: 'No encontramos tu perfil. Escríbenos para revisarlo.', details: null, hint: null } },
+      'No encontramos tu perfil. Escríbenos para revisarlo.',
+    ],
+    [
+      // auth.uid() null con la sesion del navegador aun viva: no hay redireccion.
+      'P0001 de sesion expirada muestra su mensaje',
       { status: 400, json: { code: 'P0001', message: 'Tu sesión expiró. Vuelve a iniciar sesión.', details: null, hint: null } },
       'Tu sesión expiró. Vuelve a iniciar sesión.',
     ],
@@ -254,11 +260,16 @@ test.describe('/perfil', () => {
     expect(llamadas).toHaveLength(1)
   })
 
-  test('sesion expirada al guardar: no hay exito y termina en /login con vuelta a /perfil', async ({ page }) => {
-    // Reloj falso para caducar el token sin esperar una hora. setSystemTime no
-    // dispara los timers, asi el refresco automatico no se adelanta al clic.
+  /**
+   * Caduca el token sin esperar una hora y guarda: supabase-js no puede
+   * refrescar, cierra la sesion y la llamada sale con la anon key. Despues
+   * vuelve a entrar por el formulario de login con la cuenta `id`.
+   */
+  async function expirarAlGuardarYVolverComo(page: Page, id: string) {
+    // Reloj falso: setSystemTime no dispara los timers, asi el refresco
+    // automatico no se adelanta al clic.
     await page.clock.install()
-    const { llamadas } = await abrir(page)
+    const ctx = await abrir(page)
     await page.route('**/auth/v1/token?grant_type=refresh_token', (route) =>
       route.fulfill({
         status: 400,
@@ -266,7 +277,7 @@ test.describe('/perfil', () => {
       }),
     )
     await page.route('**/rest/v1/rpc/actualizar_mi_perfil', (route) => {
-      llamadas.push(route.request())
+      ctx.llamadas.push(route.request())
       // Sin sesion, supabase-js llama con la anon key, y 0020 le revoca execute.
       return route.fulfill({
         status: 401,
@@ -281,9 +292,49 @@ test.describe('/perfil', () => {
     await expect(page).toHaveURL(/\/login\?volver=%2Fperfil$/)
     await expect(page.getByText('Perfil actualizado')).toHaveCount(0)
     // La llamada salio sin token de usuario: la base no la atribuye a nadie.
-    const autorizaciones = llamadas.map((r) => r.headers()['authorization'] ?? '')
+    const autorizaciones = ctx.llamadas.map((r) => r.headers()['authorization'] ?? '')
     expect(autorizaciones.length).toBeGreaterThan(0)
     expect(autorizaciones.filter((a) => a.endsWith('.firma'))).toEqual([])
+    const llamadasAlExpirar = ctx.llamadas.length
+
+    // El reloj del navegador va 2 h adelantado: el token nuevo vence despues.
+    const expira = Math.floor(Date.now() / 1000) + 4 * 3600
+    const usuario = { id, aud: 'authenticated', role: 'authenticated', email: EMAIL, app_metadata: {}, user_metadata: {} }
+    await page.route('**/auth/v1/token?grant_type=password', (route) =>
+      route.fulfill({
+        json: {
+          access_token: `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: id, role: 'authenticated', exp: expira })}.firma`,
+          refresh_token: 'refresh-e2e-3',
+          token_type: 'bearer',
+          expires_in: 4 * 3600,
+          expires_at: expira,
+          user: usuario,
+        },
+      }),
+    )
+    await page.locator('input[type="email"]').fill(EMAIL)
+    await page.locator('input[type="password"]').fill('clave')
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+    await expect(page).toHaveURL(/\/perfil$/)
+    return { llamadasAlExpirar, llamadas: ctx.llamadas }
+  }
+
+  const AVISO = /Recuperamos lo que escribiste antes de que expirara tu sesión/
+
+  test('sesion expirada al guardar: va a /login y, al volver la misma cuenta, recupera lo escrito sin guardarlo', async ({
+    page,
+  }) => {
+    const { llamadasAlExpirar, llamadas } = await expirarAlGuardarYVolverComo(page, ID)
+    await expect(campo(page, 'Teléfono')).toHaveValue('9 8765 4321')
+    await expect(page.getByText(AVISO)).toBeVisible()
+    expect(llamadas).toHaveLength(llamadasAlExpirar)
+  })
+
+  test('sesion expirada al guardar: si entra otra cuenta, no ve lo que escribio la anterior', async ({ page }) => {
+    await expirarAlGuardarYVolverComo(page, '00000000-0000-4000-8000-000000000043')
+    await expect(campo(page, 'Teléfono')).toHaveValue('+56912345678')
+    await expect(page.getByText(AVISO)).toHaveCount(0)
+    expect(await page.evaluate(() => window.sessionStorage.getItem('nuravision:borrador-perfil'))).toBeNull()
   })
 
   test('en movil, el nombre del menu lleva a /perfil', async ({ page }) => {
