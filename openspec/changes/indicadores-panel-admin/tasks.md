@@ -31,7 +31,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
 
 ## 2. Contrato
 
-- [ ] 2.1 **(nv-contracts)** Entrada `indicadores_panel` en `Functions` de
+- [x] 2.1 **(nv-contracts)** Entrada `indicadores_panel` en `Functions` de
   `frontend/src/shared/types/supabase.ts` con el shape TypeScript de
   `design.md` y comentario de origen (0022, solo personal). Criterio:
   `npx tsc --noEmit -p tsconfig.app.json` falla si un consumidor lee una clave
