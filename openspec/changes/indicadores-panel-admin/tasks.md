@@ -21,7 +21,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
   una base local con datos de prueba y la salida pegada en el reporte).
   Depende de: nada.
 
-- [ ] 1.2 **(nv-rls-auditor)** Auditar 1.1: que sea `security invoker`, que la
+- [x] 1.2 **(nv-rls-auditor)** Auditar 1.1: que sea `security invoker`, que la
   comprobación de `es_staff()` ocurra antes de cualquier lectura, que anon,
   clienta y profesional sin `es_staff` reciban error y no agregados filtrados
   por su RLS, que no cambie ninguna política ni privilegio de tabla, y que el

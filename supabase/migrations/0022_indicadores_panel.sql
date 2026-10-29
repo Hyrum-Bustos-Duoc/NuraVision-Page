@@ -88,7 +88,13 @@
 -- El cast del precio de la variante va dentro de un `case` que antes mira
 -- `jsonb_typeof(...) = 'number'`: `'abc'::numeric` LANZA, y el `case` es lo que
 -- garantiza el orden de evaluacion (0011, 0019). Un precio que no sea numero
--- JSON —texto, null, objeto, clave ausente— cae al `precio_base`.
+-- JSON —texto, null, objeto, clave ausente— cae al `precio_base`. Tambien
+-- cae un numero fuera del rango de `precio_base numeric(10,2)` (0 a
+-- 99999999.99): las filas anteriores a 0019 las pudo insertar anon con
+-- cualquier numero, y `1e30` rompia el `::bigint` del total (22003, panel
+-- inservible en todo rango que la incluya) y un negativo restaba ingresos.
+-- El `and` va dentro del `when`, despues del typeof: el cast solo se evalua
+-- si el valor ya es numero JSON, y un numero JSON siempre castea a numeric.
 --
 -- `por_estado` nombra los 4 valores del enum `estado_reserva` uno por uno, y
 -- es deliberado: el contrato (y el tipo TS) los fija. Si el enum gana un valor,
@@ -136,6 +142,8 @@ begin
       case
         when r.estado = 'cancelada' then null
         when jsonb_typeof(r.detalles_extra -> 'variante' -> 'precio') = 'number'
+         and (r.detalles_extra -> 'variante' ->> 'precio')::numeric
+             between 0 and 99999999.99
           then (r.detalles_extra -> 'variante' ->> 'precio')::numeric
         else s.precio_base
       end                                        as precio_acordado

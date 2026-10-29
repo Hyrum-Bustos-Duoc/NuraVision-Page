@@ -10,8 +10,14 @@ Cruza SQL y TypeScript. No hay capa Python (`services/api/` no existe).
 public.indicadores_panel(p_desde date, p_hasta date) returns jsonb
 ```
 
-- `language sql` o `plpgsql`, `stable`, **`security invoker`**, `search_path`
-  fijo (`public, pg_temp`), igual que `es_staff()` (0006).
+- `language sql` o `plpgsql`, `stable`, **`security invoker`**, con
+  `search_path = ''`. Toda tabla y toda función propia van calificadas con
+  `public.`.
+  - Se descartó `public, pg_temp` (el de `es_staff()` en 0006). Aunque las
+    funciones lleven `pg_catalog.`, los operadores sin calificar (`=` sobre
+    `estado_reserva`, `<>`, `->`) se resolverían contra uno plantado en
+    `public`. Con la ruta vacía solo se busca en `pg_catalog`.
+  - Decisión de implementación aceptada por nv-rls-auditor el 2026-10-29.
 - `execute` revocado a `public` y `anon`; concedido a `authenticated`.
 - Migración **`0022`** (0020 y 0021 están tomadas por ramas sin integrar; esta
   no comparte objetos con ellas).
