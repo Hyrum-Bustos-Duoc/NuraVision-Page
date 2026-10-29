@@ -1,0 +1,3877 @@
+{
+  "dataset": "kaggle:arthitaya/nail-dataset@v2",
+  "uso": "solo_particion",
+  "semilla": 20261029,
+  "fracciones": {
+    "val": 0.15,
+    "test": 0.15
+  },
+  "clases": [
+    "beau_s line",
+    "black line",
+    "clubbing",
+    "mees_ line",
+    "normal",
+    "onycholysis",
+    "other",
+    "terry_s nail",
+    "white spot"
+  ],
+  "conteos": {
+    "train": {
+      "beau_s line": 42,
+      "black line": 42,
+      "clubbing": 42,
+      "mees_ line": 42,
+      "normal": 42,
+      "onycholysis": 42,
+      "other": 42,
+      "terry_s nail": 42,
+      "white spot": 42
+    },
+    "val": {
+      "beau_s line": 9,
+      "black line": 9,
+      "clubbing": 9,
+      "mees_ line": 9,
+      "normal": 9,
+      "onycholysis": 9,
+      "other": 9,
+      "terry_s nail": 9,
+      "white spot": 9
+    },
+    "test": {
+      "beau_s line": 9,
+      "black line": 9,
+      "clubbing": 9,
+      "mees_ line": 9,
+      "normal": 9,
+      "onycholysis": 9,
+      "other": 9,
+      "terry_s nail": 9,
+      "white spot": 9
+    }
+  },
+  "huella": "145ccd4e79e9a57d69a5df688726f626872e7c75770ecd098615cfa2cb62aef3",
+  "archivos": [
+    {
+      "archivo": "beau_s line/beau (1).jpg",
+      "clase": "beau_s line",
+      "sha256": "5d01169db12c560c7abae0cd2c5391037caa6e6d91d3596cca42bc7e463e8226",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (10).jpg",
+      "clase": "beau_s line",
+      "sha256": "6c9024227f668cfc5ea46546dbf64141c9d4ea1800e14973fef0c05db3f25f6f",
+      "lado_menor": 115,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (11).jpg",
+      "clase": "beau_s line",
+      "sha256": "1fac2287753849342cac3c937a4ffa1db70ba0aff5e3cf286464e89adf699172",
+      "lado_menor": 87,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (12).jpg",
+      "clase": "beau_s line",
+      "sha256": "ef050078777b757c419429ebad57ee3c4bcf6763f5e368d9d11bb592d42d7c71",
+      "lado_menor": 129,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (13).jpg",
+      "clase": "beau_s line",
+      "sha256": "7347f9afc4ec819b20ae83d4f50c0b28b8021ab3396e839cc5342524b9f1737b",
+      "lado_menor": 179,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (14).jpg",
+      "clase": "beau_s line",
+      "sha256": "72c5ff57bb38711fc5c50461259204113bd5e4710bd7d0edf963ded724430500",
+      "lado_menor": 174,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (15).jpg",
+      "clase": "beau_s line",
+      "sha256": "b16714bf72af2a48f39a6019af28882c8b17e16816dc3cf233446a4c7fdb24f8",
+      "lado_menor": 40,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (16).jpg",
+      "clase": "beau_s line",
+      "sha256": "bf21b730eb9740df5120ae85066f90f8993e3729f29c76945ba8a253e75ac919",
+      "lado_menor": 42,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (17).jpg",
+      "clase": "beau_s line",
+      "sha256": "0cff47c9c93598da9f8142381f097c0d68db18023036dcbc1e363e5dc9b7d116",
+      "lado_menor": 37,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (18).jpg",
+      "clase": "beau_s line",
+      "sha256": "7438a3556cced86d75d4482888d0620a7a79ac0c01f02d3622839a58ba5ebff4",
+      "lado_menor": 40,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (19).jpg",
+      "clase": "beau_s line",
+      "sha256": "6700f3ce6e56ce8812e53e656a10e67adbf459e0d291fd604635e2c95d663aaa",
+      "lado_menor": 115,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (2).jpg",
+      "clase": "beau_s line",
+      "sha256": "d8a32ccf0167d736461b8e0d4d4d0caefc4e1d5634c7c32a831208160e5e5278",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (20).jpg",
+      "clase": "beau_s line",
+      "sha256": "47d394519b9afb706a27215f8b7bab2887dcf5e930c4f6cf4a932ae5cbf0bec9",
+      "lado_menor": 125,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (21).jpg",
+      "clase": "beau_s line",
+      "sha256": "50cfa28413b663418a0a3fc41398698e1736b44b2438903f654e35a700b9fe7c",
+      "lado_menor": 147,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (22).jpg",
+      "clase": "beau_s line",
+      "sha256": "c144883ea56e75788b112c3270e2e37cdda3058fcc1d0d25457b84e96c80626a",
+      "lado_menor": 122,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (23).jpg",
+      "clase": "beau_s line",
+      "sha256": "d0287f3c08b006baa5a7c08cf852ba7cfa9edca7857f3dd6f49f9064cf337e59",
+      "lado_menor": 89,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (24).jpg",
+      "clase": "beau_s line",
+      "sha256": "f07e43528a80b5230ebdbf228b6d535397c50e31900c605121e5d6e68cba025b",
+      "lado_menor": 85,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (25).jpg",
+      "clase": "beau_s line",
+      "sha256": "b412d08c1c7802bcf1c3f4356ba49b85364965af6c2f26dbf13f3f359d90a2a6",
+      "lado_menor": 299,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (26).jpg",
+      "clase": "beau_s line",
+      "sha256": "d4744b7f1d3861a3c366b2101ae83ee9c68761ee2a2ba48c1079cc712e6b276e",
+      "lado_menor": 270,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (27).jpg",
+      "clase": "beau_s line",
+      "sha256": "7bfcdbfbf0465651bff532218db615ca3e113774e4fe7e17693e5e9b9c19cf4a",
+      "lado_menor": 267,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (28).jpg",
+      "clase": "beau_s line",
+      "sha256": "cf4e90e4ad8ce7b94dbc8481b308e8b495ad8bd7a9a104aac664e9a572e5dd44",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (29).jpg",
+      "clase": "beau_s line",
+      "sha256": "8856c538840c67b1d0422c3f941476972b6b5a32943db655f861a1e7c3bc6f08",
+      "lado_menor": 92,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (3).jpg",
+      "clase": "beau_s line",
+      "sha256": "665c1a6c7f8549c127930a60bce8b8133c34b30b87c559bf19051586b91c00de",
+      "lado_menor": 97,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (30).jpg",
+      "clase": "beau_s line",
+      "sha256": "bf287e05615968915a8ded9119959925156713633450781eddbbda85ad80b139",
+      "lado_menor": 119,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (31).jpg",
+      "clase": "beau_s line",
+      "sha256": "a8450c283244d3dfba107dfb115f606a677a37bbf2345323b6b4d242b617241c",
+      "lado_menor": 116,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (32).jpg",
+      "clase": "beau_s line",
+      "sha256": "6705571b5c08cac9c6ee99cb66ae2b85f047128461d80c6d4d21e99845f50db7",
+      "lado_menor": 108,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (33).jpg",
+      "clase": "beau_s line",
+      "sha256": "33118d1a9cadbf7249b1312809b13cb30e76d5511e0d0473349cc88acea96f11",
+      "lado_menor": 49,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (34).jpg",
+      "clase": "beau_s line",
+      "sha256": "10f76a6e28074c03f947a6592c4ab1d19eca4cdf19b667f2fb4f7be3d2db473e",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (35).jpg",
+      "clase": "beau_s line",
+      "sha256": "7d046050d1742a5c4d3df766a55963b2ff0f9d830999c73afbf0c601068956f0",
+      "lado_menor": 49,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (36).jpg",
+      "clase": "beau_s line",
+      "sha256": "1618176f3b6ca1fa6760bde3694cf18cecd3cb88f9e37e5ca2807082c5a173a5",
+      "lado_menor": 40,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (37).jpg",
+      "clase": "beau_s line",
+      "sha256": "28e8f4063bc464c62ba5bb282e1b09a09da8805b0f44273c2e12510ab949405f",
+      "lado_menor": 40,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (38).jpg",
+      "clase": "beau_s line",
+      "sha256": "70230d04b1750945f35fda8708e28a963062e77f160c6aefdec6239c9f8965e9",
+      "lado_menor": 40,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (39).jpg",
+      "clase": "beau_s line",
+      "sha256": "5055e07eea0c55d817e146058e3c1d6ffd0bdca0ee0dec7149badeb25af48586",
+      "lado_menor": 106,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (4).jpg",
+      "clase": "beau_s line",
+      "sha256": "5968a41aa5e7c48211506c77f7bc22eeb8a6ee256d3e4eb4af71e817b0a376de",
+      "lado_menor": 198,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (40).jpg",
+      "clase": "beau_s line",
+      "sha256": "147d113e8277c3d2f18d6e6fa61ffde6b3a4e373672c96288b5586cfdc2ee81d",
+      "lado_menor": 122,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (41).jpg",
+      "clase": "beau_s line",
+      "sha256": "026259f835a92b6afe415eaafc653fccd00ca05ac15514dfcdec9e6f3cbb8fbd",
+      "lado_menor": 382,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (42).jpg",
+      "clase": "beau_s line",
+      "sha256": "cde1b51069565e5a816577dabb91b994b54a5008a1c9293dfdb062dc9efe4735",
+      "lado_menor": 356,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (43).jpg",
+      "clase": "beau_s line",
+      "sha256": "ac0e148f7ef433cb78e02b4bd5220a6a7eae18436b3c11bd9da50ec1de511673",
+      "lado_menor": 74,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (44).jpg",
+      "clase": "beau_s line",
+      "sha256": "46faa3a85b2ab6cf62ce698287e1051b378e30786a6a02accdad75e6950f194d",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (45).jpg",
+      "clase": "beau_s line",
+      "sha256": "b8fd7c70a9ae45e0557c160f95bf59234d4b63399ee3807fa0826e87599335fc",
+      "lado_menor": 71,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (46).jpg",
+      "clase": "beau_s line",
+      "sha256": "70839de9aa51fdd2c042515005e56f80b7ad41079ba13cafcf29ed1b3aec719a",
+      "lado_menor": 160,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (47).jpg",
+      "clase": "beau_s line",
+      "sha256": "0b14773a371129853dd7713e7417facf2e54649e528453f9970fb21a5cbd337e",
+      "lado_menor": 439,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (48).jpg",
+      "clase": "beau_s line",
+      "sha256": "cf5904bce0a4f306f16d14474db0c3b8f6ea1949ae94c4d042883bce46110a5d",
+      "lado_menor": 102,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (49).jpg",
+      "clase": "beau_s line",
+      "sha256": "d38f51e9bef32a6b904eb1eb5221464597ae4d5f0825572b06a9c4db4a04c684",
+      "lado_menor": 147,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (5).jpg",
+      "clase": "beau_s line",
+      "sha256": "4408255b02ab69e9c43c9f506b4526f5a46672bfe44806aba3521af660a2d905",
+      "lado_menor": 223,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (50).jpg",
+      "clase": "beau_s line",
+      "sha256": "cd38c8be287901b49d05c0ccb0afd7501e3abe0d90ba8999c1c3a0be79466d69",
+      "lado_menor": 172,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (51).jpg",
+      "clase": "beau_s line",
+      "sha256": "34b4bd4500f6d5eddf711c5b1e4c854cb113cdc85e4044b25da3c001283cec7c",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (52).jpg",
+      "clase": "beau_s line",
+      "sha256": "5befc62ba811dfe50ea1b135a186ec2ad1629842b33f55b9513a57eb7e87b267",
+      "lado_menor": 300,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (53).jpg",
+      "clase": "beau_s line",
+      "sha256": "d769ac5ed2d7ef76bd24da4b7f79114be1f983cdcca4ba3b7617a8dec8cea073",
+      "lado_menor": 293,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (54).jpg",
+      "clase": "beau_s line",
+      "sha256": "2df7f915bfed0aba351f04094c2d16c4ec13277a32b20eaf6e738c51e190da8c",
+      "lado_menor": 154,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (55).jpg",
+      "clase": "beau_s line",
+      "sha256": "7a5a2d1c9eeb290074c4e12952c193766f7e82d7c2dc6e454a62ee963e9a5492",
+      "lado_menor": 157,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (56).jpg",
+      "clase": "beau_s line",
+      "sha256": "96bd02f487a79f73cc4bbb98d2db253aa814cfe28397a3fb9d34e1c00d9c7cb9",
+      "lado_menor": 143,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (57).jpg",
+      "clase": "beau_s line",
+      "sha256": "e0c60714291d9d283000f251360ccb882f64e5601e58c77c27e2d5c500689dee",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (58).jpg",
+      "clase": "beau_s line",
+      "sha256": "28ce79dedccdded6f1ea160ea140f736c179ad78824dd15da78bd29e4b24d36b",
+      "lado_menor": 106,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (59).jpg",
+      "clase": "beau_s line",
+      "sha256": "3200afcb40bb24be9fd50fd0917d1cd342e1cf2cf447f407adb798750308ce45",
+      "lado_menor": 97,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (6).jpg",
+      "clase": "beau_s line",
+      "sha256": "47b5734f183eb9dce6a8b10d58b5d4944b1e46d85d648af30d17d10e1c92a7f2",
+      "lado_menor": 257,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (60).jpg",
+      "clase": "beau_s line",
+      "sha256": "21c397255e11364c88a03031cd614b7fcdd2899cb88a7e8be95e74686abe9321",
+      "lado_menor": 89,
+      "particion": "train"
+    },
+    {
+      "archivo": "beau_s line/beau (7).jpg",
+      "clase": "beau_s line",
+      "sha256": "5c61e6ba9b2c2848645b6a0bc581116635ef288114a9f27c0f501503a8518703",
+      "lado_menor": 148,
+      "particion": "test"
+    },
+    {
+      "archivo": "beau_s line/beau (8).jpg",
+      "clase": "beau_s line",
+      "sha256": "6acb2bb722b44294a9263a8974dcba8381be3baa01efc52cdc9bcc8263643dfc",
+      "lado_menor": 162,
+      "particion": "val"
+    },
+    {
+      "archivo": "beau_s line/beau (9).jpg",
+      "clase": "beau_s line",
+      "sha256": "93de41f599ccd0caf30ec1cb2e6163159aca974e459c3dc096ad8c103bd9fa99",
+      "lado_menor": 145,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (1).jpg",
+      "clase": "black line",
+      "sha256": "1be72e31f2b1de4789e154938d08553fc367fb74e914c2f889417eea8ff56537",
+      "lado_menor": 290,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (10).jpg",
+      "clase": "black line",
+      "sha256": "3394aa962cff13657f0de70203e368f04ebb25d2f042e48e0d58c2ac2ba64ae0",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (11).jpg",
+      "clase": "black line",
+      "sha256": "ec743b99178a5391ad01d36effa358fb0c849cd899c4161a0743aa20c15ab455",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (12).jpg",
+      "clase": "black line",
+      "sha256": "76c268c5fe597222bedc5d92f5b00b89a6a1104bcf6a5f9c4967b8471699cae1",
+      "lado_menor": 168,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (13).jpg",
+      "clase": "black line",
+      "sha256": "f8090bb48817d16eb8d6c42bd06a2ed8cc95feed55b62ac40eb8adfb717df240",
+      "lado_menor": 73,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (14).jpg",
+      "clase": "black line",
+      "sha256": "f5358b9056fa07bbcd6ac55b6e1e85f2e784d7314a2e17acd986aa151ae76b10",
+      "lado_menor": 73,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (15).jpg",
+      "clase": "black line",
+      "sha256": "95d1dabf6ed1feed7042066731b7f6dff12a525f070d3aef93ec1b75ab9fde5c",
+      "lado_menor": 73,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (16).jpg",
+      "clase": "black line",
+      "sha256": "32e8178cabe73916e71629811011b6a207de254ba5b26ff0e6d8dfce8e546762",
+      "lado_menor": 175,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (17).jpg",
+      "clase": "black line",
+      "sha256": "167cdca176b0cd269609731cc834db2b8258b181396b6f24b5f239d1a8b79e28",
+      "lado_menor": 166,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (18).jpg",
+      "clase": "black line",
+      "sha256": "93e987bbed86bd8c42db59b900139b0221fed739b43017255e7777ab237c8fea",
+      "lado_menor": 165,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (19).jpg",
+      "clase": "black line",
+      "sha256": "662d49aa9873b3980ee276c3949511046ccb0d4814655d90c7103d1df8dd35ef",
+      "lado_menor": 113,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (2).jpg",
+      "clase": "black line",
+      "sha256": "9422f2e75dba299a8b60c2780ac3e91cae280bafd7e1d81fbe812d1f96d47594",
+      "lado_menor": 147,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (20).jpg",
+      "clase": "black line",
+      "sha256": "763af46c627b37a08c49d83c7eea5bfd85b83acb1d902627e75cd1d56675fa6c",
+      "lado_menor": 93,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (21).jpg",
+      "clase": "black line",
+      "sha256": "d101c599662d826e680c8305d7bcee1e9306830212e2cc0ae4afcbca314ef8b6",
+      "lado_menor": 107,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (22).jpg",
+      "clase": "black line",
+      "sha256": "902671b13510b8572b4a8b327a14e07d99e6b055ef88a0648df9605f0e5be210",
+      "lado_menor": 179,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (23).jpg",
+      "clase": "black line",
+      "sha256": "d81894f355ddb6ea06cd3609b254204568ceb76f173456e7ffb5c2ac413a3075",
+      "lado_menor": 163,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (24).jpg",
+      "clase": "black line",
+      "sha256": "a68efd9b7bcd11576f67a211f4aed33f35385d829281624b7db6aaf33bd0534e",
+      "lado_menor": 96,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (25).jpg",
+      "clase": "black line",
+      "sha256": "0b234cee0394078e4deaf7c5f6ac5de1eb488e48f8b9907c825dfc47247fcb7b",
+      "lado_menor": 94,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (26).jpg",
+      "clase": "black line",
+      "sha256": "fdf060be97794fa97c8e91f6c147903c1681ee4a41c42b1c174410f4c4689ecb",
+      "lado_menor": 40,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (27).jpg",
+      "clase": "black line",
+      "sha256": "8f461062790e60ba52727a1d0749fc5b5b432855f3ddf03be0c922effb70783b",
+      "lado_menor": 86,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (28).jpg",
+      "clase": "black line",
+      "sha256": "6ef25e640b1fa2bf6f73a6876ba7e646f4f335f4165b47ec106e206dc19bd6a6",
+      "lado_menor": 107,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (29).jpg",
+      "clase": "black line",
+      "sha256": "aeaa451267a178f325cafef8926a32bf0377b4578822b00a2651f092f0c78e35",
+      "lado_menor": 59,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (3).jpg",
+      "clase": "black line",
+      "sha256": "4cd804e67f1a6fa93e8e21d31358e354d7982a91082082306f3a16386e997151",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (30).jpg",
+      "clase": "black line",
+      "sha256": "6509234dba83979b2a3d1d4f8705cdcbe298ca53574265da85f39922ac40f60d",
+      "lado_menor": 43,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (31).jpg",
+      "clase": "black line",
+      "sha256": "095885e53d10e0419f5ae834571dfa2c1dc8807a9ff4ea16aff26330db23ee8a",
+      "lado_menor": 108,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (32).jpg",
+      "clase": "black line",
+      "sha256": "9a8f4af118aa6f11f255552f1a7599156b4ea8a9b1bd52aaff66a184e854abb4",
+      "lado_menor": 205,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (33).jpg",
+      "clase": "black line",
+      "sha256": "fe020d5e799399cc82773072d43a1278797fe6f98739f3b1f1a5d1c0d9ee3b97",
+      "lado_menor": 76,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (34).jpg",
+      "clase": "black line",
+      "sha256": "dc3db3d3593e2601c1102c55942c55e7fab2cbd62b7dfde6cbdc01cfbe837c34",
+      "lado_menor": 98,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (35).jpg",
+      "clase": "black line",
+      "sha256": "cd4826bed450baadfec9874ad0050d1303179c2f581b48eef7ced85f99d22965",
+      "lado_menor": 83,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (36).jpg",
+      "clase": "black line",
+      "sha256": "0512d362f66068f1acac0834c32397fcfb84d4bb96c1e65c5bf4221c670749e0",
+      "lado_menor": 39,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (37).jpg",
+      "clase": "black line",
+      "sha256": "22e82b45c1141fd4bc65031ffc36e2acde640ed06a79332704e46dcfa48088aa",
+      "lado_menor": 52,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (38).jpg",
+      "clase": "black line",
+      "sha256": "be50cf4c67709d5959f7c992c9d1e4e5e2816ec156a7a8abe289bc7c2e194b03",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (39).jpg",
+      "clase": "black line",
+      "sha256": "4100afa9672bf32ea15dc091312c16342fc3f79755ea88fb8619834bf9dd70f7",
+      "lado_menor": 72,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (4).jpg",
+      "clase": "black line",
+      "sha256": "564ad8eba995077630fb31374aa3b5b33896bf6ce302dcce6226246f38a5cc08",
+      "lado_menor": 102,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (40).jpg",
+      "clase": "black line",
+      "sha256": "6f9c5d4f3e0aa19e7f6e2c7e140fb76caa923247b730884698fe05eef938826f",
+      "lado_menor": 108,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (41).jpg",
+      "clase": "black line",
+      "sha256": "6085cfeb69c578598e67711d4149d99d9380f5630a187bbade45b4caf851691b",
+      "lado_menor": 38,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (42).jpg",
+      "clase": "black line",
+      "sha256": "97f77e498c04493041ede1cca048df556607de846630bd2134a8089d82453a70",
+      "lado_menor": 82,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (43).jpg",
+      "clase": "black line",
+      "sha256": "db9e1a5c6df986b5a763740948f10799ed38291c30edeece7e233df8a9103114",
+      "lado_menor": 114,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (44).jpg",
+      "clase": "black line",
+      "sha256": "24e9ab61bcb31bc3e42efaeee190b36bdd3457849e5730862cccc50426cd86c5",
+      "lado_menor": 83,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (45).jpg",
+      "clase": "black line",
+      "sha256": "665ded2efb4449609d2ce4112e18b2ce76fa67aa82fae300ac7566add40b075f",
+      "lado_menor": 86,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (46).jpg",
+      "clase": "black line",
+      "sha256": "f6bea2761547b00b511a0a7f8b635cabbbad66f76e78e96e056acd052cfeca13",
+      "lado_menor": 74,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (47).jpg",
+      "clase": "black line",
+      "sha256": "7ff9245e17047ec4b50853861fff8bd8b4edd6008f434a1a9e38431092bcfdde",
+      "lado_menor": 179,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (48).jpg",
+      "clase": "black line",
+      "sha256": "c7352f093c737980dbceac0a3dde90ce1cdfe6ace4e58fec79d99e0b29a413d0",
+      "lado_menor": 103,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (49).jpg",
+      "clase": "black line",
+      "sha256": "421ebacad52b8f5d13ac1dea56535fd399b42a8191c1c25766c3d4a82fccc82a",
+      "lado_menor": 86,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (5).jpg",
+      "clase": "black line",
+      "sha256": "928558dcf945265c008164c5dfa374f17b14e3f4daa9256eccaca24c44c9f27f",
+      "lado_menor": 717,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (50).jpg",
+      "clase": "black line",
+      "sha256": "1291c7d7e5171df87b004743f0e3c3a958d15999a05f767932b1647e054df76c",
+      "lado_menor": 129,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (51).jpg",
+      "clase": "black line",
+      "sha256": "6f370dfa70484836745702f9319c3655aec84a322be8bb2f11df6e9fd5e1fcd2",
+      "lado_menor": 151,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (52).jpg",
+      "clase": "black line",
+      "sha256": "23d1ddb5c358b9ed720d855949cf8ce64787b12119fb5162361018dcc14a8777",
+      "lado_menor": 152,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (53).jpg",
+      "clase": "black line",
+      "sha256": "437c7e7bd8d99ab2c3607d995421b97d9e1cbf84e9ab180e5b26d46acc14aad5",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (54).jpg",
+      "clase": "black line",
+      "sha256": "b4b4188eee09779f4c7559ccb4e56f2c4af858548b8833e18cb7ad3cafa126aa",
+      "lado_menor": 129,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (55).jpg",
+      "clase": "black line",
+      "sha256": "3573c9a3a4197643c22b59a200e690354144ea168ed8b7c4cccb40ec0bc72bf5",
+      "lado_menor": 75,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (56).jpg",
+      "clase": "black line",
+      "sha256": "9e35259b4fc38e860f148dda2506ec6bea534bdfbddfb77345c1065bc634ff8a",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (57).jpg",
+      "clase": "black line",
+      "sha256": "17a69144843c3541158719a9f0a55bd8d912128d6c3a484e6b766357716f5d1f",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (58).jpg",
+      "clase": "black line",
+      "sha256": "dda7f6d0e938b4cece7afa70bbf94dc1b3fcbe467a3781937165875228255f04",
+      "lado_menor": 92,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (59).jpg",
+      "clase": "black line",
+      "sha256": "2fd2edf2372e5614b475f47cbd7898844fce610c9bc7fd560bcc8f5a395a124f",
+      "lado_menor": 60,
+      "particion": "test"
+    },
+    {
+      "archivo": "black line/black_line (6).jpg",
+      "clase": "black line",
+      "sha256": "e289e0117471b6e3a9c3c790edd8e0c9a6cf7b59e3640892c13d5db17efdddc4",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (60).jpg",
+      "clase": "black line",
+      "sha256": "38d66c087f53644c98e031f58d0f63bc0a688b7171011755996bb77ebc86ca8f",
+      "lado_menor": 129,
+      "particion": "val"
+    },
+    {
+      "archivo": "black line/black_line (7).jpg",
+      "clase": "black line",
+      "sha256": "608d44adf921a2e52751be72d8dd3d971fa0bb98a61932a709a2d7b51c796212",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (8).jpg",
+      "clase": "black line",
+      "sha256": "9d54172168a259775f0761f1299340be63a98d9b847988ebed2cea3126590850",
+      "lado_menor": 116,
+      "particion": "train"
+    },
+    {
+      "archivo": "black line/black_line (9).jpg",
+      "clase": "black line",
+      "sha256": "8b68cb42b0909b111b5452802c69f9dbebeeec71ae776b17c0bb4066edb06222",
+      "lado_menor": 56,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (1).jpg",
+      "clase": "clubbing",
+      "sha256": "997750b5ef518dba03f0ef10d0efaa25316a832a4624d8c0f89ee9d4d5db70a2",
+      "lado_menor": 46,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (10).jpg",
+      "clase": "clubbing",
+      "sha256": "3c5edbdd68708f9f436cdee9acfb29ca25842bc15bc86691cee094ec10e5c128",
+      "lado_menor": 373,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (11).jpg",
+      "clase": "clubbing",
+      "sha256": "39992e86f7e5f41fce6dc2d975a1fe13f926460944a165d5e75c4ff247b2dd8e",
+      "lado_menor": 77,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (12).jpg",
+      "clase": "clubbing",
+      "sha256": "02a35d01918c079e5dea5b2c69e87b2696584b314af7a06345282e713b367fe8",
+      "lado_menor": 73,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (13).jpg",
+      "clase": "clubbing",
+      "sha256": "4e3da41a6840170932b82ec46fef582cde7e3455007288ef0573e181d3442a13",
+      "lado_menor": 66,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (14).jpg",
+      "clase": "clubbing",
+      "sha256": "eb864afbd1e1cddb81ae5018b2130c7b412a619aa513d3c14eb3f7cf8930110c",
+      "lado_menor": 54,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (15).jpg",
+      "clase": "clubbing",
+      "sha256": "95b6e71451134359e386c3f31e7c64455aa4a4eaad065490a87b9cf09c30dd6f",
+      "lado_menor": 43,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (16).jpg",
+      "clase": "clubbing",
+      "sha256": "039aac3a59dfe5b674844a85067b0e48996f345bebcc7c945214e87f4f2480f1",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (17).jpg",
+      "clase": "clubbing",
+      "sha256": "8804dacd083052ce2f39d1bac0777d928e950718664389b53b42ce17ee0b0fc0",
+      "lado_menor": 66,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (18).jpg",
+      "clase": "clubbing",
+      "sha256": "c68edf5d994010449164c7eb2a90386671cde37f897a3fb119ce109a5975dea6",
+      "lado_menor": 74,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (19).jpg",
+      "clase": "clubbing",
+      "sha256": "c0257f9704182df9312e5657f47c54922cdc0319d2bad1f08c9323cb68cdf01d",
+      "lado_menor": 59,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (2).jpg",
+      "clase": "clubbing",
+      "sha256": "4d7822304bdea2d6371758db553c076dfdbad74dff0bf41234b28a3869d08137",
+      "lado_menor": 41,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (20).jpg",
+      "clase": "clubbing",
+      "sha256": "ece3ccc9c49d95fd8215e00020d97f6e734097110eaceabe6cc40e6e0b1cfca6",
+      "lado_menor": 67,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (21).jpg",
+      "clase": "clubbing",
+      "sha256": "556588991b7406c4c0a52366a09966ac89f3a3c3942f3f02ece61adff8d17630",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (22).jpg",
+      "clase": "clubbing",
+      "sha256": "9ccb56ec32bd1c056641d851016f182f8d084b15dd852d315e944b769eead5dd",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (23).jpg",
+      "clase": "clubbing",
+      "sha256": "20f7dd2895a3b49a7a260eb08ce42d3dd053d0f66c1eb2cd7e284f616c0ccb18",
+      "lado_menor": 157,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (24).jpg",
+      "clase": "clubbing",
+      "sha256": "5a3a626a81920d88e0b886e8931340bbad010391750c32d4a3eb5c516774ea07",
+      "lado_menor": 83,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (25).jpg",
+      "clase": "clubbing",
+      "sha256": "977915283114cd042b1dffc4ed3515ae177b867d071d420d0be3a6f7b5933ffc",
+      "lado_menor": 88,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (26).jpg",
+      "clase": "clubbing",
+      "sha256": "df76a10325d4279b16d647eab60ba9f2bd7b8f99f4f9b57dfd0d757122b1d2a6",
+      "lado_menor": 52,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (27).jpg",
+      "clase": "clubbing",
+      "sha256": "0c7ea05e67aa466d2fe16fe7fd8e8f5a72d807c00d431f0f5e2a66057795e48e",
+      "lado_menor": 52,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (28).jpg",
+      "clase": "clubbing",
+      "sha256": "eb6054ca506a7e960cc3bb4d3d6ca4d90f03d3a9fae36e9561ea78caf0f9be00",
+      "lado_menor": 53,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (29).jpg",
+      "clase": "clubbing",
+      "sha256": "d59922feddc6f13df78b39706fa3cc5ba910edbc4cd6f1513ad3cffd7ce8718c",
+      "lado_menor": 49,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (3).jpg",
+      "clase": "clubbing",
+      "sha256": "7dde476034914fb70bbe01b099e5fe9500d4097b4e55133d4efd9e087d288b7e",
+      "lado_menor": 40,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (30).jpg",
+      "clase": "clubbing",
+      "sha256": "6e55c683ccdbc8be7458613959d25f799ef343cf143651e6b5a607a16754e5b1",
+      "lado_menor": 89,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (31).jpg",
+      "clase": "clubbing",
+      "sha256": "e7d2c10edba7c1ac0f46a605e1876a31b62800f5e63ee51e1d7f471b0cd2a91a",
+      "lado_menor": 49,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (32).jpg",
+      "clase": "clubbing",
+      "sha256": "a88baf9aba79c5fa6ea59af88651c8615748a9c8c67e59dd8371e82cd3ed64a9",
+      "lado_menor": 61,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (33).jpg",
+      "clase": "clubbing",
+      "sha256": "f9c1e5fc9c3b03b7b9e44bfb530b918a64e4c2b1d2a0e5e6b63d26e01166179f",
+      "lado_menor": 61,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (34).jpg",
+      "clase": "clubbing",
+      "sha256": "518190fc36d26f3ea4f408e00ee9df4fa0f98a61715de75eec9bc608991a1974",
+      "lado_menor": 73,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (35).jpg",
+      "clase": "clubbing",
+      "sha256": "5614aef593ac7c7fa6f43c32c9380feff443d580cd5b206c4c45988ff55eeb93",
+      "lado_menor": 66,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (36).jpg",
+      "clase": "clubbing",
+      "sha256": "013739d2093bf0c1839fdc3e5d05df40bfd895d439b5312f55fae3a42077c540",
+      "lado_menor": 74,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (37).jpg",
+      "clase": "clubbing",
+      "sha256": "a07724b451d3b4249ef8411074f835150c5751aa88fe4e6023b3fa168db0c1c8",
+      "lado_menor": 57,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (38).jpg",
+      "clase": "clubbing",
+      "sha256": "17d53b845dde230cdbc53753779a0f4df17c8f43a211f6697f4d9f2769b3ee40",
+      "lado_menor": 52,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (39).jpg",
+      "clase": "clubbing",
+      "sha256": "4603c83359663cf036fcc8b9e5f19275f2a0079bdddd10927218591e9d7ce8bb",
+      "lado_menor": 53,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (4).jpg",
+      "clase": "clubbing",
+      "sha256": "9d024a530a8aeb4a885ce4d2d58e335c8e6065af72bce95b7cee305a5d217a10",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (40).jpg",
+      "clase": "clubbing",
+      "sha256": "8291efd4693e2e8880df847d96c3db40185971e80b3f87f16b61669bb110a62a",
+      "lado_menor": 41,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (41).jpg",
+      "clase": "clubbing",
+      "sha256": "fe96d1397b5a10c08d032ce72603ba182d8b326df8fa1e169054eb053c09870c",
+      "lado_menor": 34,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (42).jpg",
+      "clase": "clubbing",
+      "sha256": "2c19e332872ab737fa23229b74df2c47b788f34ec6d19d5f0589b855db3c665a",
+      "lado_menor": 37,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (43).jpg",
+      "clase": "clubbing",
+      "sha256": "9b53e1c24d5af33e2e434e53a153252908dbeb8fe279398191dd937c84170fd8",
+      "lado_menor": 39,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (44).jpg",
+      "clase": "clubbing",
+      "sha256": "5bbeb0a3b6d1c22fca84d214a66a2c68b13a4bec3d410f30ac5f093bfb759293",
+      "lado_menor": 33,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (45).jpg",
+      "clase": "clubbing",
+      "sha256": "f077a12ce4c42cc95ee93e9c71b5504b83c72d32ead1b0f67d979fa4f7972cdb",
+      "lado_menor": 36,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (46).jpg",
+      "clase": "clubbing",
+      "sha256": "ae41df1106319ceac2196d6e1dbcb46a3f80527e43b43eb917c2051ab8699f8b",
+      "lado_menor": 43,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (47).jpg",
+      "clase": "clubbing",
+      "sha256": "fb47a7e2d73d7774575b311bea95375ed14ede41249694a7b0eb772b8b80ca8b",
+      "lado_menor": 36,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (48).jpg",
+      "clase": "clubbing",
+      "sha256": "1c912d52aad336114efff338c019175f15fca6a9dcb2c0a8d79f8153124e66be",
+      "lado_menor": 37,
+      "particion": "test"
+    },
+    {
+      "archivo": "clubbing/clubbing (49).jpg",
+      "clase": "clubbing",
+      "sha256": "c4855a49e10a73e46cda16a38ad06e19be80f92b98fa027b3037ed85f713973e",
+      "lado_menor": 121,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (5).jpg",
+      "clase": "clubbing",
+      "sha256": "abbea4aad9a8ed4375ab007a4bead3b85ddcdcde6c719618fa8a6676db132bb6",
+      "lado_menor": 37,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (50).jpg",
+      "clase": "clubbing",
+      "sha256": "3ccbf41fa2a118486234a96ccde39551b6675616f3301864dbf9fa254d82381f",
+      "lado_menor": 148,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (51).jpg",
+      "clase": "clubbing",
+      "sha256": "6241a08016d2e6489e8e41afc039a83a152abebea14fd1bc48d136c89ead0992",
+      "lado_menor": 143,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (52).jpg",
+      "clase": "clubbing",
+      "sha256": "05e80b414f228b42695826a3ab5aa691db46af44c70eae849c110ce224f3ae80",
+      "lado_menor": 143,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (53).jpg",
+      "clase": "clubbing",
+      "sha256": "03dfd53bb03195cc582183346810a4cf3970baa5be7f5c4dcb86381d36d527e7",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (54).jpg",
+      "clase": "clubbing",
+      "sha256": "b9d97df751ced2caf9ae99549778c26bd3edacf3a8cfdc6610bc3788ffb1cd7b",
+      "lado_menor": 76,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (55).jpg",
+      "clase": "clubbing",
+      "sha256": "be0bdee901d8c881222162e644280fca01be7fe17e54a699b2a9dd08a37b78cf",
+      "lado_menor": 127,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (56).jpg",
+      "clase": "clubbing",
+      "sha256": "73a50c30cf3f379e325920dcb5f11a8caec72c94aa9d370a5b39f2bd11c061bf",
+      "lado_menor": 150,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (57).jpg",
+      "clase": "clubbing",
+      "sha256": "739cc734946ecede0ce8ad45a27ff2437f8805ebb15201eccb0846e3b9a6d0bb",
+      "lado_menor": 161,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (58).jpg",
+      "clase": "clubbing",
+      "sha256": "a3365484276cc344a308f8f42ecd9980121199895fc3ef707c6992d8ccf94b37",
+      "lado_menor": 290,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (59).jpg",
+      "clase": "clubbing",
+      "sha256": "ef28dbc5f8c2aaaed899f320e5765e9580df26e47aa9be8fcf26677aefe99676",
+      "lado_menor": 76,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (6).jpg",
+      "clase": "clubbing",
+      "sha256": "201f2340564e3748aeda1ab8a96c29b3f603fa298c2b3aa1f46f16a8f54f85d6",
+      "lado_menor": 63,
+      "particion": "val"
+    },
+    {
+      "archivo": "clubbing/clubbing (60).jpg",
+      "clase": "clubbing",
+      "sha256": "dffba4131f85873ffbeedad876a23780a4a7bb3581d5b3267bb29937bce8c64d",
+      "lado_menor": 71,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (7).jpg",
+      "clase": "clubbing",
+      "sha256": "0719b9bee0ba6c4fee96dee10809039ac08175d4ef4d1a4b1c7924cf425f7ac4",
+      "lado_menor": 92,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (8).jpg",
+      "clase": "clubbing",
+      "sha256": "e8afb1334ed9d2ef6ad3a9b3adaceb3a3ffb5036cf0b8124ef5c486faac81912",
+      "lado_menor": 57,
+      "particion": "train"
+    },
+    {
+      "archivo": "clubbing/clubbing (9).jpg",
+      "clase": "clubbing",
+      "sha256": "b017c577f1f8825e30f7df71f838f1998bd1d43548271081c0c8575f072f45e1",
+      "lado_menor": 307,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (1).jpg",
+      "clase": "mees_ line",
+      "sha256": "bcc89c972d3e4b9ad8debfe97c950ff2bd36780484eb8eacbf2cebb83f2855ca",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (10).jpg",
+      "clase": "mees_ line",
+      "sha256": "376dbdc18f7afa3ce0287c6cc053f870b5fbd671933037eac0f8dff078a72aeb",
+      "lado_menor": 66,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (11).jpg",
+      "clase": "mees_ line",
+      "sha256": "625509cf72d708408625f90e1906a4605cc118ba4c31e4ad00b3cae74e86a0be",
+      "lado_menor": 43,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (12).jpg",
+      "clase": "mees_ line",
+      "sha256": "5a31cc15ab4c36c4d1bc9c5d83b44bc882d171d26600be6f79c3c292b625a3ee",
+      "lado_menor": 44,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (13).jpg",
+      "clase": "mees_ line",
+      "sha256": "5758f68b77fc54cc7464e0aa33083905f51bac15e84a6bced07f0693408d8afc",
+      "lado_menor": 50,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (14).jpg",
+      "clase": "mees_ line",
+      "sha256": "6ed947978730dd8e873e19736744efa80725696ceb4db246b6c80546c6d46ca4",
+      "lado_menor": 106,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (15).jpg",
+      "clase": "mees_ line",
+      "sha256": "ebb4c634b022735ab37bc7807159850432f5be2df2de9a9d93ad2e88bd4b6bae",
+      "lado_menor": 101,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (16).jpg",
+      "clase": "mees_ line",
+      "sha256": "f75010e7ad421b8f2ed6867c3d180fc5bdc9b248f4c08c18035c7c5c38830c5e",
+      "lado_menor": 47,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (17).jpg",
+      "clase": "mees_ line",
+      "sha256": "c7beadfd7cb1766094e4dc596979914002d216ad3c67addc4dd7689bc7cf063d",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (18).jpg",
+      "clase": "mees_ line",
+      "sha256": "e95baf38a27ee0ce0712e6fdb4db8d483d8b53791aa86ff24ea93620da82797d",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (19).jpg",
+      "clase": "mees_ line",
+      "sha256": "577698c65d8f540d5d7283a7d5829b4274da77d940a80519bb614e3bacce1b26",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (2).jpg",
+      "clase": "mees_ line",
+      "sha256": "5e60f35f89c8b65ccd612fdf40d7a7354c31e139b995f5bc87dd614256b5c795",
+      "lado_menor": 27,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (20).jpg",
+      "clase": "mees_ line",
+      "sha256": "62a552df16277840ab5cb2da13a3b8cd669f74a1ef7b6f3de7a16b9e0f158990",
+      "lado_menor": 51,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (21).jpg",
+      "clase": "mees_ line",
+      "sha256": "1941fae26bce84ad9f46997255a4cb8c88861536ba2b614e62b8172f26926bc3",
+      "lado_menor": 49,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (22).jpg",
+      "clase": "mees_ line",
+      "sha256": "c3511d64c6b8aad1044ab68153de71dc9fe79f5a193eb056d08da0b8230f1b74",
+      "lado_menor": 42,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (23).jpg",
+      "clase": "mees_ line",
+      "sha256": "0f91cf5708de56db5d16264b74116c002609db753aedc227eda9b365ea1d276a",
+      "lado_menor": 42,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (24).jpg",
+      "clase": "mees_ line",
+      "sha256": "6ac96a6bf8bd7ba0e7b36424014293f7d85a0715ce01a025691404a0c31d85db",
+      "lado_menor": 47,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (25).jpg",
+      "clase": "mees_ line",
+      "sha256": "da9dbeda7479324b99483dfb2613ed7f726082ebe5d0abfda7da6d3e8e2efc86",
+      "lado_menor": 46,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (26).jpg",
+      "clase": "mees_ line",
+      "sha256": "bd220e43e56237628c3db55d5fc395737994658d903f059e99d0a45d53046e9a",
+      "lado_menor": 43,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (27).jpg",
+      "clase": "mees_ line",
+      "sha256": "63118a4fb11716aace11430f84d7e636e5c9e73e2d0cc9fdfa43073695ab752f",
+      "lado_menor": 43,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (28).jpg",
+      "clase": "mees_ line",
+      "sha256": "ee050d128f0df265fbcaad5997f593f8f196e4c3352fc942a0abc699571d2d43",
+      "lado_menor": 131,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (29).jpg",
+      "clase": "mees_ line",
+      "sha256": "bebf2beddb00af69c463adc59ded79661c98c04e58fcf1fdb14a2dfe0f5715e1",
+      "lado_menor": 48,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (3).jpg",
+      "clase": "mees_ line",
+      "sha256": "11e0c75b29acc694bc50f7de8f49539cb4ec98bea19eec6885b0ccab55a8fbe0",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (30).jpg",
+      "clase": "mees_ line",
+      "sha256": "95ca974d90a2ebf69abe9d431166bbccb6be887a92d6b06274f04e230c7326d2",
+      "lado_menor": 49,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (31).jpg",
+      "clase": "mees_ line",
+      "sha256": "75481de1bf58a707e6c16a7847eeea39a3c4efb28dd5cb2f49e9355b6ffbed2d",
+      "lado_menor": 51,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (32).jpg",
+      "clase": "mees_ line",
+      "sha256": "eaa45e1faa57a653913eebad394c1fdd8779f14e5668bb5ae55c78700ffbc4de",
+      "lado_menor": 40,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (33).jpg",
+      "clase": "mees_ line",
+      "sha256": "d953b9748e58c56a02ba62bd9278a3921997f362ad148c5af57637d355913c0b",
+      "lado_menor": 169,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (34).jpg",
+      "clase": "mees_ line",
+      "sha256": "37c7c8689f5aa1b0eea32dd73d7e3e377fef81de1db29fc3de31399a9904cd74",
+      "lado_menor": 67,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (35).jpg",
+      "clase": "mees_ line",
+      "sha256": "e9be15a6428f62fbe4d074f0b02907ca5c59856f4ddbba10e170f7c4513b0f9f",
+      "lado_menor": 73,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (36).jpg",
+      "clase": "mees_ line",
+      "sha256": "4e1fe774ebcae0f18981782f064ca16438377e08196b3fee689c71ed085a0a84",
+      "lado_menor": 53,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (37).jpg",
+      "clase": "mees_ line",
+      "sha256": "e44b5573f2bc3466fcc0f882ebc9f1dd05ba7d631064773b7739a3e455c525ac",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (38).jpg",
+      "clase": "mees_ line",
+      "sha256": "ea801f9d6dff07f090b420c53dacebf1dee776c9058031f2ac5312a1881c3734",
+      "lado_menor": 38,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (39).jpg",
+      "clase": "mees_ line",
+      "sha256": "0e41e3724f48f58e39d4a972935617c0a638d5f24d835baf64e2da008e8a625d",
+      "lado_menor": 48,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (4).jpg",
+      "clase": "mees_ line",
+      "sha256": "77f5628be1d1da473a686f6a14a2c1c073a7631daef88047a76c01192860ee07",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (40).jpg",
+      "clase": "mees_ line",
+      "sha256": "1931fd40a08c9832f4377f6c4de199ab88f01fb1527fd43d44c72fe0233817a2",
+      "lado_menor": 144,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (41).jpg",
+      "clase": "mees_ line",
+      "sha256": "ffb56e40150e25804087cf3dbc9a4977257a6d8fce6eedb8170c84a5c33d57e6",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (42).jpg",
+      "clase": "mees_ line",
+      "sha256": "e02e57f2cf10022ac0a7b2ee4c1d23ceb8fc6333fd28c93c528bffe9131a25e0",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (43).jpg",
+      "clase": "mees_ line",
+      "sha256": "5ac46175686798b772d21f4e9f1e119c833b1e7ec7f9e058292a75001d14b472",
+      "lado_menor": 57,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (44).jpg",
+      "clase": "mees_ line",
+      "sha256": "67f614760d4ca3b595789c1039b96fe702cff3632b40cc019f7e0b60e998f19c",
+      "lado_menor": 27,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (45).jpg",
+      "clase": "mees_ line",
+      "sha256": "56edc94f03098bc955df1a3ceeba4fa37d3c74dd12e46d37afc6066118c7b728",
+      "lado_menor": 31,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (46).jpg",
+      "clase": "mees_ line",
+      "sha256": "b5ff32b6cb08ffdf448d6dd67703a1f9c1e36d74e72a5d9f923aea3e2c4cac42",
+      "lado_menor": 94,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (47).jpg",
+      "clase": "mees_ line",
+      "sha256": "78f27d94ff209701d1356f42c5b48ba2e1c7a8334ad4db5a54624033ba1314ae",
+      "lado_menor": 38,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (48).jpg",
+      "clase": "mees_ line",
+      "sha256": "e5443761290d72e8f6c68dc9802f5d8ba86c9932748cf8ea8f1564c713151558",
+      "lado_menor": 43,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (49).jpg",
+      "clase": "mees_ line",
+      "sha256": "5395fe7e2625930c8d4871ab8233518c11d9d899369a436a98fe16d57e18a43b",
+      "lado_menor": 38,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (5).jpg",
+      "clase": "mees_ line",
+      "sha256": "e28862d598ea980b978af4ea6ee26282ae564c41999265c6f9b43b5b13c802b1",
+      "lado_menor": 29,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (50).jpg",
+      "clase": "mees_ line",
+      "sha256": "d1992616dcd8f31c194c6fb714310f4984c46b8f5b72364d54e8b3ff97b35644",
+      "lado_menor": 43,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (51).jpg",
+      "clase": "mees_ line",
+      "sha256": "8edc07e7f4409dc5198a2d04037b80b957bbba034211e1e450bddb9acc1aa9e1",
+      "lado_menor": 42,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (52).jpg",
+      "clase": "mees_ line",
+      "sha256": "e16092bd6d83f86867921fa4da0c6b4f0fa29b295f6f48779c9ac80927cf7f4e",
+      "lado_menor": 41,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (53).jpg",
+      "clase": "mees_ line",
+      "sha256": "22d1333c7ec0fc71c5bc830eead810bd7a5d41110e6aa22af2f5bdcae75a88be",
+      "lado_menor": 45,
+      "particion": "test"
+    },
+    {
+      "archivo": "mees_ line/mees_line (54).jpg",
+      "clase": "mees_ line",
+      "sha256": "9375199fc6a8c9342db2719ed9fa6721aae049c68c9c35b0d919a8a7963f649f",
+      "lado_menor": 53,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (55).jpg",
+      "clase": "mees_ line",
+      "sha256": "939dba3d4b1f4431fe49c844e9cc281fe0ba55290f565e477563e48c471c3cf7",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (56).jpg",
+      "clase": "mees_ line",
+      "sha256": "986a4635429d984d67ff98edab19ce46fcbcdc725d524913c2235ac25f58403c",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (57).jpg",
+      "clase": "mees_ line",
+      "sha256": "2c48b3f733373b48a5ecb13ebb8b59303c499ed94978f482f7f6f0cf031168f3",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (58).jpg",
+      "clase": "mees_ line",
+      "sha256": "b85859494b07c38352800b9f6cade84cbb49fbc18da4834f9fe2c14b400fb682",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (59).jpg",
+      "clase": "mees_ line",
+      "sha256": "b88a18abea28041fb9895fda1c26f8006e033ee7015c8ff35a0ec5a2d0a24b81",
+      "lado_menor": 49,
+      "particion": "val"
+    },
+    {
+      "archivo": "mees_ line/mees_line (60).jpg",
+      "clase": "mees_ line",
+      "sha256": "7a24aef3021ed76078bd12844a2f217945d63399152d89733d52cb9a2b90af06",
+      "lado_menor": 66,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (61).jpg",
+      "clase": "mees_ line",
+      "sha256": "ba043d51bdb82859927319fae2b4ee5990560ec17466a24131dbfd4428d5137c",
+      "lado_menor": 117,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (7).jpg",
+      "clase": "mees_ line",
+      "sha256": "3c4ca326fe946c484e0da71d8c6de5b96b455087c1d66ac6d67a32241880add0",
+      "lado_menor": 30,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (8).jpg",
+      "clase": "mees_ line",
+      "sha256": "9aa45c29be687dfeea10b6a26edf463e0e2d6f19531bb5e4ab90d0b980722b5a",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "mees_ line/mees_line (9).jpg",
+      "clase": "mees_ line",
+      "sha256": "0ea61cba4b89a4a445e875e04df7f4833ea5ca1d25ffbf31f61de09013e74c14",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (1).jpg",
+      "clase": "normal",
+      "sha256": "6543f1a8470f0dec430268de3418dc4954b5dbed6a58efc4e6ed5049242fbfb3",
+      "lado_menor": 78,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (10).jpg",
+      "clase": "normal",
+      "sha256": "0b7de0a6686cb30d2ba3353387151a3a521fa322165c487dc250f42cbb9364e0",
+      "lado_menor": 174,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (11).jpg",
+      "clase": "normal",
+      "sha256": "3eb3be41a0e49cafa37f08b4a8f916be5a7a87229734f0d740997d7a7395afc6",
+      "lado_menor": 224,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (12).jpg",
+      "clase": "normal",
+      "sha256": "6b4d35876435ab610b908e4212e6af3a40eab7c73d82d70a2348760efd202d05",
+      "lado_menor": 251,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (13).jpg",
+      "clase": "normal",
+      "sha256": "c718586a24bdba6a7ae823b14c229d577db0bb2b101be5461f880ec612d65c62",
+      "lado_menor": 195,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (14).jpg",
+      "clase": "normal",
+      "sha256": "bc42dd1dbebffc3af65401084e0fe723d42394dccff76c2db8afd615d76c1c01",
+      "lado_menor": 334,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (15).jpg",
+      "clase": "normal",
+      "sha256": "e7f6b8d5dcf49bcb6a0b53a827765d4617ea96b959d2b34a7f61f885f9f9211b",
+      "lado_menor": 323,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (16).jpg",
+      "clase": "normal",
+      "sha256": "c35c00ca01d947c39d6c0a99b789ad547fe6f20e82b4e50d259902a730989e1c",
+      "lado_menor": 270,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (17).jpg",
+      "clase": "normal",
+      "sha256": "20a2b3b91ca8eaa051d2a35946d116b13d1c9b8e5ec2cad59783ee6902c2ce52",
+      "lado_menor": 250,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (18).jpg",
+      "clase": "normal",
+      "sha256": "e2b2794c6b85c951fd026a31f3799556f8b9de90ad17bec4ff8b77491251ab8d",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (19).jpg",
+      "clase": "normal",
+      "sha256": "22c49ccc515a1565c00399b21275bbbf80ad35ca33c872adab92b13981dbdf23",
+      "lado_menor": 58,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (2).jpg",
+      "clase": "normal",
+      "sha256": "033d007ea379e88e70321f6cd1fc8dc10805c4bb85147dc596584560554b802e",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (20).jpg",
+      "clase": "normal",
+      "sha256": "329cb5e126f53b59ef3f1a2b81926094438eb89156099d3837a2f86ce5989735",
+      "lado_menor": 50,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (21).jpg",
+      "clase": "normal",
+      "sha256": "cad48b0f9ca759a1ef8f54dc354183451dddf06d1318639181abfb0d78c55f8d",
+      "lado_menor": 50,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (22).jpg",
+      "clase": "normal",
+      "sha256": "843c940c5e9857d8bc6cf53a8ff72c1af5cf0f289336e24ed7d4c760d0b51c4c",
+      "lado_menor": 61,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (23).jpg",
+      "clase": "normal",
+      "sha256": "16e1a54404c63227f1964363b1c5a2658dd08d0805639d71c19a4a58caa5ab9e",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (24).jpg",
+      "clase": "normal",
+      "sha256": "7718a04343f49e6c88325f3f137e705bd9e8e85ac6a234e6f70aafd2af726a4b",
+      "lado_menor": 213,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (25).jpg",
+      "clase": "normal",
+      "sha256": "51314148f0fa7df5d2f02a1a2010e4e7cfcfc7fb4eb737732d93105e43333f8b",
+      "lado_menor": 227,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (26).jpg",
+      "clase": "normal",
+      "sha256": "f5ec7c2966ae096acee3e40ee7876f7f1409905701ab28c599534ad0f8155d31",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (27).jpg",
+      "clase": "normal",
+      "sha256": "5f910dccc09b91504cb653603c0fc52ea2599224ee5361db218d170f6a95a192",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (28).jpg",
+      "clase": "normal",
+      "sha256": "a627c29e218736f5fc5dc5942cec1aa4436df446f584084596ff02939385a6b4",
+      "lado_menor": 193,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (29).jpg",
+      "clase": "normal",
+      "sha256": "8bbfac04dd8acb6ba7136a2bc6c0903073d1254c313e2a3e1df4668e906b723b",
+      "lado_menor": 189,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (3).jpg",
+      "clase": "normal",
+      "sha256": "00c63bd020b44eb3b483c748bc76e4bdbcdcfa6b52f1ce60100ebc137f1752da",
+      "lado_menor": 200,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (30).jpg",
+      "clase": "normal",
+      "sha256": "89e18fa0a7a2d85ed522b17a4abe2fd0dea21a35b33e1a17652e3dd8e909b61c",
+      "lado_menor": 175,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (31).jpg",
+      "clase": "normal",
+      "sha256": "efb43e6af51f695418bc4de9f7d6e0692649c4819b016a5cc5eb1982f79d0bb7",
+      "lado_menor": 169,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (32).jpg",
+      "clase": "normal",
+      "sha256": "8ea73410564899e1ea4109814be96a1dd658279f8249c20ff65bdc7c21e87bcd",
+      "lado_menor": 162,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (33).jpg",
+      "clase": "normal",
+      "sha256": "242931a76959bac443f0ad5af1dc706828e42273293564ebeeb6d2ef4c92aa39",
+      "lado_menor": 109,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (34).jpg",
+      "clase": "normal",
+      "sha256": "d132264e46531cf40118457797c3a3fdd28caaf16d0d4823251e75218904ab85",
+      "lado_menor": 74,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (35).jpg",
+      "clase": "normal",
+      "sha256": "f31a81d5c10970b4dd1c4dc2361046997ccb79362879a38316421ba369be0828",
+      "lado_menor": 111,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (36).jpg",
+      "clase": "normal",
+      "sha256": "21116284ae573d1b1a7be9c07ac090a4b2d95299d1757e81f8bb5ece7e10c688",
+      "lado_menor": 128,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (37).jpg",
+      "clase": "normal",
+      "sha256": "ec5022d6b8be2ac9db2c51376c27e2f41cb3688d661b02b00bcff01a69e51a68",
+      "lado_menor": 176,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (38).jpg",
+      "clase": "normal",
+      "sha256": "22698fe5105896641150a329a2f3ed6d69253a8cec7a3ad37659a4f131a93fad",
+      "lado_menor": 210,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (39).jpg",
+      "clase": "normal",
+      "sha256": "4f59ba9b910f631c1931232ae1c19e0f072f039a51c51d65524713eb76737d58",
+      "lado_menor": 190,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (4).jpg",
+      "clase": "normal",
+      "sha256": "4382f8cff60051de865b726fd25eea4392906943d718cd4a81aa37117c008f59",
+      "lado_menor": 312,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (40).jpg",
+      "clase": "normal",
+      "sha256": "f477be3cb89a3912e692765f9acee260eea7f38668cca48417b8c7c643707296",
+      "lado_menor": 177,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (41).jpg",
+      "clase": "normal",
+      "sha256": "fe1653ba1b315e0701ca1bf4e8310a2d55db80343fdfa8b4642da65449cf96af",
+      "lado_menor": 211,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (42).jpg",
+      "clase": "normal",
+      "sha256": "1a770e10761144d2ed746397216ec2947a2445fc68c4636b4046dca3c9958b1b",
+      "lado_menor": 285,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (43).jpg",
+      "clase": "normal",
+      "sha256": "4b5bd41ccb4eee39a421f799c307355c212fefbc8f0a8abbb62a93634513a45d",
+      "lado_menor": 99,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (44).jpg",
+      "clase": "normal",
+      "sha256": "15bb8040331dd46fc3a71aaa9edbaf7e5ebb0007d7048406ca2c4f4c2a3e36d4",
+      "lado_menor": 87,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (45).jpg",
+      "clase": "normal",
+      "sha256": "e472232731d1a5a4b209ce1e885e917040a3f2f7b34b08965c96adf7124a9001",
+      "lado_menor": 95,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (46).jpg",
+      "clase": "normal",
+      "sha256": "eac6f092f85c4535d9111afe37d42f5e6cf5a69e835a5b7e8c5ddcef5702708f",
+      "lado_menor": 106,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (47).jpg",
+      "clase": "normal",
+      "sha256": "910d8ca5583049ff2b8a68353270c6501e3a31c5bb1085d8bcfc647ae096dc77",
+      "lado_menor": 119,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (48).jpg",
+      "clase": "normal",
+      "sha256": "81ae3aeb911b529d53a979ce5a42e928f6f4a9c35659031862ee68c6bf1b914e",
+      "lado_menor": 94,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (49).jpg",
+      "clase": "normal",
+      "sha256": "e0bf78b5974d7e6b407fafa23980cebf94a836676cc9fdb4d35ec3791627a55d",
+      "lado_menor": 105,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (5).jpg",
+      "clase": "normal",
+      "sha256": "92134e39b55d8cceb502f65ae2ca1af5e6fe4874c1ad5bd1b683cfe669142d36",
+      "lado_menor": 270,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (50).jpg",
+      "clase": "normal",
+      "sha256": "ba33b79069ba6e51bd45baadf48a4854481c4180442f4dfa90df225891b1186c",
+      "lado_menor": 74,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (51).jpg",
+      "clase": "normal",
+      "sha256": "3f00728f8f5ff02a6a16df382998cf4604924bbfd1f8974cc82e1495b7f5ccc8",
+      "lado_menor": 51,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (52).jpg",
+      "clase": "normal",
+      "sha256": "ea42a1679d356ecc6825198007e3c3dc7498edacdb509966bc8e81d7ffeadcff",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (53).jpg",
+      "clase": "normal",
+      "sha256": "88baf72a8253b61dc039b75d568f2c989a05aa21de2f840ddf83756f2185ee97",
+      "lado_menor": 51,
+      "particion": "val"
+    },
+    {
+      "archivo": "normal/normal (54).jpg",
+      "clase": "normal",
+      "sha256": "06989851c40319c132f98d18c09d9aa4fc8bf10db9fa9ef88339ee56a88008cd",
+      "lado_menor": 56,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (55).jpg",
+      "clase": "normal",
+      "sha256": "2d04ecde4699e65775c7094c4b7d173ad44e547caefd13de4be81634a571a642",
+      "lado_menor": 145,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (56).jpg",
+      "clase": "normal",
+      "sha256": "394616e8eb8611e89d54aa091b6e40ba7b439feef0133fe871939de607a66d5c",
+      "lado_menor": 116,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (57).jpg",
+      "clase": "normal",
+      "sha256": "9d15e049165cea5a39eb9ed57901d5300be47dfcaf68bada35833216bae084ea",
+      "lado_menor": 99,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (58).jpg",
+      "clase": "normal",
+      "sha256": "a7bed8597b2aae996f2592be086ff301b5cb7e3c68e716fb7ae1b4dac56b04d0",
+      "lado_menor": 71,
+      "particion": "test"
+    },
+    {
+      "archivo": "normal/normal (59).jpg",
+      "clase": "normal",
+      "sha256": "42e0550ff770d0b8e52c93763b9e1e480be980b4c69a6b2d8b4bad4205af1562",
+      "lado_menor": 77,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (6).jpg",
+      "clase": "normal",
+      "sha256": "fdafc4b96f03c7fa2b98caeff5fbbefe618819e5b7ed9d21e54ed46d33df290f",
+      "lado_menor": 148,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (60).jpg",
+      "clase": "normal",
+      "sha256": "56ea7db61150a07dbdb9d6dca89d0ffbc4516dfbf7a863c083ae034a5f502bc5",
+      "lado_menor": 115,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (7).jpg",
+      "clase": "normal",
+      "sha256": "aa10c67aa5445f85eafaf63d2c7832c4f2a42189d2612c457d09cbdb68a62f91",
+      "lado_menor": 164,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (8).jpg",
+      "clase": "normal",
+      "sha256": "9fe838b2b4cc83ed9443d5e7a67966e5c78ee1cc63ab0f13e2c91d03808f5af9",
+      "lado_menor": 148,
+      "particion": "train"
+    },
+    {
+      "archivo": "normal/normal (9).jpg",
+      "clase": "normal",
+      "sha256": "5364f3b8be02be36bb750148acddbaf75e803d008b2c7a50423e41135e26e6c7",
+      "lado_menor": 125,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (1).jpg",
+      "clase": "onycholysis",
+      "sha256": "e202dc9bbc404d1f86e82c7b0e21546685cc189b2a4d92e4446f089c00389d4d",
+      "lado_menor": 174,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (10).jpg",
+      "clase": "onycholysis",
+      "sha256": "10f4a7fe52890193246b0a0cee187896d33ce3188b4e76d9010bc9cb49e138a2",
+      "lado_menor": 491,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (11).jpg",
+      "clase": "onycholysis",
+      "sha256": "ae58c00b0d3728dd5fb7ab00d4fc74d914c790edb45eaaa0c7ab4c9571522ad7",
+      "lado_menor": 102,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (12).jpg",
+      "clase": "onycholysis",
+      "sha256": "31c766b968451629032b0af2a884ff58a1d9234f1c383718f06e7b8bbd72ad7a",
+      "lado_menor": 103,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (13).jpg",
+      "clase": "onycholysis",
+      "sha256": "432b1e787dcfa8e5060c525ed1c147bdac609acef6c8a00acd8bc7602b9cf7ff",
+      "lado_menor": 137,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (14).jpg",
+      "clase": "onycholysis",
+      "sha256": "e6acb6a6957328a94e4abd9384f31f6f40579dbaed625d39bbfb029a7849be62",
+      "lado_menor": 168,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (15).jpg",
+      "clase": "onycholysis",
+      "sha256": "b7f26fddf9653dd6446a846173029c59e3b40f6ebb29f9f6b50f12be4491be1c",
+      "lado_menor": 158,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (16).jpg",
+      "clase": "onycholysis",
+      "sha256": "8f3330aef2b4297d4732df981df094f39f341a5aa40088b873e9ec3474857b5d",
+      "lado_menor": 158,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (17).jpg",
+      "clase": "onycholysis",
+      "sha256": "9f84167c6d95e0e5a764bd4a4712a57ff01fa0958bfc73d4d092a33b27b8d7f7",
+      "lado_menor": 90,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (18).jpg",
+      "clase": "onycholysis",
+      "sha256": "64c042545182de8d77ca921bf65184341f062a8b4b84ad7c27f556ed11ed1d46",
+      "lado_menor": 81,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (19).jpg",
+      "clase": "onycholysis",
+      "sha256": "e03a9ded17922e379623f289c825027b5b323785be5545acaafc39765bdadf11",
+      "lado_menor": 116,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (2).jpg",
+      "clase": "onycholysis",
+      "sha256": "f47ce86a4119da1a535f404c03d6a9d8ed6054c730abae4b8d775a41e9df3a3d",
+      "lado_menor": 261,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (20).jpg",
+      "clase": "onycholysis",
+      "sha256": "c778ced3fc2aefea8bea6bf3d9bb5447423672cc9800b6cd7fffb114ab226564",
+      "lado_menor": 56,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (21).jpg",
+      "clase": "onycholysis",
+      "sha256": "92256e0e3c8e1780471948c52bd832ce9274d30dd957d04bab0811539ef2c90c",
+      "lado_menor": 67,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (22).jpg",
+      "clase": "onycholysis",
+      "sha256": "793ba61e64a5c530654f20fc0049cac4413cad57d6112a13c0ce3ea7fe9315b7",
+      "lado_menor": 61,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (23).jpg",
+      "clase": "onycholysis",
+      "sha256": "8464deb96ed0b871dafa36837790fb85b48aa5e77715dc4fd0c3e668b8b362b2",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (24).jpg",
+      "clase": "onycholysis",
+      "sha256": "34aaba6748fc5648442344b711265a4569811e616273fcc38ed61e678d65349c",
+      "lado_menor": 53,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (25).jpg",
+      "clase": "onycholysis",
+      "sha256": "619e5a2bd82a28384b9cd7201b672f21e2deee1effa495f3f1e803f1cea87423",
+      "lado_menor": 50,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (26).jpg",
+      "clase": "onycholysis",
+      "sha256": "6d1d9617e49d6d919dd7b66e518801d835dab0fc586a6ee47eae4dd50cf38c28",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (27).jpg",
+      "clase": "onycholysis",
+      "sha256": "ce5c569e9458c9cc9f84a01d0ba2cd151a9bdd97e34a04a6f429c04b2274c4f3",
+      "lado_menor": 59,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (28).jpg",
+      "clase": "onycholysis",
+      "sha256": "30545f5ec131d6a884b371433582bfdc2e213a88ae79d721777e8931c5e86dce",
+      "lado_menor": 51,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (29).jpg",
+      "clase": "onycholysis",
+      "sha256": "81384b8eb37e5ddb4948e6516fa553ef3720a25f7a05d7a132f0a9ebe2275e93",
+      "lado_menor": 57,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (3).jpg",
+      "clase": "onycholysis",
+      "sha256": "b8739c566a0a0938baa601fcfc2ae4cc6ddfb74d1d5126453b220ee70a63556d",
+      "lado_menor": 288,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (30).jpg",
+      "clase": "onycholysis",
+      "sha256": "07d66638a7da7251db3bf8f6a783144050913968ba394628f99bdafd2d15c15f",
+      "lado_menor": 66,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (31).jpg",
+      "clase": "onycholysis",
+      "sha256": "a53a7bfe45fbd9634361c1605713a7441b8b4f69f75ac02904c500aeb404dffc",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (32).jpg",
+      "clase": "onycholysis",
+      "sha256": "273f92b3348654c93003ada46b99339fd5adf5c4975e7ed638ee5f8326b5c5f3",
+      "lado_menor": 68,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (33).jpg",
+      "clase": "onycholysis",
+      "sha256": "bbf96c8e9268dea5f88844ecf66c3e36f46a030846fde93ecae2e4dabaea875e",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (34).jpg",
+      "clase": "onycholysis",
+      "sha256": "4bfef861b800d026769eb09c5cb36aafc19c1f42af502366d0ac7dd7e52283ef",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (35).jpg",
+      "clase": "onycholysis",
+      "sha256": "356c32c7773552a601f8ef0c8876bd54387d92a2ef71e1e5941f8fd42797a35d",
+      "lado_menor": 65,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (36).jpg",
+      "clase": "onycholysis",
+      "sha256": "c34ec5fa6382240b5d16522acb76265927678fa591bdc6f77e34aab3026a8f3e",
+      "lado_menor": 123,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (37).jpg",
+      "clase": "onycholysis",
+      "sha256": "5dc2aebecfe7e5c214e2b23896af2de14cea0d91e176a6b4849960b12ab746df",
+      "lado_menor": 150,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (38).jpg",
+      "clase": "onycholysis",
+      "sha256": "0c76da19a60a244ada48ab2f5228133f0d2b81f7588ec7b40a3d856c7708f4e4",
+      "lado_menor": 136,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (39).jpg",
+      "clase": "onycholysis",
+      "sha256": "fd5158fdbaec9054aacd6dfda32240813131419c14dc1ba33efbacb6e8c8f0f9",
+      "lado_menor": 91,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (4).jpg",
+      "clase": "onycholysis",
+      "sha256": "0499948c591cd89b5b1c3f6f639fdb9e6b0eac299ae09133fd58899d2c51eeb6",
+      "lado_menor": 243,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (40).jpg",
+      "clase": "onycholysis",
+      "sha256": "e9adeef03c0a273560f5567b698c47aa0cacf6c4a75cc10ad713320545fb190f",
+      "lado_menor": 92,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (41).jpg",
+      "clase": "onycholysis",
+      "sha256": "d7d3f61827d78d5602b88cc5c605dccdc4f67073e15e3beeba05c785c01cb0d7",
+      "lado_menor": 88,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (42).jpg",
+      "clase": "onycholysis",
+      "sha256": "f5f4a61adce5cefd54d125d3135ac8eb1996503b0c29087a1a58674c3cb06a52",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (43).jpg",
+      "clase": "onycholysis",
+      "sha256": "484c7a539e479c5ed1a7d1ee132583794365256d16a1ac0c12e2505fe5f0c009",
+      "lado_menor": 91,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (44).jpg",
+      "clase": "onycholysis",
+      "sha256": "25da50958808321c78bb6656d46a2bf95169aebc966f861222d5ef4bc663bff6",
+      "lado_menor": 109,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (45).jpg",
+      "clase": "onycholysis",
+      "sha256": "79d30ddefad77893a288769397359cd08e8028cbe587d73d22b3a8c84f769385",
+      "lado_menor": 87,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (46).jpg",
+      "clase": "onycholysis",
+      "sha256": "a008655b1d414a46b54fee9fd7bdbdf3e25823b95df297412e76a04d9865835a",
+      "lado_menor": 78,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (47).jpg",
+      "clase": "onycholysis",
+      "sha256": "93e070a6ae2f24ffbcac760d12b79c2c1dcbb4b2ba2e09cf6abd06402540d844",
+      "lado_menor": 101,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (48).jpg",
+      "clase": "onycholysis",
+      "sha256": "1617c5f267e5f84cd8262230dbeeb12fa8b7b6e7dc6d5b64570357944290f08a",
+      "lado_menor": 101,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (49).jpg",
+      "clase": "onycholysis",
+      "sha256": "a5c576568362f5f7469f2912ff9e18703544a2428a6d3a0fbca1b6ec650a48c4",
+      "lado_menor": 168,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (5).jpg",
+      "clase": "onycholysis",
+      "sha256": "5b39b621c4fc676141d64750558482b8ae7b440bef0a1a179039fc5e39eb6566",
+      "lado_menor": 179,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (50).jpg",
+      "clase": "onycholysis",
+      "sha256": "16e969698fb3a6443e2cb9688ceb7f891e2539f3fe219d020504e5976e641f66",
+      "lado_menor": 129,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (51).jpg",
+      "clase": "onycholysis",
+      "sha256": "ad65df7441d3c31dbbdd16a5d9b183e724fa7068cc6700918f0272a6256801e5",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (52).jpg",
+      "clase": "onycholysis",
+      "sha256": "dc32aa7bf7f239c126766db779aead18ede0667b28c036bb0ba676dcd932cc01",
+      "lado_menor": 123,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (53).jpg",
+      "clase": "onycholysis",
+      "sha256": "b76aadf6e4da0600b233327c0c9dbd8bdc7580d3dba5c7fd5baae27a134bd515",
+      "lado_menor": 163,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (54).jpg",
+      "clase": "onycholysis",
+      "sha256": "9309005d6797fba6f6e92a9c3673fee2aaa8c2cb2754c6fb76951c30ad17c72f",
+      "lado_menor": 133,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (55).jpg",
+      "clase": "onycholysis",
+      "sha256": "93dff4ce169c304a175226f0c5e120185f689f4dad78f4eba06085498fc2157d",
+      "lado_menor": 116,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (56).jpg",
+      "clase": "onycholysis",
+      "sha256": "3f68be3ebdd95a6dd0513d1d661907dd0e74ad177ec486a86959913572e25cab",
+      "lado_menor": 149,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (57).jpg",
+      "clase": "onycholysis",
+      "sha256": "0ead6fb798e28490afee2b2b56814dcd4c2f65ef5d7d5f5754d2a9e4be459fdb",
+      "lado_menor": 90,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (58).jpg",
+      "clase": "onycholysis",
+      "sha256": "6b75e31ab7352e8594320f8ae049998ec4b8457398904e703b08f9d1788c784e",
+      "lado_menor": 88,
+      "particion": "val"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (59).jpg",
+      "clase": "onycholysis",
+      "sha256": "552323f4be10b2b017920248947f74f880e25b02e0619b76bcbdd8f1d4aa23b8",
+      "lado_menor": 480,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (6).jpg",
+      "clase": "onycholysis",
+      "sha256": "bad017aea8734bbb47b188756e2cdf2286564f3282a7a1100ed9e27ce5aa839e",
+      "lado_menor": 127,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (60).jpg",
+      "clase": "onycholysis",
+      "sha256": "7ca5748d6699e431a7aed923a99ddde5e381e1f07e50a6b1c9ba27d62d82b64f",
+      "lado_menor": 295,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (7).jpg",
+      "clase": "onycholysis",
+      "sha256": "4a1a3499fe5000f0229fc9de43cc2cec9f570c1b9a66b98e0607405c9aa8d440",
+      "lado_menor": 149,
+      "particion": "test"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (8).jpg",
+      "clase": "onycholysis",
+      "sha256": "4a709800b0186b0dbfba25b98f0388f4c62f3b1166e30def069a7859d2fd51c6",
+      "lado_menor": 160,
+      "particion": "train"
+    },
+    {
+      "archivo": "onycholysis/onycholysis (9).jpg",
+      "clase": "onycholysis",
+      "sha256": "b6da805ac442cd95cf30eb8352b3b6ccb2e51726fbeb104be588570c8acd6353",
+      "lado_menor": 478,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (1).jpg",
+      "clase": "other",
+      "sha256": "76fe4549fbc97abbafd32a9f7d6a58df1342e39c41f9149c86723edcf707d466",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (10).jpg",
+      "clase": "other",
+      "sha256": "3b80afbae485ede7b72bd4ce7b96824e0fd561f3093a36cd384efa7661d76f4f",
+      "lado_menor": 276,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (11).JPG",
+      "clase": "other",
+      "sha256": "a32462edccf247ca0661f6c71265315a9a921fddfe494c7926bdaa3b2e98b990",
+      "lado_menor": 1201,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (12).jpg",
+      "clase": "other",
+      "sha256": "2dc30ed3d9628824bb6720e08ddaf618bb3f04d057a0681df5fbe133f6830cd9",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (13).jpg",
+      "clase": "other",
+      "sha256": "435b9c45d4f7b5952dceb747faf01231b173529d8418d10b0caaf2cc46e590ec",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (14).jpg",
+      "clase": "other",
+      "sha256": "8bed6953aded500cc8b4195821f8b944a2247307b565ab092e745cdebe1334b8",
+      "lado_menor": 135,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (15).jpg",
+      "clase": "other",
+      "sha256": "9c1292332c5dbadc467b47eceea71c93fe849934240609993e650866ddb32a6b",
+      "lado_menor": 158,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (16).jpg",
+      "clase": "other",
+      "sha256": "9b68476f2eb981828f952dfa65edbc30ff4b6c1df5623bbdcb289cfc265bcd77",
+      "lado_menor": 95,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (17).jpg",
+      "clase": "other",
+      "sha256": "f392a16e119dbd6960c4efd03e28439e438cb3593114e2dc8e77fd2b5c510d3a",
+      "lado_menor": 99,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (18).jpg",
+      "clase": "other",
+      "sha256": "f1ff594e213d886d8eaaa181e11fff008a7a6bf11b936dfa0dcbbd816dcf58fb",
+      "lado_menor": 109,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (19).jpg",
+      "clase": "other",
+      "sha256": "1b7324ea5b7898a04e175e6afe600386324bed55c1df4f95182383243b903aab",
+      "lado_menor": 552,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (2).jpg",
+      "clase": "other",
+      "sha256": "fe25ddfc037465dd5c34a1fc27c5de1d21da03ec86eef1518215307434c14962",
+      "lado_menor": 122,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (20).jpg",
+      "clase": "other",
+      "sha256": "a2936ee9a2ee2cf152b8b0098e624e186b1a80e84e5ed8ce16738cd605b0ec4d",
+      "lado_menor": 79,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (21).jpg",
+      "clase": "other",
+      "sha256": "06bdb74efd7319679f21fc69ad37df2515983647dffc58dc1bf36eb2271ef18b",
+      "lado_menor": 130,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (22).jpg",
+      "clase": "other",
+      "sha256": "05b37bcb26dc465514f3878dc24009e3b3ef7a1be975c1be42d72bec603c0b8a",
+      "lado_menor": 137,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (23).jpg",
+      "clase": "other",
+      "sha256": "e3f2fff08dbf9dfebb340a5d8f9044cf29bf01c3de629cee899ece3fba34504c",
+      "lado_menor": 93,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (24).jpg",
+      "clase": "other",
+      "sha256": "04d96dc6066d3d56855d925bcc713feb6c780769517ba6cd4850fce8f6624120",
+      "lado_menor": 100,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (25).jpg",
+      "clase": "other",
+      "sha256": "702fd0fd7ec4589d7ed716b06dfa874a491c4d68afcf1c6ece31b4414c923019",
+      "lado_menor": 31,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (26).jpg",
+      "clase": "other",
+      "sha256": "fa8079f573239869a9d393a3947206ed785b7b688e8bd3fced316fb43ba405fe",
+      "lado_menor": 43,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (27).jpg",
+      "clase": "other",
+      "sha256": "acae4b3f894708beb2f02c0f81cebeeab15bfc3cfa027f5199385b515ea20adf",
+      "lado_menor": 96,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (28).jpg",
+      "clase": "other",
+      "sha256": "44b5729eef10c522bab7f167726aa1cdee14d373d08cce48627871432df6d0ce",
+      "lado_menor": 60,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (29).jpg",
+      "clase": "other",
+      "sha256": "4f3d63ccdf24b1ee075ec00244ea2859dde0b66b0cbee5d24458dbd728f780bd",
+      "lado_menor": 47,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (3).jpg",
+      "clase": "other",
+      "sha256": "7b7dc8a5b190b4b7658ede0b18afeaded1d7116be54129a3fbf0b2b97a90fa3f",
+      "lado_menor": 168,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (30).jpg",
+      "clase": "other",
+      "sha256": "4a2600d23ffd545022ebd6147e6bf8c2763152151bd9c5465f4fde8fd968e6c8",
+      "lado_menor": 94,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (31).jpg",
+      "clase": "other",
+      "sha256": "ef5c57bdae555f79915fed415640a6fcc2a183091539f9a6c47a414533aaed72",
+      "lado_menor": 181,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (32).jpg",
+      "clase": "other",
+      "sha256": "77028d23a3a3a36ac08f6d43283bc52f3fdd11cebbf6d440952237767d2962f1",
+      "lado_menor": 173,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (33).jpg",
+      "clase": "other",
+      "sha256": "4a640796b308591e988de1adaf66f111365cfc9a7ae81b7162f594b1d2e6aa13",
+      "lado_menor": 38,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (34).jpg",
+      "clase": "other",
+      "sha256": "02bb3130ecbc53e4f60be4dda78eee7802458f05ba35fb0046274c0a58435495",
+      "lado_menor": 167,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (35).jpg",
+      "clase": "other",
+      "sha256": "ecd277280c5f92cb74b905c3cc2675cb05e1373a4eb204799e1d0536e6a1a8dd",
+      "lado_menor": 32,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (36).jpg",
+      "clase": "other",
+      "sha256": "252bdb1b5b7fc2dc91dae189c12c3c55d3e96fca0cdd4b91ca3b5d309530c812",
+      "lado_menor": 27,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (37).jpg",
+      "clase": "other",
+      "sha256": "b545097812d0dc77f93d39fcb42ad9c52942264542dd4bdd0a0e78524c0c83a4",
+      "lado_menor": 22,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (38).jpg",
+      "clase": "other",
+      "sha256": "98beab03795fb87180f93653fef7c856726ecd496cc27a4f82324d6f5f3ca674",
+      "lado_menor": 59,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (39).jpg",
+      "clase": "other",
+      "sha256": "f4eed1cd5558b0acee4bdbc5a86b6bfee9056c807de0ad3442ce4f26f32a19cf",
+      "lado_menor": 93,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (4).jpg",
+      "clase": "other",
+      "sha256": "984925032adc0a15a7da12af580b5c02f548b35bc1b334cd9b70a256ccf2d8a3",
+      "lado_menor": 164,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (40).jpg",
+      "clase": "other",
+      "sha256": "56a0e069d6fc46766521d9784d004991faee652156765221c03919971cb59012",
+      "lado_menor": 42,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (41).jpg",
+      "clase": "other",
+      "sha256": "4c2308a3ec243e5950a91b47a69642a2eca706c1e8195f342ad411fd91f08473",
+      "lado_menor": 29,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (42).jpg",
+      "clase": "other",
+      "sha256": "fdbdf21c689f7dd60e991051f82af718cd6f900a341a581bfee7e55f0bbcd7f8",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (43).jpg",
+      "clase": "other",
+      "sha256": "6706df6bde7a995bc466d49e9010fd446f238068263021a294ccb7279a070a9d",
+      "lado_menor": 61,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (44).jpg",
+      "clase": "other",
+      "sha256": "70ed278b9386a62d4bf37791aa0f030a6407c7fa603e6b81a38728756cdc30c0",
+      "lado_menor": 82,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (45).jpg",
+      "clase": "other",
+      "sha256": "668c9c689f9a0e3fd4dfd46a6ddc820a4a2c020fc58373868bd4ad54b582a619",
+      "lado_menor": 82,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (46).jpg",
+      "clase": "other",
+      "sha256": "07ac92da8bcfb05a97959158d530e1b2b582fc5c7a46a0d62bc3cd857662c649",
+      "lado_menor": 93,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (47).jpg",
+      "clase": "other",
+      "sha256": "ddda241671cd7c770dc17ed217057b0b8171feee45619e99447dcc3711f0301f",
+      "lado_menor": 36,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (48).jpg",
+      "clase": "other",
+      "sha256": "b19037119a5dcec249d265621c2c97ee3583bbe0dac625dad22c94b062869b7c",
+      "lado_menor": 27,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (49).jpg",
+      "clase": "other",
+      "sha256": "2bbda2329547ebbd993f8fff01da80cbc394b3706cbcd840d2f2f6bbe4b6fff5",
+      "lado_menor": 155,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (5).jpg",
+      "clase": "other",
+      "sha256": "79f71a3984c4272732dee7191ba938775ca690c6820d24e19aa1c1bfd5797717",
+      "lado_menor": 65,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (50).jpg",
+      "clase": "other",
+      "sha256": "e8f0a24f11cccd05ba69c04f605cad321bd8cb8da2d51614ecdc05a967f5a669",
+      "lado_menor": 85,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (51).jpg",
+      "clase": "other",
+      "sha256": "aead7418b8f1b52c3bb80a5c2aa2583babace8942841d94a7cc60fad9929539a",
+      "lado_menor": 199,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (52).jpg",
+      "clase": "other",
+      "sha256": "b1e154fbd52a12d4ffe7adba25a14fd486f10946bfacdae1c1d571fa0abfeab0",
+      "lado_menor": 60,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (53).jpg",
+      "clase": "other",
+      "sha256": "193e0821a69f5145f90d1f693a70f1fd3d7fa37e3243cc9e2eb2ddb8a897bfe3",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (54).jpg",
+      "clase": "other",
+      "sha256": "1b7d89a72ed9b7a1aa07ebb09a42f62c10167b56ba2a3bbb7d00a8fa3758f570",
+      "lado_menor": 208,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (55).jpg",
+      "clase": "other",
+      "sha256": "04ef06294ade5856246a79acbea7303ee72fc86080b5abf07c438067aa170347",
+      "lado_menor": 59,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (56).jpg",
+      "clase": "other",
+      "sha256": "e316c00d33deb2eba17eff9319dcb793105aaa5f0ebaaa6cacd5f8339b9b0462",
+      "lado_menor": 76,
+      "particion": "test"
+    },
+    {
+      "archivo": "other/other (57).jpg",
+      "clase": "other",
+      "sha256": "ebabe9a6406395b4a59cfd9d60bdcd527255492b050241d84a3c46030e6389cb",
+      "lado_menor": 66,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (58).jpg",
+      "clase": "other",
+      "sha256": "3ad7a35d41f3b003680bcba07480199d6bd415ac953c25f79d56e39adc75799e",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (59).jpg",
+      "clase": "other",
+      "sha256": "16fc29723cc0f0d206b7b7f8e7fa769f96c540e82cb027ae108f5864c4b4793c",
+      "lado_menor": 44,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (6).jpg",
+      "clase": "other",
+      "sha256": "e64f52110b910c8e1c676b2260758785712992d7f49ae7f13240690c277d9fbe",
+      "lado_menor": 641,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (60).jpg",
+      "clase": "other",
+      "sha256": "1e846a8f491b687bf3b9e6464bfc7e56dc99f75988bea8943efd09347fb0aeb0",
+      "lado_menor": 74,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (7).jpg",
+      "clase": "other",
+      "sha256": "3a60c9dfffe9c30913f872c64d8048c7cf91ff09f00dc966a497c207ce2f4f19",
+      "lado_menor": 695,
+      "particion": "val"
+    },
+    {
+      "archivo": "other/other (8).jpg",
+      "clase": "other",
+      "sha256": "08f8158fd5ea2491e111c47efcf2694039638fbf210a3b29e91099be07f57dce",
+      "lado_menor": 325,
+      "particion": "train"
+    },
+    {
+      "archivo": "other/other (9).jpg",
+      "clase": "other",
+      "sha256": "faffeacd3a3571af28364a46de01dbb6abff399dabfd617875cc228d55f3563d",
+      "lado_menor": 417,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (1).jpg",
+      "clase": "terry_s nail",
+      "sha256": "2e127284aa91af8ddc7b63242634b1d9cdf60d56cdc93b9a1d0d596c15ffbe22",
+      "lado_menor": 253,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (10).jpg",
+      "clase": "terry_s nail",
+      "sha256": "907060077c3552c6b4f65797f1ab7e3d7f41e0d1252de58bbde9bd8be68aa96b",
+      "lado_menor": 75,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (11).jpg",
+      "clase": "terry_s nail",
+      "sha256": "bbf2aa54bcbd0ef342434548d03b0c0fc3b5ee7fcd275b87ab4927636899e075",
+      "lado_menor": 85,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (12).jpg",
+      "clase": "terry_s nail",
+      "sha256": "a70a160c58613322082ad648e185851cfce8c896821710bf6f6106f6a8dd8179",
+      "lado_menor": 335,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (13).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e7742ed441aba32b731594b057b681538025b4bc25242315d160e39b75013787",
+      "lado_menor": 77,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (14).jpg",
+      "clase": "terry_s nail",
+      "sha256": "f933c08a577f8cf34ab9a5a852af9a08be046619728c1f8429085d0fc0c2edb2",
+      "lado_menor": 76,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (15).jpg",
+      "clase": "terry_s nail",
+      "sha256": "125189cdca1cb72c3c75ffdc90f5e59518f940ebd89de26a0ddd4adc0fb67723",
+      "lado_menor": 63,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (16).jpg",
+      "clase": "terry_s nail",
+      "sha256": "7ef73b9c61a564f6a2adc61b10fc4980711c2ef872d1f63747cf0d48e80911af",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (17).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e53caeb8181c0b7e0f473a21db841c6f0e4b870233c3fb6a2f80678f56299472",
+      "lado_menor": 203,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (18).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e990cc6f3178fba593c94ffdd886bf435315e91649dba60cd612e396cd7c9d73",
+      "lado_menor": 248,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (19).jpg",
+      "clase": "terry_s nail",
+      "sha256": "563de8cdec0d09d452228ce704ea9ec9a4a420fde66037ab6fdc52fc2e0d8a30",
+      "lado_menor": 168,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (2).jpg",
+      "clase": "terry_s nail",
+      "sha256": "edfd13df1b4ecb9389afe21d94b43f10807a062023462086b0e4e9879b8af5d5",
+      "lado_menor": 45,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (20).jpg",
+      "clase": "terry_s nail",
+      "sha256": "cf4759e2417c01c1c32bf6130072a1baeb7a3c791a4cbc343c935bb32da6b447",
+      "lado_menor": 161,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (21).jpg",
+      "clase": "terry_s nail",
+      "sha256": "277d3806eb69743b9c92f24c93361077ca818233fdaf4981a640d7224db9e3b7",
+      "lado_menor": 81,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (22).jpg",
+      "clase": "terry_s nail",
+      "sha256": "f3841d7060fba0129e38b237eb07cdd727ae0562a99ddeb2aaf14948dfc211b4",
+      "lado_menor": 74,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (23).jpg",
+      "clase": "terry_s nail",
+      "sha256": "d8c7a8c9d08002b822231cc3bc8651ef631f6e039eeb5258f99af1028c7150b8",
+      "lado_menor": 112,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (24).jpg",
+      "clase": "terry_s nail",
+      "sha256": "f0a351d03d814577fb9b0cd40106668fd34e47fd399d173df43d341ebcf98530",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (25).jpg",
+      "clase": "terry_s nail",
+      "sha256": "19a5b51188286867c5c26ae5a5fe1408f016157fa5a2874716c44b2f76fef717",
+      "lado_menor": 106,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (26).jpg",
+      "clase": "terry_s nail",
+      "sha256": "d236dc4ebb6ae39601f1b35f06ff55b624a0fb71e20340482e36d1e46b7a51af",
+      "lado_menor": 171,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (27).jpg",
+      "clase": "terry_s nail",
+      "sha256": "17cea66f04874cfc5b8388c7692721f4b3bc0ac042a60ad6a8ad7e548952d1a1",
+      "lado_menor": 427,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (28).jpg",
+      "clase": "terry_s nail",
+      "sha256": "d5f97aa5754938eec6e42ecf8275b02d453df7ca8f9f24a69dbfacd1cb7c907b",
+      "lado_menor": 244,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (29).jpg",
+      "clase": "terry_s nail",
+      "sha256": "c1df862fc18746e5290b9282907b55656c8228b4a0a590f0329563783958411f",
+      "lado_menor": 254,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (3).jpg",
+      "clase": "terry_s nail",
+      "sha256": "2c0761af95fa4929f431a390a7cdae58e18c35fc5196e8269076a99ec56a894e",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (30).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e33d511d8ccf09723e4c2b97218c50b05ff12e56a63fe61a2cf205071befef50",
+      "lado_menor": 64,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (31).jpg",
+      "clase": "terry_s nail",
+      "sha256": "aab5aef5999e36337e676febb78498506a8b25d38bbaf4ce34f464625e272104",
+      "lado_menor": 56,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (32).jpg",
+      "clase": "terry_s nail",
+      "sha256": "5e88e5fb34b5819d25ab20151774209ca787cd986905c3d52f64a7df45538580",
+      "lado_menor": 65,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (33).jpg",
+      "clase": "terry_s nail",
+      "sha256": "4df4a4eb58b39a266f9e0e3b0490b106f42d983badf92a3fffda61d3a15e4208",
+      "lado_menor": 54,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (34).jpg",
+      "clase": "terry_s nail",
+      "sha256": "dc6d34f1e59bbcd6c804057fcab0e65c15688c8f6381bd82ef56521dfae10b92",
+      "lado_menor": 81,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (35).jpg",
+      "clase": "terry_s nail",
+      "sha256": "86165274ae3202510d248bb9491d5f76351f7dec07c904649b086ac67a1f3d99",
+      "lado_menor": 63,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (36).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e9e773ada51b816f64a69dd183f2c096073e62533c716ed53c80d2353eced07d",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (37).jpg",
+      "clase": "terry_s nail",
+      "sha256": "a7b44765a0677e023bf2e33b892a7f20650fc69fb18cf9be2558ebcf2e9e5b3c",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (38).jpg",
+      "clase": "terry_s nail",
+      "sha256": "2be741866f5e42b09164be8de718f62f365407a169e1daa52956dc8911dc0b35",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (39).jpg",
+      "clase": "terry_s nail",
+      "sha256": "3981b596a47e4e83ad888e75f33cd4ee0065334701da552f0a2e81c8edbc7e6a",
+      "lado_menor": 59,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (4).jpg",
+      "clase": "terry_s nail",
+      "sha256": "ce3b2ff40072b3a41574df6ff2cf9703f6c7408e96b6066e1311e878d76a3d5b",
+      "lado_menor": 51,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (40).jpg",
+      "clase": "terry_s nail",
+      "sha256": "cbfe7a245b6372c06ff24dee4e0711d6bcc94c791ce417d20e9fd1b569b89fe6",
+      "lado_menor": 60,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (41).jpg",
+      "clase": "terry_s nail",
+      "sha256": "c68f7e85891488a71bbfafd577c8d27d2f2fbf6b51052380c31b1b961347ea4a",
+      "lado_menor": 58,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (42).jpg",
+      "clase": "terry_s nail",
+      "sha256": "527c65dca9351a9c08ecad3d070346cdb67ecbde7dfd466b59f2869d7bdc9fc8",
+      "lado_menor": 44,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (43).jpg",
+      "clase": "terry_s nail",
+      "sha256": "5e3becb6c85eefb21ef2f6318bc2ddaa02f1956a039eacf2d133ae96de3db4c1",
+      "lado_menor": 37,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (44).jpg",
+      "clase": "terry_s nail",
+      "sha256": "f53c00510475fd484a737eefc19b4e46e2d977a4d69f2d7bb3343f346637eeba",
+      "lado_menor": 50,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (45).jpg",
+      "clase": "terry_s nail",
+      "sha256": "7a1d3bea28000c1888eaf10112d0b3ae5536f67c0c86f1a0c29d1ce0dc254c4f",
+      "lado_menor": 44,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (46).jpg",
+      "clase": "terry_s nail",
+      "sha256": "7ee94892c2bd78c4ef512893447b10a9065ea452a70a4deafeb6e14b506893ce",
+      "lado_menor": 118,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (47).jpg",
+      "clase": "terry_s nail",
+      "sha256": "bbfa55790830addefcbba735435e6e3271cfc47def372363c2e2eeccfebfb370",
+      "lado_menor": 64,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (48).jpg",
+      "clase": "terry_s nail",
+      "sha256": "ab9481101f167f1f29444dd45eae4470464a56c081a59e090eef4caeccb86bb2",
+      "lado_menor": 71,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (49).jpg",
+      "clase": "terry_s nail",
+      "sha256": "8ffee65878beb7796a429d671a1d07d6db3cf8e2dccd88b4959c5e5c1c7c8112",
+      "lado_menor": 136,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (5).jpg",
+      "clase": "terry_s nail",
+      "sha256": "11ba8bd0d9da6b0bcd3bf468060847469c3a27ff0c956a48f3dbf0c218f607fe",
+      "lado_menor": 52,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (50).jpg",
+      "clase": "terry_s nail",
+      "sha256": "e1a629dd8dd0b5827138d150a931985056722435ba513f0f0a7707b76478ebe6",
+      "lado_menor": 55,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (51).jpg",
+      "clase": "terry_s nail",
+      "sha256": "99cc5c363f3a131362aa7491628cda9cf43054d5a691769f0ed4429d1cd7fc2f",
+      "lado_menor": 63,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (52).jpg",
+      "clase": "terry_s nail",
+      "sha256": "45edcfa5f4753aa5df8e4f1d3d9d7dc6a804dc3ae79a7892c7fdbcabd85b3891",
+      "lado_menor": 96,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (53).jpg",
+      "clase": "terry_s nail",
+      "sha256": "9bc760bd6134707bd2ec2d07c916f4c16b3ebc372b24d3cf24726572ff35f1d6",
+      "lado_menor": 70,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (54).jpg",
+      "clase": "terry_s nail",
+      "sha256": "a93db909207ba6e13847b84a6ff32ebaa514aab31d7f7e944c295cdf1ffb49f6",
+      "lado_menor": 72,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (55).jpg",
+      "clase": "terry_s nail",
+      "sha256": "2b80b822f3e91bacb9bf825f9fb354cc7f11f01e943bba03550c744d0f7d1e49",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (56).jpg",
+      "clase": "terry_s nail",
+      "sha256": "79538fbe50ea31f6f3c911c5bf53c5c0ff351a5dba02ecea9f1a471dade21daf",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (57).jpg",
+      "clase": "terry_s nail",
+      "sha256": "44ccd2a5ff0345a7828aeb39df40da895a5f8cc2f237b3920f471f27b9fb9dfc",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (58).jpg",
+      "clase": "terry_s nail",
+      "sha256": "4e7123b8f2fb616025e859236f36b54c9d33389918fb1754c6a6cfad18f9ede7",
+      "lado_menor": 70,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (59).jpg",
+      "clase": "terry_s nail",
+      "sha256": "fac3f24e0d01fba9fee08116caa6f1b1a90e4e7a291549a982cd9faba38b0435",
+      "lado_menor": 140,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (6).jpg",
+      "clase": "terry_s nail",
+      "sha256": "5c9deaab1fca4ef848468367052565281ba32a9709d45fb591df10f1f4c3a58d",
+      "lado_menor": 60,
+      "particion": "val"
+    },
+    {
+      "archivo": "terry_s nail/terry (60).jpg",
+      "clase": "terry_s nail",
+      "sha256": "406849818c2ec03f34f9ed940f0469680fbb1ccba2a829933676c899668a3cbf",
+      "lado_menor": 32,
+      "particion": "train"
+    },
+    {
+      "archivo": "terry_s nail/terry (7).jpg",
+      "clase": "terry_s nail",
+      "sha256": "f10b15eacd524bc89bf68e18a6462e8f461d88a9b6f349af57b707cd04f9bfde",
+      "lado_menor": 62,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (8).jpg",
+      "clase": "terry_s nail",
+      "sha256": "df2c00353ba898003a47d75a9fc6ac1b79094999f396c0a1e720035cef8f4d71",
+      "lado_menor": 56,
+      "particion": "test"
+    },
+    {
+      "archivo": "terry_s nail/terry (9).jpg",
+      "clase": "terry_s nail",
+      "sha256": "1bb2e45811ca18cd50378e75a8b6a038239387ce0979084446b62614a4fe04ab",
+      "lado_menor": 71,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (1).jpg",
+      "clase": "white spot",
+      "sha256": "9bfb835be2d2ee340fc3b7fb8a50560bb04881d8b4a414636875b9710f27d754",
+      "lado_menor": 248,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (10).jpg",
+      "clase": "white spot",
+      "sha256": "b147b3088b504f485a5453ba8dd91219f2523b4a6db5a2132ffa721de07a65c7",
+      "lado_menor": 79,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (11).jpg",
+      "clase": "white spot",
+      "sha256": "300e5b69d657fa3bbe79bf05bd66da4c0fec0e2438e4e40c2fcf96f734b5c640",
+      "lado_menor": 133,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (12).jpg",
+      "clase": "white spot",
+      "sha256": "a6f58a7c64923d862fc67265d85664e95db860902de2206888949d93b9a2b40a",
+      "lado_menor": 137,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (13).jpg",
+      "clase": "white spot",
+      "sha256": "d4b71b44b28ee928c0b765bac163b876778b57c9ecec9a4b7a15041a6c5c2c51",
+      "lado_menor": 150,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (14).jpg",
+      "clase": "white spot",
+      "sha256": "6c72d77e7d3e138e66749d23244cb8eafdf8b264f6575c8ff7dba270c6972921",
+      "lado_menor": 216,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (15).jpg",
+      "clase": "white spot",
+      "sha256": "61a845e3177259c2eaa983537fcfc88227c69cd67afd131a54e4060b06603cf0",
+      "lado_menor": 188,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (16).jpg",
+      "clase": "white spot",
+      "sha256": "e9320420682f8d0f4b12590d1c44f4b2400f1c2ac586f40bbddc8cae2784a3ef",
+      "lado_menor": 160,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (17).jpg",
+      "clase": "white spot",
+      "sha256": "5501fd5f126fdaa2bda73263a0606525382d57171d76749991e1ff07d602e4d0",
+      "lado_menor": 48,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (18).jpg",
+      "clase": "white spot",
+      "sha256": "c1a6a1c774c1c7993c375707661ea9a72e616a58191349f30682178c2485980d",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (19).jpg",
+      "clase": "white spot",
+      "sha256": "c1a80dbf4fd87702c33afb600ec36ff43b6352f38bbb5359a2ae8ce3094b3808",
+      "lado_menor": 69,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (2).jpg",
+      "clase": "white spot",
+      "sha256": "ec35fd07558be605eae9fc00014105db1dea7f2344f064e0f837e8b880602ad6",
+      "lado_menor": 252,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (20).jpg",
+      "clase": "white spot",
+      "sha256": "1cfa79777540e67d759d29ee22b10e0486cfcff642424e28f09ed447f233636b",
+      "lado_menor": 66,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (21).jpg",
+      "clase": "white spot",
+      "sha256": "aa6f692201bc474caa5c8e71fa0d079ad0de807e68d2134118cb61dc4928df72",
+      "lado_menor": 105,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (22).jpg",
+      "clase": "white spot",
+      "sha256": "b7181abcb40de1245dabee7e397be99db0ef20e24aea5617fa568b1e7e68b892",
+      "lado_menor": 165,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (23).jpg",
+      "clase": "white spot",
+      "sha256": "4452afe61d5d14690765a3009abf43a04d021f6f9a97dae1e150b24e3d00153c",
+      "lado_menor": 50,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (24).jpg",
+      "clase": "white spot",
+      "sha256": "83b402ee8cc7ea37113a94b5a3f889477664ea8f46059c382b3565c5fb3c6d18",
+      "lado_menor": 88,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (25).jpg",
+      "clase": "white spot",
+      "sha256": "2b2caaacc87f9a97f464f9ac84573d960b337a9a9cb9532455a009c5153bde80",
+      "lado_menor": 53,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (26).jpg",
+      "clase": "white spot",
+      "sha256": "6529616195c3f8616d0494dfe9fdc0b20f3f4f3904a81385e66c64000fc4051d",
+      "lado_menor": 62,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (27).jpg",
+      "clase": "white spot",
+      "sha256": "d162fd07da5a9560fc7cc689235f670d10fc52973004aa3f4b58511fa992bc51",
+      "lado_menor": 61,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (28).jpg",
+      "clase": "white spot",
+      "sha256": "81e299db92c2b98df54348852a2719e9007eb4f32770e25b1354740b2c981daf",
+      "lado_menor": 46,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (29).jpg",
+      "clase": "white spot",
+      "sha256": "1c0ff59bd139dedef8fc0a1ce87141ad40b746420345d405ba02af5d0ebb6bf0",
+      "lado_menor": 125,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (3).jpg",
+      "clase": "white spot",
+      "sha256": "4283f5adbc01adafeecb1a7ba89582d3540b875b2562ca45344f609479df5452",
+      "lado_menor": 76,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (30).jpg",
+      "clase": "white spot",
+      "sha256": "8c139f214244c84aec4742759ca521e64a7b3170e94114136d54e87bd67ea2f7",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (31).jpg",
+      "clase": "white spot",
+      "sha256": "7ed4f2b2be768628d354f48d0fe96676bffa870d1f3259bf79a4ef0f43a2246f",
+      "lado_menor": 63,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (32).jpg",
+      "clase": "white spot",
+      "sha256": "d70b7fafb1ec8bf46d344f875bf5fe83fd737522d4aa38a6309fa3788e43d244",
+      "lado_menor": 54,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (33).jpg",
+      "clase": "white spot",
+      "sha256": "e38b1b2da56f8c7cba96ef0e09e68dbb2a8fd3dcfaa4b5f94beea2d027caebd6",
+      "lado_menor": 87,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (34).jpg",
+      "clase": "white spot",
+      "sha256": "01dedb583c39b9e53f4452a98b5b199fbf3828a293a2f043f55bf1be7e035408",
+      "lado_menor": 82,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (35).jpg",
+      "clase": "white spot",
+      "sha256": "105e1900050c7f96fc95f10e27fd20136ad379cbd6de740363fe5e98c488f66b",
+      "lado_menor": 43,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (36).jpg",
+      "clase": "white spot",
+      "sha256": "95d13ded9d15946c8db24b176f1c40707f587ac248de8bb90192ed2d5353de07",
+      "lado_menor": 43,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (37).jpg",
+      "clase": "white spot",
+      "sha256": "0a76913f09a283e9e2ef237d1eae41a3bf85da20bb357d758f34ca39729e8ec8",
+      "lado_menor": 46,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (38).jpg",
+      "clase": "white spot",
+      "sha256": "3163608086364065ea8199eb1d24c0293b9796e35d9d13e042120d26175a0510",
+      "lado_menor": 51,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (39).jpg",
+      "clase": "white spot",
+      "sha256": "f9afc04d14545a51fc37dc572423bd227856ebca0dbbba7c1ef17c358c305e69",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (4).jpg",
+      "clase": "white spot",
+      "sha256": "80c42e1ee601e1284096f4ece46eb25cd14fc9ce845f898dd9e8d4830d2f3f50",
+      "lado_menor": 87,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (40).jpg",
+      "clase": "white spot",
+      "sha256": "541d8ec95179a688fd9275322dd693bd620ae0e25c4efe57ae7fb25b7c38697d",
+      "lado_menor": 60,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (41).jpg",
+      "clase": "white spot",
+      "sha256": "6be5b1c69c8850124c5c3bfa11f02395040d5e1ca5e22e4cfb3edb5af4f1da86",
+      "lado_menor": 84,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (42).jpg",
+      "clase": "white spot",
+      "sha256": "c4572a6cf05468f4bf1852d8db1148981ca80dd9a5f2ff37fd81f22f6b25298c",
+      "lado_menor": 49,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (43).jpg",
+      "clase": "white spot",
+      "sha256": "2093901f344e5b0230f98521c68e03accf3dec09fa12060edaaae0d62e5d1c61",
+      "lado_menor": 37,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (44).jpg",
+      "clase": "white spot",
+      "sha256": "ec0ac2312d2e748994b1b239fcfc9fc1a0a5975cf93e7cee54a4ec3fb505c89b",
+      "lado_menor": 50,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (45).jpg",
+      "clase": "white spot",
+      "sha256": "08e7710da338141ff6a8edbdb8beda0395a3715980ea64262ebc2b9150094c9b",
+      "lado_menor": 45,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (46).jpg",
+      "clase": "white spot",
+      "sha256": "b74b1db7b16a99e16e6633c6b84ef8aee48bf9821ddcd21dba990905def86a8b",
+      "lado_menor": 47,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (47).jpg",
+      "clase": "white spot",
+      "sha256": "564a44079408c5d2b1f2dea08c00edc76ca5e5c9d8f1f4ab6be47cd571ae537e",
+      "lado_menor": 53,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (48).jpg",
+      "clase": "white spot",
+      "sha256": "7a1943d365574c1d5283d1da3d51663ecfd28f235992b9c2e1fa3cdf40457f40",
+      "lado_menor": 57,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (49).jpg",
+      "clase": "white spot",
+      "sha256": "a030eb0c7f843697e753cd6f4ec995fb5d8f285ac4ae18d295fdc4d0044e504a",
+      "lado_menor": 45,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (5).jpg",
+      "clase": "white spot",
+      "sha256": "2d7704aea85419dcddc8ad9277d203f18ea7b847eb3ea38999f09d47748393da",
+      "lado_menor": 104,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (50).jpg",
+      "clase": "white spot",
+      "sha256": "647e6d2326663632d30391e4f34d45fcfa037adf85706bc8dc1cb8ba3c1d825a",
+      "lado_menor": 44,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (51).jpg",
+      "clase": "white spot",
+      "sha256": "9644b289882065b0b86521542ee6bc55751c66b7cbd0d9ca3d062db0ee4d21ac",
+      "lado_menor": 50,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (52).jpg",
+      "clase": "white spot",
+      "sha256": "600ccec543ebea8e1fb2c703df5ef3e8cd03cc642b9ec82bd0a9748fba1f25a7",
+      "lado_menor": 78,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (53).jpg",
+      "clase": "white spot",
+      "sha256": "4cec9edc458244d45861f1b58a61d80186963ce4d7cb6026ce0e002da8dd04f6",
+      "lado_menor": 81,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (54).jpg",
+      "clase": "white spot",
+      "sha256": "bd95f6ba653a726552d5c77efed8d6b5c5c393ec4d020127593366743ec0970e",
+      "lado_menor": 222,
+      "particion": "test"
+    },
+    {
+      "archivo": "white spot/white (55).jpg",
+      "clase": "white spot",
+      "sha256": "30f66fb3f6e0c6070f740309bd1739e931b4e8aa0e6654c4e42bda166887e100",
+      "lado_menor": 233,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (56).jpg",
+      "clase": "white spot",
+      "sha256": "53c8efa618e0049c5899eaa98d8f310cb8f719f96c379a7f577adf8bb50a87f2",
+      "lado_menor": 196,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (57).jpg",
+      "clase": "white spot",
+      "sha256": "783b62a368548552cf97fb58be909c40fa5f7d3857e77ea857919a2a427ea703",
+      "lado_menor": 166,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (58).jpg",
+      "clase": "white spot",
+      "sha256": "3772756fdba204e83a9d70f6346c2ae92486746fc49b836892bf6fc376abbe01",
+      "lado_menor": 183,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (59).jpg",
+      "clase": "white spot",
+      "sha256": "effc3ff8c2e9b85f2ad550fc41eb5f1d6e20b8699e9833fe770cde4243ff163a",
+      "lado_menor": 162,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (6).jpg",
+      "clase": "white spot",
+      "sha256": "794d2744646490d0e2a413dd6b5e338bfbc57e9b88ed661009efebc54b3c4606",
+      "lado_menor": 86,
+      "particion": "val"
+    },
+    {
+      "archivo": "white spot/white (60).jpg",
+      "clase": "white spot",
+      "sha256": "673d30b6b10cb4e1313f629355f0b66da2c8bddd9597303de4cd4081b43b9ab2",
+      "lado_menor": 233,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (7).jpg",
+      "clase": "white spot",
+      "sha256": "39c4ec41d025e5b46909bef0e1b1271754830e99e25d75dc4db3c41f5834837b",
+      "lado_menor": 77,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (8).jpg",
+      "clase": "white spot",
+      "sha256": "3a891d739cb6a07a1dc4403e1717b814645a5b35b4e224150ba802d72d97593e",
+      "lado_menor": 82,
+      "particion": "train"
+    },
+    {
+      "archivo": "white spot/white (9).jpg",
+      "clase": "white spot",
+      "sha256": "c29736a0f2ad5f4fb7893497c91c368b8a9895733e31fd1f712c1f10fefd5c05",
+      "lado_menor": 72,
+      "particion": "train"
+    }
+  ],
+  "aptas_lado_producto": {
+    "lado_minimo": 224,
+    "conteos": {
+      "train": {
+        "beau_s line": 6,
+        "black line": 1,
+        "clubbing": 1,
+        "mees_ line": 0,
+        "normal": 8,
+        "onycholysis": 6,
+        "other": 6,
+        "terry_s nail": 6,
+        "white spot": 3
+      },
+      "val": {
+        "beau_s line": 2,
+        "black line": 0,
+        "clubbing": 1,
+        "mees_ line": 0,
+        "normal": 2,
+        "onycholysis": 0,
+        "other": 1,
+        "terry_s nail": 0,
+        "white spot": 1
+      },
+      "test": {
+        "beau_s line": 1,
+        "black line": 1,
+        "clubbing": 1,
+        "mees_ line": 0,
+        "normal": 0,
+        "onycholysis": 1,
+        "other": 0,
+        "terry_s nail": 0,
+        "white spot": 0
+      }
+    }
+  },
+  "rechazadas": []
+}

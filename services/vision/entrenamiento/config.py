@@ -21,10 +21,20 @@ ARQUITECTURAS = {
 # terminos convertiria el clasificador en un dispositivo medico de facto, con
 # un dataset que no lo soporta: un falso negativo confiado sobre una lesion es
 # el peor resultado posible. Se rechaza al cargar, no se confia en la revision.
+# Incluye los equivalentes en ingles: los datasets publicos de unas (p. ej.
+# datasets/kaggle_nail/) nombran sus carpetas en ingles, y copiar una de esas
+# clases tal cual no debe colarse por diferencia de idioma.
 TERMINOS_CLINICOS = (
     "hongo", "micosis", "onicomicosis", "psoriasis", "melanoma", "cancer",
     "tumor", "infeccion", "paroniquia", "onicolisis", "lesion", "enfermedad",
+    "fungus", "fungal", "onychomycosis", "infection", "paronychia",
+    "onycholysis", "disease", "clubbing",
 )
+
+# Marca de las fichas de datasets externos (datasets/*/particion.toml). Esas
+# fichas tienen clases clinicas y solo sirven para particionar: si una llega
+# aqui como config de entrenamiento, se rechaza con un motivo claro.
+USO_SOLO_PARTICION = "solo_particion"
 
 
 def cargar_config(ruta: Path = RUTA_POR_DEFECTO) -> dict:
@@ -35,6 +45,8 @@ def cargar_config(ruta: Path = RUTA_POR_DEFECTO) -> dict:
 
 
 def _validar(cfg: dict) -> None:
+    if cfg.get("uso") == USO_SOLO_PARTICION:
+        raise ValueError("es una ficha de dataset externo (solo particion), no una config de entrenamiento")
     p = cfg["particion"]
     if not (0 < p["val"] < 1 and 0 < p["test"] < 1 and p["val"] + p["test"] < 1):
         raise ValueError("particion: val y test deben ser fracciones con val + test < 1")
