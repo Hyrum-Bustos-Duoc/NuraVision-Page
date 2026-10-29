@@ -85,13 +85,13 @@ export default function AdminDashboard() {
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-busy={!resumen}>
             <StatCard
               label="Reservas del mes"
-              value={resumen ? String(resumen.reservasDelMes) : '…'}
+              value={resumen ? resumen.reservasDelMes.toLocaleString('es-CL') : '…'}
               caption={monthLabel(anio, mes)}
               icon={CalendarCheck}
             />
             <StatCard
               label="Reservas hoy"
-              value={resumen ? String(resumen.reservasHoy) : '…'}
+              value={resumen ? resumen.reservasHoy.toLocaleString('es-CL') : '…'}
               caption={resumen ? `${resumen.porAtenderHoy} por atender` : 'Cargando…'}
               icon={Clock}
             />

@@ -125,7 +125,7 @@ y `hora_inicio` descendentes, filtrables por los 4 estados reales y por
 profesional del equipo real, y la petición MUST NOT traer más de 8 filas.
 
 #### Scenario: Filtro por estado
-- **WHEN** se elige «Pendiente»
+- **WHEN** se elige «Por confirmar» (el estado `pendiente`, con el mismo rótulo que el resto del panel)
 - **THEN** solo aparecen reservas con estado `pendiente`, a lo más 8
 
 #### Scenario: Sin resultados

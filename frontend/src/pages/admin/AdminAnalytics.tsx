@@ -141,9 +141,9 @@ export default function AdminAnalytics() {
       {indicadores && indicadores.reservas > 0 && (
         <>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label="Reservas" value={String(indicadores.reservas)} />
+            <Metric label="Reservas" value={indicadores.reservas.toLocaleString('es-CL')} />
             <Metric label="Ingresos estimados" value={formatPrice(indicadores.ingresosEstimados)} />
-            <Metric label="Clientas distintas" value={String(indicadores.clientasDistintas)} />
+            <Metric label="Clientas distintas" value={indicadores.clientasDistintas.toLocaleString('es-CL')} />
             <Metric
               label="Tasa de cancelación"
               value={`${tasaCancelacion(indicadores.porEstado.cancelada, indicadores.reservas).toFixed(1)}%`}

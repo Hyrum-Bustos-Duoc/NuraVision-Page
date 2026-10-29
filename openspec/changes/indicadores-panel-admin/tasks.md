@@ -67,7 +67,7 @@ con `fix/agenda-profesional-real`. 3.1 y 3.2 no empiezan sin eso.
 
 ## 4. Verificación
 
-- [ ] 4.1 **(nv-qa)** Casos desde todos los escenarios de
+- [x] 4.1 **(nv-qa)** Casos desde todos los escenarios de
   `specs/indicadores-panel/spec.md`: llamadas a la función con anon key, sesión
   de clienta con reservas propias, profesional y personal; rangos invertido, de
   un día y que cruzan año; datos sucios en `detalles_extra`; las dos pantallas
@@ -92,3 +92,16 @@ Ver `proposal.md`: ingresos cobrados por Webpay, marcar `completada`, congelar
 el precio de reservas sin variante, indicadores de la tienda, comparación con
 el período anterior, CSV, tiempo real, índice por `fecha` (sin medición que lo
 pida) y retirar los datos semilla del resto de la app.
+
+> Nota del 2026-10-29 sobre 4.1: se verificó con la migración real sobre
+> PGlite, con RLS activa. Las cifras de pantalla se compararon contra
+> consultas SQL directas en 15 rangos, sin diferencias. Hay 20 e2e y 315
+> unitarios en verde. Quedan 2 fallos menores, ya corregidos: el separador
+> de miles y el rótulo «Por confirmar».
+>
+> Faltan cuatro comprobaciones contra Supabase real, porque Docker local
+> no funcionaba:
+> - el código HTTP que PostgREST devuelve ante un 42501 sin sesión;
+> - los privilegios por defecto de `anon`;
+> - el claim `es_staff` emitido por Auth;
+> - la tabla `perfiles` de producción, que no está versionada.
