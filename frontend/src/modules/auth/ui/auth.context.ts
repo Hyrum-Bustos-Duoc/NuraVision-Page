@@ -18,6 +18,11 @@ export interface AuthValue {
   /** Inicia sesion. Lanza una excepcion con el motivo si falla. */
   signInWithPassword: (credenciales: Credenciales) => Promise<UsuarioAuth>
   signOut: () => Promise<void>
+  /**
+   * Vuelve a leer la sesion (p. ej. tras corregir el perfil, para que el
+   * encabezado vea el nombre nuevo). Lanza si falla.
+   */
+  refrescarSesion: () => Promise<void>
 }
 
 /**

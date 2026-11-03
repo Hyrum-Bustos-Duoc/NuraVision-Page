@@ -1,4 +1,4 @@
-import { esFechaISO, hoyISO } from '@/shared/lib/calendario'
+import { esFechaISO, FECHA_NACIMIENTO_MINIMA, hoyISO } from '@/shared/lib/calendario'
 import type { AuthRepository } from '../domain/auth.repository'
 import type { DatosRegistro, ResultadoRegistro } from '../domain/auth.types'
 
@@ -6,13 +6,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** Minimo de Supabase por defecto. Subirlo aqui no lo hace cumplir en la base. */
 const LARGO_MINIMO_PASSWORD = 8
-
-/**
- * Cumpleaños mas antiguo que se acepta. No es una regla de la base (alli es un
- * metadato libre), solo un limite razonable para que el selector no ofrezca un
- * siglo de años vacios. El maximo es hoy: no se nace en el futuro.
- */
-export const FECHA_NACIMIENTO_MINIMA = '1920-01-01'
 
 /**
  * Crea una cuenta.
