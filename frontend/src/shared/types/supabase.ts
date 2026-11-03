@@ -561,6 +561,27 @@ export interface Database {
         }[]
       }
       /**
+       * Unica via por la que una cuenta corrige su propia fila de `perfiles`
+       * (0020). Reemplazo completo: los tres argumentos son obligatorios.
+       * Devuelve una fila; arreglo vacio es un error, no un exito.
+       */
+      actualizar_mi_perfil: {
+        Args: {
+          p_nombre: string
+          /** Canonico `+56XXXXXXXXX` o `''` (sin telefono). */
+          p_telefono: string
+          /** `'YYYY-MM-DD'` o null. */
+          p_fecha_nacimiento: string | null
+        }
+        Returns: {
+          nombre: string
+          /** `''` = sin telefono. */
+          telefono: string
+          /** `'YYYY-MM-DD'` o null. */
+          fecha_nacimiento: string | null
+        }[]
+      }
+      /**
        * Agregados del Dashboard y la Analitica (0022). Solo personal: 42501 si
        * no es_staff(); 22023 con hint 'rango_invalido' si falta un extremo o
        * p_desde > p_hasta. Rango inclusivo sobre `reservas.fecha`.
