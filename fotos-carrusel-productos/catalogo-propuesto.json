@@ -1,0 +1,522 @@
+{
+  "generado": "2026-10-28",
+  "origen": "Fotos de fotos-carrusel-productos/productos/ (22 archivos, 2026-10-01), revisadas una a una.",
+  "notas": [
+    "TODOS los precios y stocks son una propuesta: precio_estado = 'a confirmar por la PO'. El stock es un marcador; debe reemplazarse por el inventario real del estudio.",
+    "imagen_url apunta a frontend/public/productos/<slug>.jpg (1200x1200, JPEG q80, sin Exif/XMP/C2PA/IPTC). Vite las sirve en la raiz, igual que /carrusel/. No hay bucket de Storage para productos: el panel guarda la foto que se sube a mano como data URL en la misma columna.",
+    "servicio_patrones sigue el mismo mecanismo que el seed de 0013 (primer servicio activo cuyo nombre haga ilike con el patron, en orden). Array vacio = sin servicio.",
+    "modo_uso es redaccion propuesta, no leida del envase (la cara posterior no aparece en ninguna foto). ingredientes solo recoge lo que esta impreso en la cara frontal.",
+    "categoria usa solo ids existentes en frontend/src/modules/tienda/domain/categorias.ts y en el check productos_categoria_valida de 0013."
+  ],
+  "productos": [
+    {
+      "slug": "crema-manos-pies-gonails-cotton-candy-500ml",
+      "nombre": "Crema de manos y pies GoNails Cotton Candy",
+      "categoria": "unas_manos",
+      "tamano": "500 ml",
+      "precio": 10990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema para manos y pies con aroma a algodón de azúcar. Hidrata sin dejar la piel grasosa y el formato con dispensador dura meses.",
+      "modo_uso": "Aplica sobre manos y pies limpios y masajea hasta que se absorba. Úsala después de cada lavado.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 6,
+      "imagen_url": "/productos/crema-manos-pies-gonails-cotton-candy-500ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.55 (3) - editada.jpg",
+      "identificacion": "segura (marca, linea, aroma y volumen legibles)",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "GoNails es marca chilena de venta en su tienda online y en salones. El formato 500 ml con dispensador se ha vendido en torno a $9.990; se ajusta a ~$10.990 por inflacion a octubre de 2026."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-lemon-pie-500ml",
+      "nombre": "Crema de manos y pies GoNails Lemon Pie",
+      "categoria": "unas_manos",
+      "tamano": "500 ml",
+      "precio": 10990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema para manos y pies con aroma a pie de limón. Hidrata sin dejar la piel grasosa y el formato con dispensador dura meses.",
+      "modo_uso": "Aplica sobre manos y pies limpios y masajea hasta que se absorba. Úsala después de cada lavado.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 6,
+      "imagen_url": "/productos/crema-manos-pies-gonails-lemon-pie-500ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.55 (4) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato y linea que Cotton Candy 500 ml: mismo precio."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-lolipop-500ml",
+      "nombre": "Crema de manos y pies GoNails Lolipop",
+      "categoria": "unas_manos",
+      "tamano": "500 ml",
+      "precio": 10990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema para manos y pies con aroma a dulce de colores. Hidrata sin dejar la piel grasosa y el formato con dispensador dura meses.",
+      "modo_uso": "Aplica sobre manos y pies limpios y masajea hasta que se absorba. Úsala después de cada lavado.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 6,
+      "imagen_url": "/productos/crema-manos-pies-gonails-lolipop-500ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (5) - editada.jpg",
+      "identificacion": "segura. El envase escribe 'Lolipop' (con una sola l): se respeta la grafia de la marca.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato y linea que Cotton Candy 500 ml: mismo precio."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-popcorn-500ml",
+      "nombre": "Crema de manos y pies GoNails Popcorn",
+      "categoria": "unas_manos",
+      "tamano": "500 ml",
+      "precio": 10990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema para manos y pies con aroma a cabritas dulces. Hidrata sin dejar la piel grasosa y el formato con dispensador dura meses.",
+      "modo_uso": "Aplica sobre manos y pies limpios y masajea hasta que se absorba. Úsala después de cada lavado.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 6,
+      "imagen_url": "/productos/crema-manos-pies-gonails-popcorn-500ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato y linea que Cotton Candy 500 ml: mismo precio."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-cotton-candy-60ml",
+      "nombre": "Crema de manos y pies GoNails Cotton Candy mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "La crema Cotton Candy en pomo de bolsillo, para llevar en la cartera y retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-cotton-candy-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.58 (2) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "El pomo de 60 ml de GoNails ha estado en torno a $3.990; se propone $4.490 a octubre de 2026. Es el producto de entrada de la tienda: conviene que quede bajo $5.000."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-lemon-pie-60ml",
+      "nombre": "Crema de manos y pies GoNails Lemon Pie mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "La crema Lemon Pie en pomo de bolsillo, para llevar en la cartera y retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-lemon-pie-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.58 (3) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-cupcake-60ml",
+      "nombre": "Crema de manos y pies GoNails Cupcake mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema de manos y pies con aroma a cupcake, en pomo de bolsillo para retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-cupcake-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.57 (3) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-watermelon-gum-60ml",
+      "nombre": "Crema de manos y pies GoNails Watermelon Gum mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema de manos y pies con aroma a chicle de sandía, en pomo de bolsillo para retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-watermelon-gum-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.57 (4) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-strawberry-cake-60ml",
+      "nombre": "Crema de manos y pies GoNails Strawberry Cake mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema de manos y pies con aroma a torta de frutilla, en pomo de bolsillo para retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-strawberry-cake-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.58 (1) - editada.jpg",
+      "identificacion": "segura. Etiqueta de otro diseño (cuadrille): podria ser edicion de temporada.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-hot-chocolate-60ml",
+      "nombre": "Crema de manos y pies GoNails Hot Chocolate mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema de manos y pies con aroma a chocolate caliente, en pomo de bolsillo para retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-hot-chocolate-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.57 (2) - editada.jpg",
+      "identificacion": "segura. Etiqueta de otro diseño (cuadrille): podria ser edicion de temporada.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "crema-manos-pies-gonails-pistacho-caramelo-60ml",
+      "nombre": "Crema de manos y pies GoNails Pistacho y caramelo mini",
+      "categoria": "unas_manos",
+      "tamano": "60 ml",
+      "precio": 4490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Crema de manos y pies con aroma a pistacho y caramelo, en pomo de bolsillo para retocar la hidratación durante el día.",
+      "modo_uso": "Aplica una pequeña cantidad y masajea hasta que se absorba, las veces que lo necesites.",
+      "ingredientes": "Manteca de karité, vitamina E, aloe vera. Libre de parabenos.",
+      "stock": 10,
+      "imagen_url": "/productos/crema-manos-pies-gonails-pistacho-caramelo-60ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.58 - editada.jpg",
+      "identificacion": "segura. Etiqueta de otro diseño: podria ser edicion de temporada.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Mismo formato que Cotton Candy 60 ml."
+    },
+    {
+      "slug": "exfoliante-manos-pies-gonails-cupcake-250ml",
+      "nombre": "Exfoliante de manos y pies GoNails Cupcake",
+      "categoria": "unas_manos",
+      "tamano": "250 ml",
+      "precio": 9990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "%pedicur%",
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Exfoliante con partículas minerales que deja manos y pies suaves antes de hidratar. Aroma a cupcake.",
+      "modo_uso": "Masajea sobre la piel húmeda con movimientos circulares y enjuaga. Una o dos veces por semana, y después aplica tu crema.",
+      "ingredientes": "Con exfoliantes minerales. Libre de parabenos.",
+      "stock": 6,
+      "imagen_url": "/productos/exfoliante-manos-pies-gonails-cupcake-250ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.55 (1) - editada.jpg",
+      "foto_alternativa": "WhatsApp Image 2026-10-01 at 12.21.55 - editada.jpg (solo la tapa, de frente; se eligio la del pote completo porque muestra el envase)",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Exfoliantes de manos y pies de marcas de salon chilenas en 250 ml rondan $8.000-$10.000; se propone $9.990."
+    },
+    {
+      "slug": "aceite-cuticulas-gonails-granada-30ml",
+      "nombre": "Aceite de cutículas GoNails Granada",
+      "categoria": "unas_manos",
+      "tamano": "30 ml",
+      "precio": 5490,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Manicura Completa",
+        "%manicur%"
+      ],
+      "descripcion": "Aceite de cutículas con aroma a granada y vitamina E. Suaviza la cutícula y da brillo a la uña entre cada visita al estudio.",
+      "modo_uso": "Una gota por uña cada noche. Masajea hasta que se absorba.",
+      "ingredientes": "Con vitamina E.",
+      "stock": 10,
+      "imagen_url": "/productos/aceite-cuticulas-gonails-granada-30ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (2) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Aceites de cuticula de 30 ml con gotario de marcas de salon en Chile se venden entre $4.500 y $6.500; se propone $5.490."
+    },
+    {
+      "slug": "acondicionador-gohair-reparador-cotton-candy-400ml",
+      "nombre": "Acondicionador reparador GoHair Cotton Candy",
+      "categoria": "cabello",
+      "tamano": "400 ml",
+      "precio": 10990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Capilar",
+        "%capilar%"
+      ],
+      "descripcion": "Acondicionador de fórmula cremosa para cabello seco y dañado, sin sal ni siliconas. Aroma a algodón de azúcar.",
+      "modo_uso": "Después del champú, aplica de medios a puntas, deja actuar unos minutos y enjuaga.",
+      "ingredientes": "Keramare y pantenol (según envase). Sin sal ni siliconas.",
+      "stock": 4,
+      "imagen_url": "/productos/acondicionador-gohair-reparador-cotton-candy-400ml.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.55 (2) - editada.jpg",
+      "identificacion": "segura. 'Keramare' se transcribe tal como esta impreso; no se pudo confirmar si es un nombre comercial.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Acondicionadores sin sal de marcas chilenas de salon en 400 ml estan entre $9.000 y $12.000; se propone $10.990."
+    },
+    {
+      "slug": "iluminador-essence-baby-got-holo-glow",
+      "nombre": "Iluminador en barra essence Baby Got Holo Glow",
+      "categoria": "piel",
+      "tamano": "5 g",
+      "precio": 6990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [],
+      "descripcion": "Iluminador en barra con acabado holográfico. Se difumina con los dedos sobre pómulos, párpados o donde quieras sumar brillo. Vegano.",
+      "modo_uso": "Desliza la barra sobre la zona a iluminar y difumina con los dedos.",
+      "ingredientes": "",
+      "stock": 3,
+      "imagen_url": "/productos/iluminador-essence-baby-got-holo-glow.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (1) - editada.jpg",
+      "identificacion": "segura en marca, nombre y peso (5 g / 0.17 oz). No se lee numero de tono.",
+      "categoria_duda": "Es maquillaje: ninguna categoria actual le corresponde. Se deja en 'piel' como la menos mala. Si la PO quiere vender maquillaje, hace falta una categoria nueva (check de 0013 + categorias.ts).",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "essence es marca de precio bajo; sus sticks iluminadores se venden en farmacias y tiendas de belleza chilenas entre $5.000 y $7.000. Se propone $6.990."
+    },
+    {
+      "slug": "mascarilla-kiss-beauty-strawberry",
+      "nombre": "Mascarilla facial Kiss Beauty Strawberry",
+      "categoria": "piel",
+      "tamano": "20 g",
+      "precio": 1990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Mascarilla de esencia de frutilla, hidratante, en sobre individual. Un rato de cuidado para la piel en casa.",
+      "modo_uso": "Sobre el rostro limpio, deja actuar el tiempo que indica el envase y retira. Masajea el exceso hasta absorber.",
+      "ingredientes": "",
+      "stock": 15,
+      "imagen_url": "/productos/mascarilla-kiss-beauty-strawberry.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (3) - editada.jpg",
+      "identificacion": "segura en marca, variante y peso. No se ve si es de tela o en crema (envase cerrado).",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Kiss Beauty es marca importada de bajo costo; la mascarilla individual se vende en Chile entre $1.000 y $2.000. Se propone $1.990 como precio de salon."
+    },
+    {
+      "slug": "mascarilla-kiss-beauty-aloe",
+      "nombre": "Mascarilla facial Kiss Beauty Aloe",
+      "categoria": "piel",
+      "tamano": "20 g",
+      "precio": 1990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Mascarilla de esencia de aloe vera, hidratante, en sobre individual. Un rato de cuidado para la piel en casa.",
+      "modo_uso": "Sobre el rostro limpio, deja actuar el tiempo que indica el envase y retira. Masajea el exceso hasta absorber.",
+      "ingredientes": "",
+      "stock": 15,
+      "imagen_url": "/productos/mascarilla-kiss-beauty-aloe.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (4) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Igual que Strawberry."
+    },
+    {
+      "slug": "mascarilla-kiss-beauty-orange-vc",
+      "nombre": "Mascarilla facial Kiss Beauty Orange VC",
+      "categoria": "piel",
+      "tamano": "20 g",
+      "precio": 1990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Mascarilla de esencia de naranja con vitamina C, hidratante, en sobre individual. Un rato de cuidado para la piel en casa.",
+      "modo_uso": "Sobre el rostro limpio, deja actuar el tiempo que indica el envase y retira. Masajea el exceso hasta absorber.",
+      "ingredientes": "",
+      "stock": 15,
+      "imagen_url": "/productos/mascarilla-kiss-beauty-orange-vc.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.56 (6) - editada.jpg",
+      "identificacion": "segura. 'VC' se interpreta como vitamina C; no se ve la lista de ingredientes.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Igual que Strawberry."
+    },
+    {
+      "slug": "mascarilla-kiss-beauty-grape",
+      "nombre": "Mascarilla facial Kiss Beauty Grape",
+      "categoria": "piel",
+      "tamano": "20 g",
+      "precio": 1990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Mascarilla de esencia de uva, hidratante, en sobre individual. Un rato de cuidado para la piel en casa.",
+      "modo_uso": "Sobre el rostro limpio, deja actuar el tiempo que indica el envase y retira. Masajea el exceso hasta absorber.",
+      "ingredientes": "",
+      "stock": 15,
+      "imagen_url": "/productos/mascarilla-kiss-beauty-grape.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.57 (1) - editada.jpg",
+      "identificacion": "segura",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Igual que Strawberry."
+    },
+    {
+      "slug": "mascarilla-kiss-beauty-bamboo-charcoal",
+      "nombre": "Mascarilla facial Kiss Beauty Bamboo Charcoal",
+      "categoria": "piel",
+      "tamano": "20 g",
+      "precio": 1990,
+      "precio_anterior": null,
+      "insignia": null,
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Mascarilla de esencia de carbón de bambú, hidratante, en sobre individual. Un rato de cuidado para la piel en casa.",
+      "modo_uso": "Sobre el rostro limpio, deja actuar el tiempo que indica el envase y retira. Masajea el exceso hasta absorber.",
+      "ingredientes": "",
+      "stock": 15,
+      "imagen_url": "/productos/mascarilla-kiss-beauty-bamboo-charcoal.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.57 - editada.jpg",
+      "identificacion": "segura en producto. La foto se ve mas plana y con menos nitidez que las otras cuatro (posible imagen de catalogo y no foto propia): conviene confirmarlo con la PO.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "Igual que Strawberry."
+    },
+    {
+      "slug": "pack-mascarillas-kiss-beauty",
+      "nombre": "Pack 5 mascarillas Kiss Beauty",
+      "categoria": "kits",
+      "tamano": "5 × 20 g",
+      "precio": 8990,
+      "precio_anterior": 9950,
+      "insignia": "kit",
+      "servicio_patrones": [
+        "Tratamiento Facial",
+        "%facial%",
+        "%limpieza%"
+      ],
+      "descripcion": "Las cinco mascarillas Kiss Beauty: frutilla, aloe, naranja con vitamina C, uva y carbón de bambú. Una para cada día de la semana laboral.",
+      "modo_uso": "Usa una mascarilla por sesión sobre el rostro limpio, siguiendo el tiempo de cada envase.",
+      "ingredientes": "Incluye Strawberry, Aloe, Orange VC, Grape y Bamboo Charcoal.",
+      "stock": 4,
+      "imagen_url": "/productos/pack-mascarillas-kiss-beauty.jpg",
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.54 - editada.jpg",
+      "identificacion": "DUDA: la foto muestra las cinco variantes juntas. No sabemos si el estudio vende un pack o si es solo una foto de grupo. Si no hay pack, no se carga este producto y la foto queda solo para el carrusel.",
+      "precio_estado": "a confirmar por la PO",
+      "precio_razonamiento": "precio_anterior = 5 × $1.990 = $9.950; el pack a $8.990 (~10 % menos). El check de 0013 exige precio_anterior > precio: se cumple."
+    }
+  ],
+  "fotos_sin_producto_propio": [
+    {
+      "foto_original": "WhatsApp Image 2026-10-01 at 12.21.55 - editada.jpg",
+      "motivo": "Tapa del exfoliante Cupcake 250 ml, de frente. Mismo producto que 12.21.55 (1); queda como foto alternativa y no se copia al front."
+    }
+  ],
+  "comparacion_seed_0013": {
+    "resumen": "Ninguno de los productos fotografiados coincide con un producto del seed. El seed son 10 productos genericos de la especificacion (marca propia 'Nura' y formatos inventados); las fotos son productos reales de terceros (GoNails, GoHair, essence, Kiss Beauty). Por eso no se propone actualizar ningun slug existente: todos los productos de este archivo son NUEVOS.",
+    "parecidos_no_iguales": [
+      {
+        "seed": "aceite-de-cuticula-nura",
+        "parecido": "aceite-cuticulas-gonails-granada-30ml",
+        "por_que_no_se_fusiona": "Otra marca y otro volumen (15 ml vs 30 ml). Reusar el slug dejaria la URL y los pedidos antiguos apuntando a un producto distinto del que se compro."
+      },
+      {
+        "seed": "crema-de-manos-reparadora",
+        "parecido": "cremas GoNails 60 ml / 500 ml",
+        "por_que_no_se_fusiona": "Otra marca y otros volumenes (75 ml vs 60/500 ml), y son once variantes, no una."
+      },
+      {
+        "seed": "champu-reconstructor",
+        "parecido": "acondicionador-gohair-reparador-cotton-candy-400ml",
+        "por_que_no_se_fusiona": "Es acondicionador, no champu."
+      }
+    ],
+    "nuevos": 21,
+    "a_actualizar": 0,
+    "seed_sin_foto": [
+      "aceite-de-cuticula-nura",
+      "crema-de-manos-reparadora",
+      "fortalecedor-de-unas",
+      "champu-reconstructor",
+      "mascarilla-reparacion-profunda",
+      "serum-cuero-cabelludo",
+      "gel-limpiador-suave",
+      "protector-solar-fps-50",
+      "kit-ritual-manos",
+      "gift-card-estudio-nura"
+    ],
+    "decision_pendiente_po": "Que hacer con los 10 del seed. Propuesta: desactivarlos (activo = false), no borrarlos, porque pedido_items puede referenciarlos. Excepcion probable: gift-card-estudio-nura, que no necesita foto de envase. Ojo: kit-ritual-manos es el combo de SLUG_KIT_COMBO (descuento 15 % en crear_pedido) y varios slugs del seed estan fijos en el front (Nuria y recomendaciones del analisis): desactivarlos sin reemplazo deja esas recomendaciones vacias."
+  }
+}
