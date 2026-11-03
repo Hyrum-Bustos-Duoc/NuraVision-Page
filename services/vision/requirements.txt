@@ -1,0 +1,7 @@
+# Entorno de entrenamiento (Google Colab, Python 3.11-3.13).
+# Versiones fijadas: sin ellas una ejecucion no se puede reproducir.
+# Verificadas en PyPI el 2026-10-27.
+tensorflow==2.21.0
+keras==3.15.1
+scikit-learn==1.9.1
+pillow==13.0.0
