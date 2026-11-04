@@ -39,9 +39,11 @@ export class SupabaseReservaGestionRepository implements ReservaGestionRepositor
       consulta = consulta.eq('profesional_id', aIdNumerico(filtros.profesionalId))
     }
 
-    const { data, error } = await consulta
+    const ordenada = consulta
       .order('fecha', { ascending: false })
       .order('hora_inicio', { ascending: false })
+
+    const { data, error } = await (filtros.limite ? ordenada.limit(filtros.limite) : ordenada)
 
     if (error) {
       if (error.code === '42501') throw new Error(FALTA_POLITICA)

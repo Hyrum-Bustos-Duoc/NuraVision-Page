@@ -1,0 +1,31 @@
+# TEMPORAL (decision del 2026-10-29). Ficha de particion del dataset publico
+# arthitaya/nail-dataset. Ver FICHA.md.
+#
+# SOLO PARTICION: este dataset tiene clases clinicas y NO es una tarea del
+# producto. Se usa con `python -m entrenamiento.externo`; config.py la rechaza
+# como config de entrenamiento.
+uso = "solo_particion"
+dataset = "kaggle:arthitaya/nail-dataset@v2"
+
+# Fecha de la decision, igual que la semilla de config.toml. Cambiarla cambia
+# la particion: queda fijada para que QA pueda reproducirla.
+semilla = 20261029
+
+# 1 = se particiona toda foto decodificable, sin filtrar por resolucion. El
+# lado menor de cada foto queda en particion.json, y el filtro (p. ej. el
+# minimo de 224 del producto) se aplica despues como subconjunto. Asi una foto
+# de test no pasa a train al cambiar el minimo. Solo 48 de las 540 fotos llegan
+# a 224 (mees_ line ninguna, black line 2): con ese minimo `dividir` fallaria.
+lado_minimo = 1
+
+# Nombres de carpeta tal como vienen en el zip (Nail/<clase>/).
+clases = [
+    "beau_s line", "black line", "clubbing", "mees_ line", "normal",
+    "onycholysis", "other", "terry_s nail", "white spot",
+]
+
+# Mismas fracciones que el producto (config.toml): 70/15/15. Con 60 fotos por
+# clase quedan 9 en val y 9 en test.
+[particion]
+val = 0.15
+test = 0.15

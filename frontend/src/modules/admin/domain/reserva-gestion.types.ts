@@ -53,6 +53,11 @@ export interface ReservaGestion {
 export interface FiltrosReservas {
   estado?: EstadoReserva
   profesionalId?: string
+  /**
+   * Maximo de filas. Lo usa el Dashboard ("Reservas recientes", 8): sin esto
+   * descargaria todas las reservas del estudio para pintar ocho.
+   */
+  limite?: number
 }
 
 /** Estados que el estudio puede filtrar, en el orden en que se ofrecen. */
@@ -62,6 +67,14 @@ export const ESTADOS_FILTRABLES: EstadoReserva[] = [
   'completada',
   'cancelada',
 ]
+
+/** Nombre de cada estado en los filtros; el mismo que pinta `StatusBadge`. */
+export const ETIQUETA_ESTADO: Record<EstadoReserva, string> = {
+  pendiente: 'Por confirmar',
+  confirmada: 'Confirmada',
+  completada: 'Completada',
+  cancelada: 'Cancelada',
+}
 
 /**
  * Una reserva solo se confirma desde 'pendiente'.

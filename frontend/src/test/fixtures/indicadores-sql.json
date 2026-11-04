@@ -1,0 +1,3902 @@
+{
+ "_origen": "Generado con gen_fixture_ui.mjs sobre PGlite: rpc = salida literal de 0022 con sesion de staff; sql = consultas directas. No editar a mano.",
+ "spec": {
+  "rpc": {
+   "2026-04-01|2026-10-31": {
+    "desde": "2026-04-01",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 85,
+    "por_estado": {
+     "cancelada": 16,
+     "pendiente": 12,
+     "completada": 32,
+     "confirmada": 25
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 19,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 10,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 9,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 7,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5,
+      "servicio_id": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 19,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 18,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 18,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 14,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1664003,
+    "clientas_registradas": 96
+   },
+   "2026-10-31|2026-10-31": {
+    "desde": "2026-10-31",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 5,
+      "canceladas": 1
+     }
+    ],
+    "reservas": 5,
+    "por_estado": {
+     "cancelada": 1,
+     "pendiente": 2,
+     "completada": 1,
+     "confirmada": 1
+    },
+    "por_servicio": [
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 1,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 1,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 1,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 1,
+      "servicio_id": 1
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 2,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 1,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 1,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 5,
+    "ingresos_estimados": 140000,
+    "clientas_registradas": 96
+   },
+   "2026-10-01|2026-10-31": {
+    "desde": "2026-10-01",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 40,
+    "por_estado": {
+     "cancelada": 4,
+     "pendiente": 9,
+     "completada": 13,
+     "confirmada": 14
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 9,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 6,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 4,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 4,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 3,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3,
+      "servicio_id": 4
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 3,
+      "servicio_id": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 12,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 10,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 8,
+      "profesional_id": 4
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 6,
+      "profesional_id": 1
+     }
+    ],
+    "clientas_distintas": 17,
+    "ingresos_estimados": 840669,
+    "clientas_registradas": 96
+   },
+   "2026-07-31|2026-10-31": {
+    "desde": "2026-07-31",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-07",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 64,
+    "por_estado": {
+     "cancelada": 10,
+     "pendiente": 11,
+     "completada": 24,
+     "confirmada": 19
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 17,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 8,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 5,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 4,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3,
+      "servicio_id": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 16,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 14,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 12,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 12,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1332336,
+    "clientas_registradas": 96
+   },
+   "2026-04-30|2026-10-31": {
+    "desde": "2026-04-30",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 78,
+    "por_estado": {
+     "cancelada": 14,
+     "pendiente": 11,
+     "completada": 30,
+     "confirmada": 23
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 19,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 10,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 4,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 4,
+      "servicio_id": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 17,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 15,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 14,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1563336,
+    "clientas_registradas": 96
+   },
+   "2026-01-01|2026-10-31": {
+    "desde": "2026-01-01",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-01",
+      "reservas": 5,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-02",
+      "reservas": 2,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-03",
+      "reservas": 3,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 95,
+    "por_estado": {
+     "cancelada": 19,
+     "pendiente": 15,
+     "completada": 34,
+     "confirmada": 27
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 20,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 11,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 10,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 8,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 8,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5,
+      "servicio_id": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 22,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 20,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 19,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 15,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1759337,
+    "clientas_registradas": 96
+   },
+   "2026-07-01|2027-01-31": {
+    "desde": "2026-07-01",
+    "hasta": "2027-01-31",
+    "por_mes": [
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     },
+     {
+      "mes": "2026-11",
+      "reservas": 3,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-12",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2027-01",
+      "reservas": 7,
+      "canceladas": 1
+     }
+    ],
+    "reservas": 82,
+    "por_estado": {
+     "cancelada": 13,
+     "pendiente": 19,
+     "completada": 27,
+     "confirmada": 23
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 23,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 11,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 7,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 5,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5,
+      "servicio_id": 4
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5,
+      "servicio_id": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 19,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 18,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 17,
+      "profesional_id": 4
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 15,
+      "profesional_id": 3
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1629336,
+    "clientas_registradas": 96
+   },
+   "2027-01-15|2027-01-15": {
+    "desde": "2027-01-15",
+    "hasta": "2027-01-15",
+    "por_mes": [
+     {
+      "mes": "2027-01",
+      "reservas": 2,
+      "canceladas": 0
+     }
+    ],
+    "reservas": 2,
+    "por_estado": {
+     "cancelada": 0,
+     "pendiente": 2,
+     "completada": 0,
+     "confirmada": 0
+    },
+    "por_servicio": [
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 1,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 1,
+      "servicio_id": 1
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 1,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 1,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 2,
+    "ingresos_estimados": 30000,
+    "clientas_registradas": 96
+   },
+   "2026-09-29|2026-10-29": {
+    "desde": "2026-09-29",
+    "hasta": "2026-10-29",
+    "por_mes": [
+     {
+      "mes": "2026-09",
+      "reservas": 2,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 34,
+      "canceladas": 3
+     }
+    ],
+    "reservas": 36,
+    "por_estado": {
+     "cancelada": 3,
+     "pendiente": 7,
+     "completada": 14,
+     "confirmada": 12
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 9,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 5,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 4,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 3,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 3,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3,
+      "servicio_id": 4
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 2,
+      "servicio_id": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 10,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 9,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 7,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 7,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 16,
+    "ingresos_estimados": 740669,
+    "clientas_registradas": 96
+   },
+   "2026-04-29|2026-10-29": {
+    "desde": "2026-04-29",
+    "hasta": "2026-10-29",
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 2,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 34,
+      "canceladas": 3
+     }
+    ],
+    "reservas": 73,
+    "por_estado": {
+     "cancelada": 13,
+     "pendiente": 9,
+     "completada": 30,
+     "confirmada": 21
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 18,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 9,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 7,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 7,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 5,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5,
+      "servicio_id": 5
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 4,
+      "servicio_id": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 15,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 14,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 13,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 21,
+    "ingresos_estimados": 1431670,
+    "clientas_registradas": 96
+   },
+   "2026-05-10|2026-05-10": {
+    "desde": "2026-05-10",
+    "hasta": "2026-05-10",
+    "por_mes": [
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     }
+    ],
+    "reservas": 0,
+    "por_estado": {
+     "cancelada": 0,
+     "pendiente": 0,
+     "completada": 0,
+     "confirmada": 0
+    },
+    "por_servicio": [],
+    "por_profesional": [],
+    "clientas_distintas": 0,
+    "ingresos_estimados": 0,
+    "clientas_registradas": 96
+   },
+   "2025-12-15|2027-01-20": {
+    "desde": "2025-12-15",
+    "hasta": "2027-01-20",
+    "por_mes": [
+     {
+      "mes": "2025-12",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-01",
+      "reservas": 5,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-02",
+      "reservas": 2,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-03",
+      "reservas": 3,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     },
+     {
+      "mes": "2026-11",
+      "reservas": 3,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-12",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2027-01",
+      "reservas": 7,
+      "canceladas": 1
+     }
+    ],
+    "reservas": 106,
+    "por_estado": {
+     "cancelada": 20,
+     "pendiente": 23,
+     "completada": 35,
+     "confirmada": 28
+    },
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 26,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 12,
+      "servicio_id": 2
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 10,
+      "servicio_id": 3
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 9,
+      "servicio_id": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 9,
+      "servicio_id": 7
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8,
+      "servicio_id": 6
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 6,
+      "servicio_id": 4
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6,
+      "servicio_id": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 24,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 22,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 21,
+      "profesional_id": 3
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 19,
+      "profesional_id": 4
+     }
+    ],
+    "clientas_distintas": 22,
+    "ingresos_estimados": 1926337,
+    "clientas_registradas": 96
+   }
+  },
+  "sql": {
+   "2026-04-01|2026-10-31": {
+    "reservas": 85,
+    "por_estado": {
+     "pendiente": 12,
+     "confirmada": 25,
+     "completada": 32,
+     "cancelada": 16
+    },
+    "ingresos_estimados": 1664003,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 19
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 10
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 9
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 7
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 19
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 18
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 18
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 14
+     }
+    ]
+   },
+   "2026-10-31|2026-10-31": {
+    "reservas": 5,
+    "por_estado": {
+     "pendiente": 2,
+     "confirmada": 1,
+     "completada": 1,
+     "cancelada": 1
+    },
+    "ingresos_estimados": 140000,
+    "clientas_distintas": 5,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 5,
+      "canceladas": 1
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 1
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 1
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 1
+     },
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 1
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 2
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 1
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 1
+     }
+    ]
+   },
+   "2026-10-01|2026-10-31": {
+    "reservas": 40,
+    "por_estado": {
+     "pendiente": 9,
+     "confirmada": 14,
+     "completada": 13,
+     "cancelada": 4
+    },
+    "ingresos_estimados": 840669,
+    "clientas_distintas": 17,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 9
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 6
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 4
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 4
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 3
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 3
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 12
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 10
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 8
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 6
+     }
+    ]
+   },
+   "2026-07-31|2026-10-31": {
+    "reservas": 64,
+    "por_estado": {
+     "pendiente": 11,
+     "confirmada": 19,
+     "completada": 24,
+     "cancelada": 10
+    },
+    "ingresos_estimados": 1332336,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-07",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 17
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 8
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 5
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 4
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 16
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 14
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 12
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 12
+     }
+    ]
+   },
+   "2026-04-30|2026-10-31": {
+    "reservas": 78,
+    "por_estado": {
+     "pendiente": 11,
+     "confirmada": 23,
+     "completada": 30,
+     "cancelada": 14
+    },
+    "ingresos_estimados": 1563336,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 19
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 10
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 4
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 17
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 15
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 14
+     }
+    ]
+   },
+   "2026-01-01|2026-10-31": {
+    "reservas": 95,
+    "por_estado": {
+     "pendiente": 15,
+     "confirmada": 27,
+     "completada": 34,
+     "cancelada": 19
+    },
+    "ingresos_estimados": 1759337,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-01",
+      "reservas": 5,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-02",
+      "reservas": 2,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-03",
+      "reservas": 3,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 20
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 11
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 10
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 8
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 8
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 22
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 20
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 19
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 15
+     }
+    ]
+   },
+   "2026-07-01|2027-01-31": {
+    "reservas": 82,
+    "por_estado": {
+     "pendiente": 19,
+     "confirmada": 23,
+     "completada": 27,
+     "cancelada": 13
+    },
+    "ingresos_estimados": 1629336,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     },
+     {
+      "mes": "2026-11",
+      "reservas": 3,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-12",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2027-01",
+      "reservas": 7,
+      "canceladas": 1
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 23
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 11
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 8
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 7
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 5
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 5
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 19
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 18
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 17
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 15
+     }
+    ]
+   },
+   "2027-01-15|2027-01-15": {
+    "reservas": 2,
+    "por_estado": {
+     "pendiente": 2,
+     "confirmada": 0,
+     "completada": 0,
+     "cancelada": 0
+    },
+    "ingresos_estimados": 30000,
+    "clientas_distintas": 2,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2027-01",
+      "reservas": 2,
+      "canceladas": 0
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 1
+     },
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 1
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 1
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 1
+     }
+    ]
+   },
+   "2026-09-29|2026-10-29": {
+    "reservas": 36,
+    "por_estado": {
+     "pendiente": 7,
+     "confirmada": 12,
+     "completada": 14,
+     "cancelada": 3
+    },
+    "ingresos_estimados": 740669,
+    "clientas_distintas": 16,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-09",
+      "reservas": 2,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 34,
+      "canceladas": 3
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 9
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 5
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 4
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 4
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 3
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 3
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 3
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 2
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 10
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 9
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 7
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 7
+     }
+    ]
+   },
+   "2026-04-29|2026-10-29": {
+    "reservas": 73,
+    "por_estado": {
+     "pendiente": 9,
+     "confirmada": 21,
+     "completada": 30,
+     "cancelada": 13
+    },
+    "ingresos_estimados": 1431670,
+    "clientas_distintas": 21,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 2,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 34,
+      "canceladas": 3
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 18
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 9
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 7
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 7
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 5
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 5
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 5
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 4
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 15
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 14
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 13
+     }
+    ]
+   },
+   "2026-05-10|2026-05-10": {
+    "reservas": 0,
+    "por_estado": {
+     "pendiente": 0,
+     "confirmada": 0,
+     "completada": 0,
+     "cancelada": 0
+    },
+    "ingresos_estimados": 0,
+    "clientas_distintas": 0,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     }
+    ],
+    "por_servicio": [],
+    "por_profesional": []
+   },
+   "2025-12-15|2027-01-20": {
+    "reservas": 106,
+    "por_estado": {
+     "pendiente": 23,
+     "confirmada": 28,
+     "completada": 35,
+     "cancelada": 20
+    },
+    "ingresos_estimados": 1926337,
+    "clientas_distintas": 22,
+    "clientas_registradas": 96,
+    "por_mes": [
+     {
+      "mes": "2025-12",
+      "reservas": 1,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-01",
+      "reservas": 5,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-02",
+      "reservas": 2,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-03",
+      "reservas": 3,
+      "canceladas": 1
+     },
+     {
+      "mes": "2026-04",
+      "reservas": 8,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 5,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 9,
+      "canceladas": 2
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 9,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 14,
+      "canceladas": 3
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 40,
+      "canceladas": 4
+     },
+     {
+      "mes": "2026-11",
+      "reservas": 3,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-12",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2027-01",
+      "reservas": 7,
+      "canceladas": 1
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Manicure semipermanente",
+      "reservas": 26
+     },
+     {
+      "nombre": "Corte y peinado",
+      "reservas": 12
+     },
+     {
+      "nombre": "Pedicure spa",
+      "reservas": 10
+     },
+     {
+      "nombre": "Diagnóstico capilar",
+      "reservas": 9
+     },
+     {
+      "nombre": "Diseño de cejas",
+      "reservas": 9
+     },
+     {
+      "nombre": "Alisado de keratina",
+      "reservas": 8
+     },
+     {
+      "nombre": "Esmaltado tradicional (retirado)",
+      "reservas": 6
+     },
+     {
+      "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+      "reservas": 6
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 24
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 22
+     },
+     {
+      "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+      "reservas": 21
+     },
+     {
+      "nombre": "Zoe",
+      "reservas": 19
+     }
+    ]
+   }
+  },
+  "reservas": {
+   "todos": [
+    {
+     "id": 106,
+     "servicio_id": 7,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-15",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 106",
+     "cliente_email": " clienta15@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000106",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 105,
+     "servicio_id": 1,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2027-01-15",
+     "hora_inicio": "15:00:00",
+     "hora_fin": "16:00:00",
+     "cliente_nombre": "Clienta 105",
+     "cliente_email": "clienta7@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000105",
+     "estado": "pendiente",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 104,
+     "servicio_id": 1,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2027-01-14",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 104",
+     "cliente_email": " clienta3@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000104",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": 25000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 103,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2027-01-13",
+     "hora_inicio": "13:00:00",
+     "hora_fin": "14:00:00",
+     "cliente_nombre": "Clienta 103",
+     "cliente_email": "CLIENTA19@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000103",
+     "estado": "pendiente",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 102,
+     "servicio_id": 4,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-12",
+     "hora_inicio": "12:00:00",
+     "hora_fin": "13:00:00",
+     "cliente_nombre": "Clienta 102",
+     "cliente_email": "clienta18@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000102",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "25000"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 101,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-11",
+     "hora_inicio": "11:00:00",
+     "hora_fin": "12:00:00",
+     "cliente_nombre": "Clienta 101",
+     "cliente_email": "clienta4@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000101",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 100,
+     "servicio_id": 7,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2027-01-10",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 100",
+     "cliente_email": "clienta18@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000100",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": "25000"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 43,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-11-15",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 43",
+     "cliente_email": "clienta2@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000043",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": -5000
+      }
+     },
+     "abono": 0
+    }
+   ],
+   "pendiente": [
+    {
+     "id": 106,
+     "servicio_id": 7,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-15",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 106",
+     "cliente_email": " clienta15@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000106",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 105,
+     "servicio_id": 1,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2027-01-15",
+     "hora_inicio": "15:00:00",
+     "hora_fin": "16:00:00",
+     "cliente_nombre": "Clienta 105",
+     "cliente_email": "clienta7@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000105",
+     "estado": "pendiente",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 104,
+     "servicio_id": 1,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2027-01-14",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 104",
+     "cliente_email": " clienta3@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000104",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": 25000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 103,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2027-01-13",
+     "hora_inicio": "13:00:00",
+     "hora_fin": "14:00:00",
+     "cliente_nombre": "Clienta 103",
+     "cliente_email": "CLIENTA19@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000103",
+     "estado": "pendiente",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 102,
+     "servicio_id": 4,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-12",
+     "hora_inicio": "12:00:00",
+     "hora_fin": "13:00:00",
+     "cliente_nombre": "Clienta 102",
+     "cliente_email": "clienta18@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000102",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "25000"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 101,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2027-01-11",
+     "hora_inicio": "11:00:00",
+     "hora_fin": "12:00:00",
+     "cliente_nombre": "Clienta 101",
+     "cliente_email": "clienta4@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000101",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 43,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-11-15",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 43",
+     "cliente_email": "clienta2@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000043",
+     "estado": "pendiente",
+     "detalles_extra": {
+      "variante": {
+       "precio": -5000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 41,
+     "servicio_id": 8,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-11-01",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 41",
+     "cliente_email": " clienta6@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000041",
+     "estado": "pendiente",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ],
+   "confirmada": [
+    {
+     "id": 42,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-11-01",
+     "hora_inicio": "15:00:00",
+     "hora_fin": "16:00:00",
+     "cliente_nombre": "Clienta 42",
+     "cliente_email": "CLIENTA5@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000042",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 4,
+     "servicio_id": 6,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "13:00:00",
+     "hora_fin": "14:00:00",
+     "cliente_nombre": "Clienta 4",
+     "cliente_email": "clienta21@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000004",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "otra": 1
+     },
+     "abono": 0
+    },
+    {
+     "id": 35,
+     "servicio_id": 3,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-30",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 35",
+     "cliente_email": "clienta16@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000035",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 25000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 34,
+     "servicio_id": 3,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-10-29",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 34",
+     "cliente_email": "CLIENTA19@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000034",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": -5000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 32,
+     "servicio_id": 4,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-27",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 32",
+     "cliente_email": "clienta18@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000032",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 31,
+     "servicio_id": 2,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-10-26",
+     "hora_inicio": "13:00:00",
+     "hora_fin": "14:00:00",
+     "cliente_nombre": "Clienta 31",
+     "cliente_email": "clienta17@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000031",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 25,
+     "servicio_id": 1,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-20",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 25",
+     "cliente_email": " clienta2@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000025",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 33333.33
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 19,
+     "servicio_id": 8,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-14",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 19",
+     "cliente_email": "clienta15@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000019",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 25000
+      }
+     },
+     "abono": 0
+    }
+   ],
+   "completada": [
+    {
+     "id": 5,
+     "servicio_id": 2,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 5",
+     "cliente_email": " clienta8@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000005",
+     "estado": "completada",
+     "detalles_extra": {
+      "variante": null
+     },
+     "abono": 0
+    },
+    {
+     "id": 28,
+     "servicio_id": 8,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-23",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 28",
+     "cliente_email": "clienta20@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000028",
+     "estado": "completada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 27,
+     "servicio_id": 3,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-22",
+     "hora_inicio": "09:00:00",
+     "hora_fin": "10:00:00",
+     "cliente_nombre": "Clienta 27",
+     "cliente_email": "clienta17@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000027",
+     "estado": "completada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 24,
+     "servicio_id": 7,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-10-19",
+     "hora_inicio": "15:00:00",
+     "hora_fin": "16:00:00",
+     "cliente_nombre": "Clienta 24",
+     "cliente_email": "clienta10@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000024",
+     "estado": "completada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 33333.33
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 23,
+     "servicio_id": 5,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-18",
+     "hora_inicio": "14:00:00",
+     "hora_fin": "15:00:00",
+     "cliente_nombre": "Clienta 23",
+     "cliente_email": "clienta5@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000023",
+     "estado": "completada",
+     "detalles_extra": {
+      "variante": {
+       "precio": "abc"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 22,
+     "servicio_id": 8,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-17",
+     "hora_inicio": "13:00:00",
+     "hora_fin": "14:00:00",
+     "cliente_nombre": "Clienta 22",
+     "cliente_email": "CLIENTA1@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000022",
+     "estado": "completada",
+     "detalles_extra": {
+      "variante": {
+       "precio": "25000"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 21,
+     "servicio_id": 3,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-16",
+     "hora_inicio": "12:00:00",
+     "hora_fin": "13:00:00",
+     "cliente_nombre": "Clienta 21",
+     "cliente_email": "clienta18@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000021",
+     "estado": "completada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 33333.33
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 17,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-12",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 17",
+     "cliente_email": "clienta2@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000017",
+     "estado": "completada",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ],
+   "cancelada": [
+    {
+     "id": 100,
+     "servicio_id": 7,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2027-01-10",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 100",
+     "cliente_email": "clienta18@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000100",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": "25000"
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 1,
+     "servicio_id": 1,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 1",
+     "cliente_email": "clienta9@correo.cl ",
+     "cliente_telefono": null,
+     "codigo": "NV-000001",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "otra": 1
+     },
+     "abono": 0
+    },
+    {
+     "id": 8,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-10-03",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 8",
+     "cliente_email": " clienta8@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000008",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": -5000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 7,
+     "servicio_id": 5,
+     "profesional_id": 3,
+     "cliente_id": null,
+     "fecha": "2026-10-02",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 7",
+     "cliente_email": " clienta10@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000007",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 1e+30
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 6,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-01",
+     "hora_inicio": "15:00:00",
+     "hora_fin": "16:00:00",
+     "cliente_nombre": "Clienta 6",
+     "cliente_email": "clienta6@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000006",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 25000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 88,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-09-26",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 88",
+     "cliente_email": "CLIENTA18@CORREO.CL",
+     "cliente_telefono": null,
+     "codigo": "NV-000088",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 84,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-09-14",
+     "hora_inicio": "12:00:00",
+     "hora_fin": "13:00:00",
+     "cliente_nombre": "Clienta 84",
+     "cliente_email": " clienta0@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000084",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 80,
+     "servicio_id": 1,
+     "profesional_id": 4,
+     "cliente_id": null,
+     "fecha": "2026-09-02",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 80",
+     "cliente_email": "clienta16@correo.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000080",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ]
+  },
+  "servicios": [
+   {
+    "id": 1,
+    "nombre": "Manicure semipermanente",
+    "categoria": "unas",
+    "descripcion": null,
+    "duracion_minutos": 60,
+    "precio_base": 18000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 2,
+    "nombre": "Corte y peinado",
+    "categoria": "cabello",
+    "descripcion": null,
+    "duracion_minutos": 60,
+    "precio_base": 30000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 3,
+    "nombre": "Pedicure spa",
+    "categoria": "unas",
+    "descripcion": null,
+    "duracion_minutos": 60,
+    "precio_base": 20000.5,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 4,
+    "nombre": "Esmaltado tradicional (retirado)",
+    "categoria": "unas",
+    "descripcion": null,
+    "duracion_minutos": 30,
+    "precio_base": 10000,
+    "activo": false,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 5,
+    "nombre": "Lifting de pestañas con tinte y nutrición intensiva de queratina para pestañas sensibles",
+    "categoria": "piel",
+    "descripcion": null,
+    "duracion_minutos": 90,
+    "precio_base": 45000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 6,
+    "nombre": "Alisado de keratina",
+    "categoria": "cabello",
+    "descripcion": null,
+    "duracion_minutos": 120,
+    "precio_base": 40000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 7,
+    "nombre": "Diseño de cejas",
+    "categoria": null,
+    "descripcion": null,
+    "duracion_minutos": 30,
+    "precio_base": 12000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 8,
+    "nombre": "Diagnóstico capilar",
+    "categoria": "diagnostico",
+    "descripcion": null,
+    "duracion_minutos": 30,
+    "precio_base": 0,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   }
+  ],
+  "profesionales": [
+   {
+    "id": 1,
+    "nombre": "Berenice",
+    "especialidad": "Uñas",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   },
+   {
+    "id": 2,
+    "nombre": "Ana",
+    "especialidad": "Cabello",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   },
+   {
+    "id": 3,
+    "nombre": "María José de los Ángeles Valenzuela-Echeverría",
+    "especialidad": "Pestañas y cejas",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   },
+   {
+    "id": 4,
+    "nombre": "Zoe",
+    "especialidad": "Uñas",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   }
+  ]
+ },
+ "grande": {
+  "rpc": {
+   "2026-04-01|2026-10-31": {
+    "desde": "2026-04-01",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 228,
+      "canceladas": 76
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 227,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 227,
+      "canceladas": 75
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 1234,
+      "canceladas": 138
+     }
+    ],
+    "reservas": 2600,
+    "por_estado": {
+     "cancelada": 289,
+     "pendiente": 0,
+     "completada": 0,
+     "confirmada": 2311
+    },
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 1733,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 578,
+      "servicio_id": 2
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 1156,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 1155,
+      "profesional_id": 1
+     }
+    ],
+    "clientas_distintas": 1500,
+    "ingresos_estimados": 1209966000,
+    "clientas_registradas": 12345
+   },
+   "2026-10-31|2026-10-31": {
+    "desde": "2026-10-31",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 39,
+      "canceladas": 4
+     }
+    ],
+    "reservas": 39,
+    "por_estado": {
+     "cancelada": 4,
+     "pendiente": 0,
+     "completada": 0,
+     "confirmada": 35
+    },
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 26,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 9,
+      "servicio_id": 2
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18,
+      "profesional_id": 1
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 17,
+      "profesional_id": 2
+     }
+    ],
+    "clientas_distintas": 39,
+    "ingresos_estimados": 18326000,
+    "clientas_registradas": 12345
+   },
+   "2026-04-30|2026-10-31": {
+    "desde": "2026-04-30",
+    "hasta": "2026-10-31",
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 227,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 227,
+      "canceladas": 75
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 1234,
+      "canceladas": 138
+     }
+    ],
+    "reservas": 2372,
+    "por_estado": {
+     "cancelada": 213,
+     "pendiente": 0,
+     "completada": 0,
+     "confirmada": 2159
+    },
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 1733,
+      "servicio_id": 1
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 426,
+      "servicio_id": 2
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 1156,
+      "profesional_id": 2
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 1003,
+      "profesional_id": 1
+     }
+    ],
+    "clientas_distintas": 1456,
+    "ingresos_estimados": 1170270000,
+    "clientas_registradas": 12345
+   }
+  },
+  "sql": {
+   "2026-04-01|2026-10-31": {
+    "reservas": 2600,
+    "por_estado": {
+     "pendiente": 0,
+     "confirmada": 2311,
+     "completada": 0,
+     "cancelada": 289
+    },
+    "ingresos_estimados": 1209966000,
+    "clientas_distintas": 1500,
+    "clientas_registradas": 12345,
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 228,
+      "canceladas": 76
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 227,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 227,
+      "canceladas": 75
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 1234,
+      "canceladas": 138
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 1733
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 578
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 1156
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 1155
+     }
+    ]
+   },
+   "2026-10-31|2026-10-31": {
+    "reservas": 39,
+    "por_estado": {
+     "pendiente": 0,
+     "confirmada": 35,
+     "completada": 0,
+     "cancelada": 4
+    },
+    "ingresos_estimados": 18326000,
+    "clientas_distintas": 39,
+    "clientas_registradas": 12345,
+    "por_mes": [
+     {
+      "mes": "2026-10",
+      "reservas": 39,
+      "canceladas": 4
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 26
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 9
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Berenice",
+      "reservas": 18
+     },
+     {
+      "nombre": "Ana",
+      "reservas": 17
+     }
+    ]
+   },
+   "2026-04-30|2026-10-31": {
+    "reservas": 2372,
+    "por_estado": {
+     "pendiente": 0,
+     "confirmada": 2159,
+     "completada": 0,
+     "cancelada": 213
+    },
+    "ingresos_estimados": 1170270000,
+    "clientas_distintas": 1456,
+    "clientas_registradas": 12345,
+    "por_mes": [
+     {
+      "mes": "2026-04",
+      "reservas": 0,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-05",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-06",
+      "reservas": 227,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-07",
+      "reservas": 227,
+      "canceladas": 75
+     },
+     {
+      "mes": "2026-08",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-09",
+      "reservas": 228,
+      "canceladas": 0
+     },
+     {
+      "mes": "2026-10",
+      "reservas": 1234,
+      "canceladas": 138
+     }
+    ],
+    "por_servicio": [
+     {
+      "nombre": "Extensiones de cabello natural",
+      "reservas": 1733
+     },
+     {
+      "nombre": "Manicure",
+      "reservas": 426
+     }
+    ],
+    "por_profesional": [
+     {
+      "nombre": "Ana",
+      "reservas": 1156
+     },
+     {
+      "nombre": "Berenice",
+      "reservas": 1003
+     }
+    ]
+   }
+  },
+  "reservas": {
+   "todos": [
+    {
+     "id": 341,
+     "servicio_id": 1,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 341",
+     "cliente_email": "c340@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000341",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 1250000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 899,
+     "servicio_id": 1,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 899",
+     "cliente_email": "c898@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000899",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 620,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 620",
+     "cliente_email": "c619@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000620",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 1178,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 1178",
+     "cliente_email": "c1177@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-001178",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 62,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 62",
+     "cliente_email": "c61@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000062",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 682,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 682",
+     "cliente_email": "c681@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000682",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 403,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 403",
+     "cliente_email": "c402@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000403",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 124,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 124",
+     "cliente_email": "c123@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000124",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ],
+   "pendiente": [],
+   "confirmada": [
+    {
+     "id": 62,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 62",
+     "cliente_email": "c61@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000062",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 620,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 620",
+     "cliente_email": "c619@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000620",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 341,
+     "servicio_id": 1,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 341",
+     "cliente_email": "c340@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000341",
+     "estado": "confirmada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 1250000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 1178,
+     "servicio_id": 1,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 1178",
+     "cliente_email": "c1177@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-001178",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 899,
+     "servicio_id": 1,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "17:00:00",
+     "hora_fin": "18:00:00",
+     "cliente_nombre": "Clienta 899",
+     "cliente_email": "c898@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000899",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 124,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 124",
+     "cliente_email": "c123@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000124",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 403,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 403",
+     "cliente_email": "c402@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000403",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 682,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "16:00:00",
+     "hora_fin": "17:00:00",
+     "cliente_nombre": "Clienta 682",
+     "cliente_email": "c681@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000682",
+     "estado": "confirmada",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ],
+   "completada": [],
+   "cancelada": [
+    {
+     "id": 1054,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 1054",
+     "cliente_email": "c1053@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-001054",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 496,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 496",
+     "cliente_email": "c495@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000496",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 1250000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 775,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 775",
+     "cliente_email": "c774@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000775",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 217,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-31",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 217",
+     "cliente_email": "c216@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000217",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 433,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-30",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 433",
+     "cliente_email": "c432@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000433",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 154,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-30",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 154",
+     "cliente_email": "c153@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000154",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    },
+    {
+     "id": 991,
+     "servicio_id": 2,
+     "profesional_id": 1,
+     "cliente_id": null,
+     "fecha": "2026-10-30",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 991",
+     "cliente_email": "c990@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000991",
+     "estado": "cancelada",
+     "detalles_extra": {
+      "variante": {
+       "precio": 1250000
+      }
+     },
+     "abono": 0
+    },
+    {
+     "id": 712,
+     "servicio_id": 2,
+     "profesional_id": 2,
+     "cliente_id": null,
+     "fecha": "2026-10-30",
+     "hora_inicio": "10:00:00",
+     "hora_fin": "11:00:00",
+     "cliente_nombre": "Clienta 712",
+     "cliente_email": "c711@x.cl",
+     "cliente_telefono": null,
+     "codigo": "NV-000712",
+     "estado": "cancelada",
+     "detalles_extra": null,
+     "abono": 0
+    }
+   ]
+  },
+  "servicios": [
+   {
+    "id": 1,
+    "nombre": "Extensiones de cabello natural",
+    "categoria": "cabello",
+    "descripcion": null,
+    "duracion_minutos": 240,
+    "precio_base": 450000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   },
+   {
+    "id": 2,
+    "nombre": "Manicure",
+    "categoria": "unas",
+    "descripcion": null,
+    "duracion_minutos": 60,
+    "precio_base": 18000,
+    "activo": true,
+    "imagen_url": null,
+    "descripcion_larga": null,
+    "incluye": [],
+    "variantes": null,
+    "abono": 0
+   }
+  ],
+  "profesionales": [
+   {
+    "id": 1,
+    "nombre": "Berenice",
+    "especialidad": "Uñas",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   },
+   {
+    "id": 2,
+    "nombre": "Ana",
+    "especialidad": "Cabello",
+    "avatar_url": null,
+    "activo": true,
+    "experiencia_anios": 0,
+    "biografia": null,
+    "categoria": null
+   }
+  ]
+ }
+}

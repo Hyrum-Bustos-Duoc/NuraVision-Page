@@ -1,0 +1,5 @@
+# Tests de la logica pura (sin TensorFlow). Corren en Python 3.12+.
+pytest==9.1.1
+numpy==2.5.4
+scikit-learn==1.9.1
+pillow==13.0.0
