@@ -15,6 +15,15 @@ export interface AuthRepository {
   cerrarSesion(): Promise<void>
 
   /**
+   * Pide una sesion nueva al proveedor y la difunde por `alCambiarSesion`.
+   *
+   * Hace falta tras cambiar datos de la cuenta en la base (`actualizar_mi_perfil`
+   * escribe `user_metadata`): la sesion guardada sigue con los viejos hasta el
+   * siguiente refresco de token.
+   */
+  refrescarSesion(): Promise<void>
+
+  /**
    * Usuario de la sesion guardada, o `null` si no hay ninguna.
    *
    * Es asincrono porque al arrancar la app la sesion se restaura desde el

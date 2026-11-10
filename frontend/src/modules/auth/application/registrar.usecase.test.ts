@@ -7,6 +7,7 @@ function repoFalso() {
     registrar: registrarMock,
     iniciarSesion: vi.fn(),
     cerrarSesion: vi.fn(),
+    refrescarSesion: vi.fn(),
     usuarioActual: vi.fn(),
     alCambiarSesion: vi.fn(),
   }

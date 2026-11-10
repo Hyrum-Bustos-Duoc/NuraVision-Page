@@ -81,6 +81,13 @@ export class SupabaseAuthRepository implements AuthRepository {
     if (error) throw new Error(mensajeDe(error))
   }
 
+  async refrescarSesion(): Promise<void> {
+    // No se devuelve el usuario: `onAuthStateChange` emite TOKEN_REFRESHED con
+    // la sesion nueva, y esa suscripcion es la unica fuente de la sesion.
+    const { error } = await supabase.auth.refreshSession()
+    if (error) throw new Error(mensajeDe(error))
+  }
+
   async usuarioActual(): Promise<UsuarioAuth | null> {
     const { data, error } = await supabase.auth.getUser()
 
