@@ -29,10 +29,24 @@ class EdgePagoRepository implements PagoRepository {
   async iniciar(destino: DestinoPago): Promise<InicioPago> {
     // Se manda el codigo, no el id: es lo unico que acredita el pedido de una
     // clienta sin cuenta (ver DestinoPago).
-    const cuerpo =
-      destino.tipo === 'pedido'
+    const cuerpo = {
+      ...(destino.tipo === 'pedido'
         ? { pedidoCodigo: destino.codigo }
-        : { reservaCodigo: destino.codigo }
+        : { reservaCodigo: destino.codigo }),
+      /**
+       * De donde sale la peticion, para que el banco devuelva AQUI.
+       *
+       * No es la fuente principal: el navegador ya manda la cabecera `Origin` en
+       * toda peticion a otro origen, y la funcion la prefiere. Esto es el
+       * respaldo para los proxys que la borran.
+       *
+       * Nunca se escribe una URL fija: con `SITIO_URL` apuntando a localhost,
+       * las demos en otros computadores volvian a un localhost donde no habia
+       * nada escuchando. El servidor comprueba este valor contra su lista de
+       * origenes permitidos, asi que no puede elegir un destino ajeno.
+       */
+      origen: window.location.origin,
+    }
 
     const { data, error } = await supabase.functions.invoke<RespuestaInicio>(CREAR, {
       body: cuerpo,

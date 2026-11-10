@@ -42,6 +42,8 @@
 // validar contra Transbank, y por eso abrirla no supone riesgo.
 // ============================================================================
 
+import { origenDeLaRuta, origenPorDefecto } from '../_shared/origen.ts'
+
 const CLAVES = ['token_ws', 'TBK_TOKEN', 'TBK_ORDEN_COMPRA', 'TBK_ID_SESION'] as const
 
 /** Saca los parametros de Webpay vengan en la query o en el cuerpo del POST. */
@@ -93,11 +95,24 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const sitioUrl = (Deno.env.get('SITIO_URL') ?? '').trim().replace(/\/+$/, '')
+  /**
+   * A que sitio se devuelve.
+   *
+   * `webpay-crear-transaccion` codifico el origen en la RUTA de esta URL, que es
+   * la unica forma de que la vuelta lo sepa: Transbank solo devuelve el token, y
+   * aqui no hay sesion ni estado donde consultarlo.
+   *
+   * `origenDeLaRuta` lo REVALIDA contra `ORIGENES_PERMITIDOS`, asi que manipular
+   * ese fragmento de la URL no sirve de nada: solo permite elegir un destino que
+   * ya estaba autorizado. Si no viene o no esta permitido, se cae a `SITIO_URL`.
+   */
+  const sitioUrl = origenDeLaRuta(req.url) || origenPorDefecto()
   if (!sitioUrl) {
-    console.error('Falta SITIO_URL: no hay a donde devolver a la clienta.')
+    console.error(
+      'Sin origen en la ruta y sin SITIO_URL: no hay a donde devolver a la clienta.',
+    )
     return new Response(
-      'No podemos volver al sitio: falta configurar SITIO_URL.',
+      'No podemos volver al sitio: falta configurar SITIO_URL u ORIGENES_PERMITIDOS.',
       { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
     )
   }
