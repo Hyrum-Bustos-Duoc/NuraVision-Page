@@ -7,8 +7,8 @@ import { contenedorPanel } from '@/shared/ui/nv-estilos'
 
 export default function AdminSettings() {
   const [name, setName] = useState('Estudio Nura')
-  const [address, setAddress] = useState('Av. Libertad 1250, Viña del Mar')
-  const [phone, setPhone] = useState('+56 9 1234 5678')
+  const [address, setAddress] = useState('Calle Ramón de la Cerda 22, Limache')
+  const [phone, setPhone] = useState('+56 9 7743 2183')
   const [hours, setHours] = useState('Mar a Sáb · 10:00-19:00')
   const [resetting, setResetting] = useState(false)
   const { resetDemoData } = useAppState()

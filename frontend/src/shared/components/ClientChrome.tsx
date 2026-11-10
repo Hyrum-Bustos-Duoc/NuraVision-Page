@@ -448,7 +448,7 @@ export function ClientFooter() {
         </div>
 
         <div className="flex flex-wrap justify-between gap-x-6 gap-y-2 pt-6 text-xs text-nv-soft2">
-          <span>© 2026 Estudio Nura · Viña del Mar</span>
+          <span>© 2026 Estudio Nura · Limache</span>
           <span>Instagram · TikTok · WhatsApp</span>
         </div>
       </div>

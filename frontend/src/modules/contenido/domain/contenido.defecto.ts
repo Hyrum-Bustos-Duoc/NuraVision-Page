@@ -84,10 +84,10 @@ export const CONTENIDO_POR_DEFECTO: ContenidoSitio = {
   footer: {
     newsletterTitulo: 'Mantente actualizado y no te pierdas de nada!',
     newsletterDestacado: '',
-    direccion: 'Estudio Nura · Av. Libertad 1250, Viña del Mar',
+    direccion: 'Estudio Nura · Calle Ramón de la Cerda 22, Limache',
     horario: 'Martes a sábado · 10:00–19:00',
-    telefono: '+56 9 1234 5678',
-    email: 'hola@estudionura.cl',
+    telefono: '+56 9 7743 2183',
+    email: 'Babi.artnails@gmail.com',
   },
   analisis: Object.fromEntries(
     CONTENIDO_SITIO.aiFocusOptions.map((o) => [
