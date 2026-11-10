@@ -39,7 +39,7 @@ export function ResultadoUnas({
           <p className="mt-1 text-sm text-ink">
             {medidas === 0
               ? 'No pudimos medir la forma con esta foto. Prueba con más luz y los dedos bien estirados, de frente a la cámara.'
-              : 'Tus uñas no tienen una forma que predomine con claridad.'}
+              : 'Con esta foto no podemos asegurar una forma: las medidas son poco fiables o quedan entre dos formas.'}
           </p>
         )}
         {medidas > 0 && (
