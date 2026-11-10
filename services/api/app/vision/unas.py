@@ -11,6 +11,7 @@ services/vision/docs/preparacion-modelo.md).
 
 import base64
 import io
+import logging
 import threading
 from collections import Counter
 from dataclasses import dataclass
@@ -27,6 +28,8 @@ from . import forma as modulo_forma
 from .esquemas import Modelo, ResultadoAnalisis, Una
 from .segmentador import LADO as LADO_SEGMENTADOR
 from .segmentador import Segmentador
+
+log = logging.getLogger(__name__)
 
 NOMBRE_MODELO = "mediapipe-hand-landmarker"
 VERSION = "0.2.0"
@@ -258,7 +261,11 @@ class AnalizadorUnas:
         # simplemente no dice su forma.
         self._segmentador: Segmentador | None = None
         if ruta_segmentador is not None and ruta_segmentador.is_file():
-            self._segmentador = Segmentador(ruta_segmentador)
+            try:
+                self._segmentador = Segmentador(ruta_segmentador)
+            except (ValueError, cv2.error) as exc:
+                # Un XML danado no debe tumbar tambien la deteccion de manos.
+                log.warning("Segmentador ignorado, las unas saldran sin forma: %s", exc)
         # El detector es uno solo y FastAPI atiende en varios hilos.
         self._candado = threading.Lock()
 

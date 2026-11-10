@@ -24,6 +24,7 @@ UMBRAL = 0.5
 # datos de entrenamiento (recortes_segmentacion.py).
 FRACCION_MIN, FRACCION_MAX = 0.02, 0.50
 SOLIDEZ_MIN = 0.85
+DESVIACION_MIN = 6.0  # desviacion de color minima del recorte (ver tiene_contraste)
 
 
 def rasgos_pixel(recorte_bgr: np.ndarray) -> np.ndarray:
@@ -79,11 +80,43 @@ def limpiar(probabilidad: np.ndarray) -> np.ndarray | None:
     return relleno.astype(bool)
 
 
+def tiene_contraste(recorte_bgr: np.ndarray) -> bool:
+    """False si el recorte es una zona lisa (blanco por transparencia o flash, etc.).
+
+    Sin textura los rasgos de posicion mandan y el bosque "ve" la una promedio:
+    un recorte blanco salia como una redonda. En los recortes reales del dataset la
+    desviacion de color minima fue 7,1 (percentil 1: 13,3); un recorte liso da ~0.
+    """
+    pequeno = cv2.resize(recorte_bgr, (LADO, LADO), interpolation=cv2.INTER_AREA)
+    lab = cv2.cvtColor(pequeno, cv2.COLOR_BGR2LAB).astype(np.float32)
+    return float(lab.reshape(-1, 3).std(axis=0).max()) >= DESVIACION_MIN
+
+
+def _comprobar_xml(ruta: Path) -> None:
+    """Descarta un XML que no sea un RTrees completo ANTES de pasarselo a OpenCV.
+
+    RTrees_load se cae con un segfault (no una excepcion) si el XML es valido pero
+    no trae un modelo, y no se puede atrapar desde Python. Un archivo copiado a
+    medias es el caso realista: 75 MB que quedan cortados.
+    """
+    tam = ruta.stat().st_size
+    with ruta.open("rb") as f:
+        inicio = f.read(512)
+        f.seek(max(tam - 128, 0))
+        final = f.read()
+    if b"<opencv_ml_rtrees" not in inicio or b"</opencv_storage>" not in final:
+        raise ValueError(f"{ruta} no es un bosque RTrees completo (vacio, cortado o de otro tipo)")
+
+
 class Segmentador:
     def __init__(self, ruta: Path):
         if not ruta.is_file():
             raise FileNotFoundError(ruta)
-        self._bosque = cv2.ml.RTrees_load(str(ruta))
+        _comprobar_xml(ruta)
+        try:
+            self._bosque = cv2.ml.RTrees_load(str(ruta))
+        except cv2.error as exc:
+            raise ValueError(f"{ruta} no se pudo leer: {exc}") from exc
         if self._bosque is None or not self._bosque.isTrained():
             raise ValueError(f"{ruta} no es un bosque entrenado")
 
@@ -101,4 +134,6 @@ class Segmentador:
         return p.reshape(LADO, LADO)
 
     def segmentar(self, recorte_bgr: np.ndarray) -> np.ndarray | None:
+        if not tiene_contraste(recorte_bgr):
+            return None
         return limpiar(self.probabilidad(recorte_bgr))

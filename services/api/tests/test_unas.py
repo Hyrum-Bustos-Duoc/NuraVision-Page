@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from app.main import RUTA_MODELO, app
 from app.vision import unas
-from app.vision.unas import Region, esquinas_region, matriz_recorte, region_una
+from app.vision.unas import AnalizadorUnas, Region, esquinas_region, matriz_recorte, region_una
 
 modelo_presente = RUTA_MODELO.is_file()
 
@@ -213,3 +213,13 @@ def test_sin_modelo_responde_503_en_vez_de_caerse():
             app.state.analizador = anterior
     assert r.status_code == 503
     assert r.json()["codigo"] == "modelo_no_disponible"
+
+
+@pytest.mark.skipif(not modelo_presente, reason="falta models/hand_landmarker.task")
+@pytest.mark.parametrize("contenido", [b"", b"<opencv_storage></opencv_storage>"], ids=["vacio", "sin_modelo"])
+def test_segmentador_danado_no_tumba_el_analizador(tmp_path, contenido):
+    """Un XML malo deja el servicio arriba, sin forma, en vez de fallar al arrancar."""
+    ruta = tmp_path / "malo.xml"
+    ruta.write_bytes(contenido)
+    analizador = AnalizadorUnas(RUTA_MODELO, ruta)
+    assert analizador.mide_forma is False

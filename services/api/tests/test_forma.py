@@ -118,6 +118,32 @@ def test_segmentador_entrenado_con_un_circulo_lo_encuentra(tmp_path):
     assert mascara is not None
     verdad = elipse(18, 26)
     assert (mascara & verdad).sum() / (mascara | verdad).sum() > 0.8
+    # Un recorte liso (blanco por transparencia o flash) no tiene una que medir.
+    assert segmentador.Segmentador(ruta).segmentar(np.full((96, 96, 3), 255, np.uint8)) is None
+
+
+def test_tiene_contraste_rechaza_lisos_y_acepta_texturas():
+    azar = np.random.default_rng(0)
+    assert not segmentador.tiene_contraste(np.full((96, 96, 3), 255, np.uint8))
+    assert not segmentador.tiene_contraste(np.full((96, 96, 3), 120, np.uint8))
+    assert segmentador.tiene_contraste(azar.integers(0, 255, (96, 96, 3), dtype=np.uint8))
+
+
+@pytest.mark.parametrize(
+    "contenido",
+    [
+        b"",  # copia que no llego a escribir nada
+        b'<?xml version="1.0"?>\n<opencv_storage></opencv_storage>\n',  # valido pero sin modelo: segfault en OpenCV
+        b'<?xml version="1.0"?>\n<opencv_storage>\n<opencv_ml_rtrees>\n<format>3</format>\n',  # cortado
+        b"<garbage>1 2 3",
+    ],
+    ids=["vacio", "sin_modelo", "cortado", "basura"],
+)
+def test_segmentador_con_xml_danado_falla_con_valueerror(tmp_path, contenido):
+    ruta = tmp_path / "malo.xml"
+    ruta.write_bytes(contenido)
+    with pytest.raises(ValueError):
+        segmentador.Segmentador(ruta)
 
 
 # --- forma predominante ------------------------------------------------------
