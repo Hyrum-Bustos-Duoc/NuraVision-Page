@@ -71,6 +71,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 import { crearTransaccion, nuevaOrdenDeCompra } from '../_shared/transbank.ts'
+import { origenDeLaPeticion, origenPorDefecto, rutaConOrigen } from '../_shared/origen.ts'
 
 const CABECERAS_CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -139,9 +140,21 @@ Deno.serve(async (req: Request) => {
     return respuesta({ error: 'La funcion no esta configurada.' }, 500)
   }
 
-  const sitioUrl = (Deno.env.get('SITIO_URL') ?? '').trim().replace(/\/+$/, '')
+  /**
+   * A donde se devuelve a la clienta al salir del banco.
+   *
+   * Se deriva de la peticion —cabecera `Origin`, `Referer` o el cuerpo—, siempre
+   * comprobada contra `ORIGENES_PERMITIDOS`, y se cae a `SITIO_URL`. Asi el
+   * mismo despliegue sirve en local, en una IP de la red y en la URL publica:
+   * antes todo volvia al `SITIO_URL` fijo, y en un computador ajeno eso era
+   * localhost, donde no hay nada escuchando.
+   *
+   * El cuerpo se lee mas abajo, asi que aqui solo entran las cabeceras; el
+   * `origen` del cuerpo se considera despues, si hiciera falta.
+   */
+  let sitioUrl = origenDeLaPeticion(req) || origenPorDefecto()
   if (!sitioUrl) {
-    console.error('Falta SITIO_URL: sin ella no hay URL de retorno.')
+    console.error('Sin origen autorizado en la peticion y sin SITIO_URL: no hay URL de retorno.')
     return respuesta({ error: 'La funcion no esta configurada.' }, 500)
   }
 
@@ -152,6 +165,16 @@ Deno.serve(async (req: Request) => {
   } catch {
     return respuesta({ error: 'El cuerpo no es JSON valido.' }, 400)
   }
+
+  /**
+   * Segunda oportunidad para el origen, ahora con el cuerpo.
+   *
+   * El frontend manda `origen: window.location.origin`. Sirve de respaldo para
+   * los proxys que borran `Origin` y `Referer`, y pasa por la misma lista
+   * blanca, de modo que no amplia a donde se puede volver: solo permite elegir
+   * entre destinos ya autorizados.
+   */
+  sitioUrl = origenDeLaPeticion(req, cuerpo.origen) || origenPorDefecto()
 
   const pedidoId = comoId(cuerpo.pedidoId)
   const pedidoCodigo = comoTexto(cuerpo.pedidoCodigo)
@@ -365,10 +388,19 @@ Deno.serve(async (req: Request) => {
    * peticiones GET—, asi que apuntar aqui directamente dejaria a la clienta en
    * una pagina vacia justo despues de pagar.
    *
-   * `webpay-retorno` absorbe las dos formas y rebota con un 303 a
-   * `${SITIO_URL}/confirmacion-pago` con la query normalizada.
+   * `webpay-retorno` absorbe las dos formas y rebota con un 303 al sitio con la
+   * query normalizada.
+   *
+   * EL ORIGEN VIAJA EN LA RUTA de esa URL. Entre crear el cobro y volver del
+   * banco no hay sesion ni estado —lo unico que Transbank devuelve es el
+   * token—, asi que es la unica forma de que la vuelta sepa a que sitio ir. Va
+   * en la ruta y no en la query porque Transbank agrega `?token_ws=...` al
+   * volver, y una URL que ya trajera query dependeria de que lo concatene bien.
    */
-  const retornoUrl = `${urlSupabase.replace(/\/+$/, '')}/functions/v1/webpay-retorno`
+  const retornoUrl = rutaConOrigen(
+    `${urlSupabase.replace(/\/+$/, '')}/functions/v1/webpay-retorno`,
+    sitioUrl,
+  )
 
   try {
     const { token: tokenWs, url } = await crearTransaccion({
