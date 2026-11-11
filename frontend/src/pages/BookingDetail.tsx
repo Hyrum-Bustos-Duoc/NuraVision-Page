@@ -237,7 +237,7 @@ export default function BookingDetail() {
         <Row label="Fecha" value={formatLongDate(vista.fecha)} />
         <Row label="Hora" value={`${vista.hora} h`} />
         <Row label="Duración" value={`${vista.duracionMin} min`} />
-        <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
+        <Row label="Lugar" value="Calle Ramón de la Cerda 22, Limache" />
         {precio !== null && <Row label="Total" value={formatPrice(precio)} />}
         {vista.abono > 0 && <Row label="Abono" value={formatPrice(vista.abono)} />}
         {/* Aproximado si no hubo variante: `reservas` no guarda precio y el

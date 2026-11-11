@@ -1087,7 +1087,7 @@ function ConfirmStep({
             <Row label="Fecha" value={formatLongDate(dateISO)} />
             <Row label="Hora" value={`${time} h`} />
             <Row label="Duración" value={`${service.duracionMinutos} min`} />
-            <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
+            <Row label="Lugar" value="Calle Ramón de la Cerda 22, Limache" />
           </div>
 
           {/* Sin cuenta, el correo y el teléfono son el único vínculo con la
@@ -1358,7 +1358,7 @@ function SuccessScreen({
           <Row label="Fecha" value={formatLongDate(booking.dateISO)} />
           <Row label="Hora" value={`${booking.time} h`} />
           <Row label="Duración" value={`${booking.durationMin} min`} />
-          <Row label="Lugar" value="Av. Libertad 1250, Viña del Mar" />
+          <Row label="Lugar" value="Calle Ramón de la Cerda 22, Limache" />
         </div>
       </div>
 
