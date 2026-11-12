@@ -80,6 +80,17 @@ def test_ids_clinicos_rechazados_en_tareas_esteticas(cfg, tarea_estetica, clase)
     "clubbing", "onycholysis", "normal", "other",
     # sinonimos de linea_oscura y terminos con acento
     "melanoniquia", "Melanonychia", "infección",
+    # QA 2026-11-12: nombres compuestos
+    "posible_linea_beau", "linea_beau_leve", "con_mancha_blanca", "linea_oscura2", "melanoniquia_estriada",
+    "otra_2", "otras", "sin_senales_x",
+    # separadores y caracteres que la normalizacion anterior no cubria
+    "linea.oscura", "Línea—Oscura", "linea​_oscura", "li​nea_oscura", "lınea_oscura", "ot​ra",
+    # variantes de las carpetas de Kaggle
+    "beau_s lines", "Beau's lines", "beau line", "terry nail", "white spots", "black lines", "Mees' lines",
+    # carpetas de archive (2).zip
+    "Healthy_Nail", "Onychogryphosis", "blue_finger", "pitting",
+    # otras condiciones con la raiz de "una"
+    "leukonychia", "koilonychia", "leuconiquia",
 ])
 def test_variantes_y_equivalentes_clinicos_rechazados(cfg, tarea_estetica, clase):
     malo = copy.deepcopy(cfg)
@@ -90,12 +101,22 @@ def test_variantes_y_equivalentes_clinicos_rechazados(cfg, tarea_estetica, clase
 
 @pytest.mark.parametrize("tarea_estetica", ["forma", "estado"])
 def test_clases_esteticas_legitimas_siguen_aceptandose(cfg, tarea_estetica):
-    # Cada clase por separado, para que un falso positivo nombre a su culpable.
+    # Lee las clases del config.toml real: si una se volviera falso positivo de
+    # la guarda, el entrenamiento real no arrancaria. Cada clase por separado,
+    # para que el fallo nombre a su culpable.
     for clase in tarea(cfg, tarea_estetica)["clases"]:
         ok = copy.deepcopy(cfg)
-        ok["tareas"][tarea_estetica]["clases"] = [clase, "otra_estetica_x"]
+        ok["tareas"][tarea_estetica]["clases"] = [clase, "estetica_x"]
         ok["tareas"][tarea_estetica]["revision_profesional"] = []
         _validar(ok)
+
+
+@pytest.mark.parametrize("clase", ["beauty", "forma_normalizada", "nosotras", "sanador"])
+def test_las_palabras_cortas_no_se_buscan_como_subcadena(cfg, clase):
+    # "beau", "normal", "otra" y "sana" solo cuentan como palabra entera.
+    ok = copy.deepcopy(cfg)
+    ok["tareas"]["estado"]["clases"].append(clase)
+    _validar(ok)
 
 
 def test_estado_clinico_tiene_las_9_clases_y_revision_en_las_7_senales(cfg):
