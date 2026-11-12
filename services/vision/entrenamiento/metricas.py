@@ -1,7 +1,22 @@
 """Metricas, umbral de no_concluyente y eleccion del modelo. Logica pura."""
 
+import math
+
 import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+
+from .config import OTRA, SENALES_GRAVES, SIN_SENALES
+
+# Criterios para habilitar el modelo de estado_clinico (design.md de
+# reporte-clinico-unas). Son la propuesta, pendiente de Q4: si el dueno los
+# cambia, se cambian aqui con la fecha. Con ~9 fotos de test por clase sirven
+# para impedir habilitar un modelo malo, no para demostrar que uno es bueno.
+ACEPTACION_CLINICA = {
+    "M1": ("max", 0),     # fotos de SENALES_GRAVES aceptadas como sin_senales
+    "M2": ("max", 1),     # fotos de cualquier otra clase (incluida otra) aceptadas como sin_senales
+    "M3": ("min", 0.90),  # precision de las aceptadas
+    "M4": ("min", 0.30),  # cobertura: fraccion de fotos con resultado ok
+}
 
 
 def metricas(y_true, y_pred, clases: list[str]) -> dict:
@@ -86,3 +101,109 @@ def elegir_ganador(resultados: list[dict]) -> dict:
     rendimiento real. Test solo se mira para el informe.
     """
     return max(resultados, key=lambda r: (r["val"]["f1_macro"], -r["parametros"]))
+
+
+# --- estado_clinico: abstencion ----------------------------------------------
+
+def motivo_abstencion(probs: np.ndarray, clases: list[str], umbral: float | None,
+                      umbral_sin_senales: float | None) -> str | None:
+    """Motivo de no_concluyente de UNA prediccion, o None si se acepta.
+
+    Reglas 3 a 6 de la decision 5 de design.md, en ese orden. Las reglas 1
+    (sin modelo) y 2 (excepcion) solo existen en el servicio. El servicio
+    (services/api/app/vision) no puede importar este modulo (no tiene
+    scikit-learn), asi que duplica estas reglas y las dos copias se prueban
+    con la misma tabla: tests/casos_abstencion.json. Confianza = probabilidad
+    bruta del softmax sobre las 9 clases, sin redondear.
+    """
+    i = int(np.argmax(probs))
+    confianza = float(probs[i])
+    if clases[i] == OTRA:
+        return "clase_otra"
+    if umbral is None or confianza < umbral:
+        return "confianza_baja"
+    if clases[i] == SIN_SENALES and (umbral_sin_senales is None or confianza < umbral_sin_senales):
+        return "confianza_baja"
+    return None
+
+
+def calibrar_umbral_sin_senales(probs: np.ndarray, y_true, clases: list[str], umbral: float | None) -> float | None:
+    """Umbral propio para afirmar sin_senales (decision 6 de design.md), en val.
+
+    Afirmar sin_senales sobre una linea oscura es el error mas grave: este
+    umbral queda por encima del falso sin_senales mas confiado de validacion.
+    Sale de los datos y no de un porcentaje fijado a ojo. None = el sistema
+    nunca dira sin_senales.
+    """
+    if umbral is None:
+        return None
+    i = clases.index(SIN_SENALES)
+    confianza = probs.max(axis=1)
+    dice_sin_senales = probs.argmax(axis=1) == i
+    falsos = confianza[dice_sin_senales & (np.asarray(y_true) != i)]
+    if falsos.size == 0:
+        return umbral
+    # Por encima del falso mas confiado solo quedan aciertos, por construccion.
+    por_encima = confianza[dice_sin_senales & (confianza > falsos.max())]
+    if por_encima.size == 0:
+        return None
+    return max(float(por_encima.min()), umbral)
+
+
+def wilson(aciertos: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
+    """Intervalo de confianza del 95 % de Wilson para una proporcion. Con pocas
+    fotos (o con 0 o n aciertos) el intervalo normal se sale de [0, 1]."""
+    if n == 0:
+        return None
+    p = aciertos / n
+    denominador = 1 + z * z / n
+    centro = (p + z * z / (2 * n)) / denominador
+    margen = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denominador
+    return max(0.0, centro - margen), min(1.0, centro + margen)
+
+
+def evaluacion_clinica(probs_val: np.ndarray, y_val, probs_test: np.ndarray, y_test,
+                       clases: list[str], umbral: float | None) -> dict:
+    """Calibra umbral_sin_senales en val y mide test DESPUES de abstenerse.
+
+    Por clase real, las cuatro columnas suman n: aceptadas correctas,
+    abstenidas, aceptadas como otra clase (que no sea sin_senales) y aceptadas
+    como sin_senales. El recall estricto cuenta la abstencion como fallo.
+    """
+    umbral_ss = calibrar_umbral_sin_senales(probs_val, y_val, clases, umbral)
+    pred = probs_test.argmax(axis=1)
+    y = np.asarray(y_test)
+    aceptada = np.array([motivo_abstencion(p, clases, umbral, umbral_ss) is None for p in probs_test], dtype=bool)
+    i_ss = clases.index(SIN_SENALES)
+    como_ss = aceptada & (pred == i_ss) & (y != i_ss)
+
+    por_clase = {}
+    for i, c in enumerate(clases):
+        real = y == i
+        correctas = int((real & aceptada & (pred == i)).sum())
+        n = int(real.sum())
+        por_clase[c] = {
+            "n": n,
+            "aceptadas_correctas": correctas,
+            "abstenidas": int((real & ~aceptada).sum()),
+            "aceptadas_otra_clase": int((real & aceptada & (pred != i) & (pred != i_ss)).sum()),
+            "aceptadas_sin_senales": int((real & como_ss).sum()),
+            "recall_estricto": correctas / n if n else None,
+            "ic95": wilson(correctas, n),
+        }
+
+    graves = np.isin(y, [clases.index(c) for c in SENALES_GRAVES])
+    n_aceptadas = int(aceptada.sum())
+    valores = {
+        "M1": int((como_ss & graves).sum()),
+        "M2": int(como_ss.sum()),
+        "M3": float((pred[aceptada] == y[aceptada]).mean()) if n_aceptadas else None,
+        "M4": float(aceptada.mean()) if y.size else 0.0,
+    }
+    aceptacion = {}
+    for m, (tipo, limite) in ACEPTACION_CLINICA.items():
+        v = valores[m]
+        # Sin aceptadas no hay precision que medir: no se puede dar por cumplida.
+        cumple = v is not None and (v <= limite if tipo == "max" else v >= limite)
+        aceptacion[m] = {"valor": v, "limite": limite, "tipo": tipo, "cumple": cumple}
+    return {"umbral_sin_senales": umbral_ss, "por_clase": por_clase, "aceptacion": aceptacion}

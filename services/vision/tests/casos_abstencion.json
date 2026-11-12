@@ -1,0 +1,76 @@
+{
+ "_nota": "Tabla unica de las reglas 3 a 6 de abstencion (decision 5 de openspec/changes/reporte-clinico-unas/design.md). La prueban entrenamiento.metricas (tests/test_metricas.py) y la copia del servicio en services/api/app/vision: las dos deben dar el mismo motivo. motivo null = ok. La confianza es la probabilidad bruta, sin redondear; la clase es la de mayor probabilidad.",
+ "clases": ["linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis", "una_terry", "mancha_blanca", "sin_senales", "otra"],
+ "casos": [
+  {
+   "caso": "otra con 0,99 se abstiene aunque supere todo umbral",
+   "probs": [0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.99],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": "clase_otra"
+  },
+  {
+   "caso": "otra se comprueba antes que la confianza",
+   "probs": [0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.4],
+   "umbral_no_concluyente": null,
+   "umbral_sin_senales": null,
+   "motivo": "clase_otra"
+  },
+  {
+   "caso": "bajo el umbral general",
+   "probs": [0.69, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": "confianza_baja"
+  },
+  {
+   "caso": "justo en el umbral general se acepta",
+   "probs": [0.7, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": null
+  },
+  {
+   "caso": "modelo sin umbral general",
+   "probs": [0.99, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125],
+   "umbral_no_concluyente": null,
+   "umbral_sin_senales": null,
+   "motivo": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales bajo su umbral propio",
+   "probs": [0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.85, 0.01875],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales justo en su umbral propio se acepta",
+   "probs": [0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.9, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": null
+  },
+  {
+   "caso": "sin_senales nunca afirmable",
+   "probs": [0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.99, 0.00125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": null,
+   "motivo": "confianza_baja"
+  },
+  {
+   "caso": "el umbral de sin_senales no afecta a otras clases",
+   "probs": [0.025, 0.8, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": null,
+   "motivo": null
+  },
+  {
+   "caso": "senal sobre el umbral",
+   "probs": [0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.95, 0.00625, 0.00625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "motivo": null
+  }
+ ]
+}

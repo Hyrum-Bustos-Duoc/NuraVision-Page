@@ -16,8 +16,14 @@ import numpy as np
 import tensorflow as tf
 
 from . import datos, metricas, reporte
+from .config import TAREA_CLINICA
 
 DISCLAIMER = "Observacion estetica orientativa. No es un diagnostico medico."
+# Mismo texto que AVISO_CLINICO del contrato (design.md), sin tildes.
+DISCLAIMER_CLINICO = (
+    "Senal orientativa para consultar con un profesional de la salud. "
+    "No es un diagnostico medico ni reemplaza una evaluacion clinica."
+)
 
 
 def fijar_determinismo(semilla: int) -> None:
@@ -110,7 +116,7 @@ def latencia_ms(modelo, lado: int) -> float:
     return statistics.median(tiempos) * 1000
 
 
-def _evaluar_arquitectura(arq, cfg, manifiesto, raiz, salida, subgrupos) -> dict:
+def _evaluar_arquitectura(arq, cfg, nombre_tarea, manifiesto, raiz, salida, subgrupos) -> dict:
     semilla, lado, ent = cfg["semilla"], cfg["imagen"]["lado"], cfg["entrenamiento"]
     # Misma semilla al empezar cada arquitectura: el resultado de una no
     # depende de si se entreno antes o despues que la otra.
@@ -142,7 +148,7 @@ def _evaluar_arquitectura(arq, cfg, manifiesto, raiz, salida, subgrupos) -> dict
     umbral = metricas.calibrar_umbral(probs["val"], particion["val"][1], cfg["umbral"]["precision_objetivo"])
     archivos_test, y_test = particion["test"]
     pred_test = probs["test"].argmax(axis=1)
-    return {
+    resultado = {
         "arquitectura": arq,
         "parametros": modelo.count_params(),
         "tamano_mb": (carpeta / "pesos.weights.h5").stat().st_size / 1e6,
@@ -153,6 +159,11 @@ def _evaluar_arquitectura(arq, cfg, manifiesto, raiz, salida, subgrupos) -> dict
         "umbral": {p: metricas.evaluar_umbral(probs[p], particion[p][1], umbral) for p in ("val", "test")},
         "subgrupos_test": metricas.por_subgrupo(archivos_test, y_test, pred_test, subgrupos),
     }
+    if nombre_tarea == TAREA_CLINICA:
+        resultado["clinico"] = metricas.evaluacion_clinica(
+            probs["val"], particion["val"][1], probs["test"], y_test, clases, umbral
+        )
+    return resultado
 
 
 def _exportar(ganador: dict, nombre_tarea: str, cfg: dict, manifiesto: dict, salida: Path, entorno: dict) -> None:
@@ -189,8 +200,11 @@ def _exportar(ganador: dict, nombre_tarea: str, cfg: dict, manifiesto: dict, sal
         "cobertura_test": ganador["umbral"]["test"]["cobertura"],
         "entorno": entorno,
         "fecha": datetime.date.today().isoformat(),
-        "disclaimer": DISCLAIMER,
+        "disclaimer": DISCLAIMER_CLINICO if nombre_tarea == TAREA_CLINICA else DISCLAIMER,
     }
+    if nombre_tarea == TAREA_CLINICA:
+        # El servicio lo exige; forma y estado no lo tienen (y no deben tenerlo).
+        metadatos["umbral_sin_senales"] = ganador["clinico"]["umbral_sin_senales"]
     (destino / "metadatos.json").write_text(json.dumps(metadatos, indent=2, ensure_ascii=False))
 
 
@@ -199,7 +213,7 @@ def comparar(cfg: dict, nombre_tarea: str, manifiesto: dict, rechazadas: dict, r
     comparativa.json/.md y exporta la ganadora."""
     subgrupos = datos.cargar_subgrupos(raiz)
     resultados = [
-        _evaluar_arquitectura(arq, cfg, manifiesto, raiz, salida, subgrupos)
+        _evaluar_arquitectura(arq, cfg, nombre_tarea, manifiesto, raiz, salida, subgrupos)
         for arq in cfg["entrenamiento"]["arquitecturas"]
     ]
     ganador = metricas.elegir_ganador(resultados)

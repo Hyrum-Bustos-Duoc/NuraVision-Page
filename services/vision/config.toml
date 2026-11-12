@@ -18,7 +18,7 @@ test = 0.15
 # EfficientNetB0: otro tamano funciona pero desalinea los pesos preentrenados.
 lado = 224
 # Fotos con el lado menor por debajo de esto se rechazan: ampliarlas inventa
-# detalle que el modelo aprenderia como senal.
+# detalle que el modelo aprenderia como senal. Una tarea puede declarar el suyo.
 lado_minimo = 224
 
 [entrenamiento]
@@ -70,3 +70,25 @@ clases = ["cuidada", "cuticula_descuidada", "quebradiza_o_descamada", "esmalte_d
 # Una una quebradiza o descamada puede tener causas medicas: el resultado se
 # acompana de la recomendacion de consultar a un profesional, sin nombrar causa.
 revision_profesional = ["quebradiza_o_descamada"]
+
+# Senal orientativa para consultar a un profesional, no diagnostico. Decision
+# del dueno del 2026-11-12 (openspec/changes/reporte-clinico-unas). config.py
+# exige que las clases sean exactamente su lista cerrada (CLASES_CLINICAS) y el
+# CLI, que la particion use un archivo de series (--series).
+[tareas.estado_clinico]
+feature = "estado_clinico"
+clases = [
+    "linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis",
+    "una_terry", "mancha_blanca", "sin_senales", "otra",
+]
+# Todas las senales llevan la recomendacion de consultar; sin_senales y otra no.
+revision_profesional = [
+    "linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis",
+    "una_terry", "mancha_blanca",
+]
+# Q2, opcion a (recomendada, pendiente de confirmar): con 224, linea_mees se
+# queda en 0 fotos y black line en 2 (FICHA de kaggle_nail, seccion 3). Con 64
+# quedan unas 350 fotos, linea_mees con 18. cargar_imagen las lleva igual a
+# 224: este minimo solo acota cuanto se amplia (hasta 3,5x). El resto de tareas
+# usa [imagen].lado_minimo.
+lado_minimo = 64
