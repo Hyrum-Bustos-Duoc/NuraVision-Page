@@ -83,6 +83,11 @@ class Clinico(BaseModel):
         clases = [a.clase for a in self.alternativas]
         if self.clase in clases or clases[0] == clases[1]:
             raise ValueError("las alternativas no repiten la clase predicha ni entre si")
+        # "otra" ya la impide ClaseClinica. "sin_senales" como alternativa de una
+        # senal sugeriria que podria no haber nada y debilitaria la recomendacion
+        # (QA 2026-11-12); decidir() la excluye, y el contrato no debe depender de eso.
+        if "sin_senales" in clases:
+            raise ValueError("sin_senales no es una alternativa")
         if self.alternativas[0].confianza < self.alternativas[1].confianza:
             raise ValueError("las alternativas van de mayor a menor confianza")
         return self

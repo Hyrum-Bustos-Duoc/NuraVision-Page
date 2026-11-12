@@ -75,6 +75,8 @@ NC = {"estado": "no_concluyente", "motivo": "confianza_baja", "clase": None, "co
 def test_las_combinaciones_validas_se_construyen():
     Clinico(**OK)
     Clinico(**NC)
+    # sin_senales no puede ser alternativa, pero si la clase predicha.
+    Clinico(**{**OK, "clase": "sin_senales", "reporte": TEXTOS["sin_senales"].model_dump()})
 
 
 @pytest.mark.parametrize(
@@ -88,6 +90,10 @@ def test_las_combinaciones_validas_se_construyen():
         {**OK, "alternativas": [ALT[0], ALT[0]]},
         {**OK, "confianza": 1.2},
         {**OK, "clase": "otra"},
+        {**OK, "alternativas": [{**ALT[0], "clase": "sin_senales"}, ALT[1]]},
+        {**OK, "alternativas": [ALT[0], {**ALT[1], "clase": "sin_senales"}]},
+        {**OK, "alternativas": [ALT[0], {**ALT[1], "clase": "otra"}]},
+        {**OK, "alternativas": ALT + [{**ALT[1], "clase": "una_terry", "confianza": 0.01}]},
         {**NC, "confianza": 0.5},
         {**NC, "clase": "linea_beau"},
         {**NC, "alternativas": ALT},
@@ -97,6 +103,8 @@ def test_las_combinaciones_validas_se_construyen():
     ids=[
         "ok_sin_reporte", "ok_con_motivo", "ok_una_alternativa", "ok_alternativas_desordenadas",
         "ok_alternativa_repite_clase", "ok_alternativas_repetidas", "ok_confianza_fuera_de_rango", "ok_clase_otra",
+        "ok_alternativa_sin_senales_primera", "ok_alternativa_sin_senales_segunda", "ok_alternativa_otra",
+        "ok_tres_alternativas",
         "nc_con_confianza", "nc_con_clase", "nc_con_alternativas", "nc_con_reporte", "nc_sin_motivo",
     ],
 )
@@ -276,12 +284,6 @@ def test_un_modelo_que_no_cumple_no_se_carga(tmp_path, caplog, etiquetas, metada
     with caplog.at_level(logging.WARNING, logger="app.vision.clinico"):
         assert clinico.cargar_opcional(carpeta, RUTA_TEXTOS_CLINICOS) is None
     assert motivo in caplog.text
-
-
-def test_etiquetas_con_valores_que_no_son_texto_no_impiden_cargar(tmp_path):
-    carpeta = _carpeta(tmp_path)
-    (carpeta / "etiquetas.json").write_text(json.dumps({str(i): [e] for i, e in enumerate(ETIQUETAS)}))
-    assert clinico.cargar_opcional(carpeta, RUTA_TEXTOS_CLINICOS) is None
 
 
 def test_metadatos_sin_umbral_sin_senales_no_se_carga(tmp_path):

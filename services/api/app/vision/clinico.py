@@ -192,7 +192,8 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
     try:
         etiquetas_json = json.loads((carpeta / "etiquetas.json").read_text(encoding="utf-8"))
         metadatos = json.loads((carpeta / "metadatos.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
+    # RecursionError: un JSON muy anidado la lanza en Python < 3.14 y tumbaria el arranque.
+    except (OSError, ValueError, RecursionError) as exc:
         raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json o metadatos.json ilegible ({type(exc).__name__})") from exc
     if not isinstance(metadatos, dict) or metadatos.get("tarea") != TAREA:
         raise ClasificadorNoDisponible(f"{carpeta}: metadatos.tarea no es '{TAREA}'")
