@@ -1,0 +1,46 @@
+# ============================================================================
+# NuraVision · Configuracion del proyecto Supabase
+# ============================================================================
+# Este archivo declara, bajo control de versiones, los ajustes del proyecto que
+# antes solo vivian en el dashboard. Se aplican con:
+#
+#   npx supabase config push
+#
+# `config push` SOLO escribe las propiedades que este archivo declara; lo que no
+# aparece aqui queda intacto en el proyecto. Por eso el archivo es minimo a
+# proposito: declara lo que nos ha dado problemas y nada mas.
+#
+# `npx supabase config diff` muestra antes que cambiaria, sin escribir.
+# ============================================================================
+
+project_id = "sqxlmykshjhwcqpfzupe"
+
+# ----------------------------------------------------------------------------
+# [auth] · A donde llevan los enlaces de los correos de Supabase Auth
+# ----------------------------------------------------------------------------
+# EL PROBLEMA QUE ESTO ARREGLA
+#
+# El correo de confirmacion de una cuenta nueva llevaba a `localhost`. El enlace
+# no lo construye nuestro codigo: lo arma Supabase a partir de `site_url`, y ese
+# valor estaba apuntando al entorno de desarrollo. Cualquiera que se registrara
+# desde el sitio publico recibia un enlace inservible.
+#
+# `site_url` es el destino POR DEFECTO, el que se usa cuando la peticion no pide
+# otro. Tiene que ser el dominio publico.
+[auth]
+site_url = "https://nuraestudio.cl"
+
+# `additional_redirect_urls` es una LISTA BLANCA, y sin ella el `emailRedirectTo`
+# que ahora manda el frontend no sirve de nada: Supabase descarta cualquier
+# destino que no figure aqui y vuelve a `site_url` sin avisar. Es el mismo
+# patron que `ORIGENES_PERMITIDOS` en las funciones de pago, y por el mismo
+# motivo: un destino libre seria un open redirect en los correos.
+#
+# `**` cubre cualquier ruta bajo ese origen. Los comodines de Vercel permiten
+# que las vistas previas de cada rama funcionen sin tocar esto en cada despliegue.
+additional_redirect_urls = [
+  "https://nuraestudio.cl/**",
+  "https://www.nuraestudio.cl/**",
+  "https://*.vercel.app/**",
+  "http://localhost:5173/**",
+]
