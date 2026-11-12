@@ -123,6 +123,14 @@ def test_alternativas_empatadas_salen_en_el_orden_de_las_etiquetas():
     assert [a.clase for a in c.alternativas] == ["linea_beau", "linea_oscura"]
 
 
+def test_sin_senales_nunca_se_ofrece_como_alternativa_de_una_senal():
+    # QA 2026-11-12: con linea_oscura al 0.80 y sin_senales segunda, la UI decia
+    # "podria ser: Sin senales reconocidas", lo contrario de la recomendacion.
+    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, linea_mees=0.02)), RECORTE)
+    assert c.estado == "ok"
+    assert [a.clase for a in c.alternativas] == ["onicolisis", "linea_mees"]
+
+
 @pytest.mark.parametrize(
     "salida,umbral_nc,umbral_ss,motivo",
     [
@@ -270,13 +278,6 @@ def test_un_modelo_que_no_cumple_no_se_carga(tmp_path, caplog, etiquetas, metada
     assert motivo in caplog.text
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=TypeError,
-    reason="BUG (QA 2026-11-12): set(etiquetas) en clinico.cargar queda fuera del try y un "
-    "etiquetas.json con valores no hashables lanza TypeError, que tumba el arranque del servicio. "
-    "Al arreglarlo, quitar este xfail.",
-)
 def test_etiquetas_con_valores_que_no_son_texto_no_impiden_cargar(tmp_path):
     carpeta = _carpeta(tmp_path)
     (carpeta / "etiquetas.json").write_text(json.dumps({str(i): [e] for i, e in enumerate(ETIQUETAS)}))

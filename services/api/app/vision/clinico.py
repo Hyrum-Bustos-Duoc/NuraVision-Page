@@ -82,8 +82,11 @@ def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
         return no_concluyente("confianza_baja")
     # Ordenadas por la probabilidad bruta; sorted es estable, asi que un empate
     # se resuelve por el orden de etiquetas.json y el resultado es reproducible.
+    # Nunca se ofrece "sin_senales" como alternativa de una senal: sugeriria que
+    # la persona podria no tener nada y debilitaria la recomendacion (QA 2026-11-12).
+    excluidas = {OTRA, SIN_SENALES, clase}
     candidatas = sorted(
-        (j for j, e in enumerate(c.etiquetas) if e not in (OTRA, clase)), key=lambda j: -float(probs[j])
+        (j for j, e in enumerate(c.etiquetas) if e not in excluidas), key=lambda j: -float(probs[j])
     )[:N_ALTERNATIVAS]
     return Clinico(
         estado="ok",
@@ -198,6 +201,9 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
         etiquetas = tuple(etiquetas_json[str(i)] for i in range(len(etiquetas_json)))
     except (KeyError, TypeError) as exc:
         raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json no va de 0 a n-1") from exc
+    # Un valor que no es texto (lista, dict) no es hashable: set() lanzaria TypeError.
+    if not all(isinstance(e, str) for e in etiquetas):
+        raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json trae valores que no son texto")
     if len(etiquetas) != len(CLASES_MODELO) or set(etiquetas) != CLASES_MODELO:
         raise ClasificadorNoDisponible(f"{carpeta}: las etiquetas no son exactamente los 9 ids de estado_clinico")
     umbral_nc = _umbral(metadatos, "umbral_no_concluyente")
