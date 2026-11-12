@@ -23,9 +23,25 @@ export const AVISO_CLINICO_POR_DEFECTO =
   'Señal orientativa para consultar con un profesional de la salud. ' +
   'No es un diagnóstico médico ni reemplaza una evaluación clínica.'
 
-/** Unico punto que resuelve la ausencia de `clinico`. La UI no usa `?.` sobre el. */
+/**
+ * Un `ok` que llega roto (sin reporte, sin clase o con alternativas que no son lista)
+ * viola el contrato del servicio. Se trata como una clasificacion fallida: es lo que
+ * es desde el punto de vista de quien mira la pantalla.
+ */
+const CLINICO_FALLIDO: Clinico = { ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' }
+
+/**
+ * Unico punto que resuelve la ausencia o rotura de `clinico`. La UI no usa `?.` sobre
+ * el y ramifica solo por estado === 'ok', asi que aqui se garantiza que un `ok` trae
+ * todo lo que la UI lee. Las comprobaciones parecen redundantes para TS, pero el
+ * JSON llega por red y la union no lo valida.
+ */
 export function clinicoDe(una: UnaDetectada): Clinico {
-  return una.clinico ?? CLINICO_NO_DISPONIBLE
+  const c = una.clinico
+  if (!c) return CLINICO_NO_DISPONIBLE
+  if (c.estado !== 'ok') return c
+  const roto = c.reporte == null || typeof c.clase !== 'string' || !Array.isArray(c.alternativas)
+  return roto ? CLINICO_FALLIDO : c
 }
 
 /**

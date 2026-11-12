@@ -45,6 +45,29 @@ describe('clinicoDe', () => {
     const c = ok('linea_beau')
     expect(clinicoDe(una(1, c))).toBe(c)
   })
+
+  // Simulan un servicio roto que dice `ok` sin los campos que la UI lee.
+  it.each([
+    ['sin reporte', { reporte: null }],
+    ['sin clase', { clase: null }],
+    ['con alternativas que no son lista', { alternativas: null }],
+  ])('un ok %s se trata como no concluyente por clasificacion_fallida', (_, rotura) => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), ...rotura }))
+    expect(clinicoDe(una(1, roto))).toMatchObject({
+      estado: 'no_concluyente',
+      motivo: 'clasificacion_fallida',
+      reporte: null,
+      alternativas: [],
+    })
+  })
+
+  it('un ok roto cuenta como no concluyente en el resumen', () => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), reporte: null }))
+    expect(resumenClinico([una(1, roto), una(1, ok('linea_oscura'))])).toEqual({
+      disponible: true,
+      manos: [{ mano: 1, total: 2, conSenal: 1, sinSenales: 0, noConcluyentes: 1 }],
+    })
+  })
 })
 
 describe('mensajeMotivoClinico', () => {
