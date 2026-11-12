@@ -10,7 +10,12 @@ datasets candidatos. Nada de esto ejecuta la limpieza ni el entrenamiento de
 ## ADDED Requirements
 
 ### Requirement: Guarda clínica por tarea
-La carga de la configuración SHALL aceptar clases clínicas solo en la tarea `estado_clinico`, y solo si su lista de clases coincide exactamente con los 9 ids de `design.md`. Cualquier otra tarea MUST rechazarse si alguna de sus clases contiene un término de `TERMINOS_CLINICOS` o coincide con uno de esos 9 ids. La lista de 9 ids SHALL vivir en el código, no en `config.toml`. Las fichas externas con `uso = "solo_particion"` SHALL seguir rechazándose como configuración de entrenamiento.
+La carga de la configuración SHALL aceptar clases clínicas solo en la tarea `estado_clinico`, y solo si su lista de clases coincide exactamente con los 9 ids de `design.md`. Cualquier otra tarea MUST rechazarse si alguna de sus clases **contiene** un nombre clínico, según la regla de la decisión 2 de `design.md`:
+- el nombre de clase se normaliza: minúsculas, descomposición NFKD sin marcas de acento, sin caracteres invisibles de formato (ancho cero, marcas de dirección), la «ı» sin punto como «i», y después se quita todo lo que no sea a-z o 0-9;
+- son nombres clínicos los términos de `TERMINOS_CLINICOS`, los 9 ids, las carpetas de `Nail.zip` y de `archive (2).zip` tal como vienen, los sinónimos de `linea_oscura` y las raíces `onych` y `oniquia`;
+- los nombres cortos o ambiguos (`otra`, `other`, `normal`, `sana`, `sano`, `healthy`, `beau`, `terry`, `mees`) cuentan solo como palabra entera, con plural opcional en -s/-es, delimitada por cualquier carácter que no sea letra; el resto cuenta como subcadena del nombre normalizado.
+
+La lista de 9 ids SHALL vivir en el código, no en `config.toml`. Las fichas externas con `uso = "solo_particion"` SHALL seguir rechazándose como configuración de entrenamiento. Toda clase de `forma` y `estado` del `config.toml` del repositorio SHALL seguir aceptándose.
 
 #### Scenario: Configuración por defecto
 - **WHEN** se carga el `config.toml` del repositorio
@@ -23,6 +28,22 @@ La carga de la configuración SHALL aceptar clases clínicas solo en la tarea `e
 #### Scenario: Término clínico en forma
 - **WHEN** se añade `onicolisis` a las clases de `forma`
 - **THEN** la carga falla, igual que hoy
+
+#### Scenario: Nombre compuesto que contiene un id clínico
+- **WHEN** se añade a `estado` cualquiera de `posible_linea_beau`, `linea_beau_leve`, `con_mancha_blanca`, `linea_oscura2`, `sin_senales_x` u `otra_2`
+- **THEN** la carga falla con un mensaje que nombra la tarea y la clase
+
+#### Scenario: Separadores y caracteres invisibles
+- **WHEN** se añade a `forma` cualquiera de `linea.oscura`, `Línea—Oscura`, `linea_oscura` con un espacio de ancho cero intercalado, `lınea_oscura` (con «ı» sin punto) u `otra` con un espacio de ancho cero intercalado
+- **THEN** la carga falla
+
+#### Scenario: Variantes de las carpetas de Kaggle y raíces clínicas
+- **WHEN** se añade a `estado` cualquiera de `Beau's lines`, `beau line`, `terry nail`, `white spots`, `black lines`, `Mees' lines`, `otras`, `Healthy_Nail`, `Onychogryphosis`, `blue_finger`, `pitting`, `leukonychia`, `koilonychia` o `leuconiquia`
+- **THEN** la carga falla
+
+#### Scenario: Palabras cortas dentro de otra palabra
+- **WHEN** se añade a `estado` cualquiera de `beauty`, `forma_normalizada`, `nosotras` o `sanador`
+- **THEN** la carga no falla
 
 #### Scenario: Clase extra en la tarea clínica
 - **WHEN** se añade `melanoma` a las clases de `estado_clinico`
