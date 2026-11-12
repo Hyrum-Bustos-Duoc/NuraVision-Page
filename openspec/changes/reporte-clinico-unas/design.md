@@ -103,11 +103,18 @@ que una combinación inválida no se puede construir):
 
 | `estado` | `motivo` | `clase` | `confianza` | `alternativas` | `reporte` |
 |---|---|---|---|---|---|
-| `ok` | `null` | id público | 0..1 | **exactamente 2**, ordenadas de mayor a menor confianza, sin `otra` ni la clase predicha | texto de `clase` |
+| `ok` | `null` | id público | 0..1 | **exactamente 2**, ordenadas de mayor a menor confianza, sin `otra`, sin `sin_senales` y sin la clase predicha | texto de `clase` |
 | `no_concluyente` | uno de los 4 | `null` | `null` | `[]` | `null` |
 
 Cuando la respuesta es no concluyente no se muestra ninguna suposición. Si se
 expusieran la clase o las alternativas, la abstención dejaría de servir.
+
+El validador comprueba el número, el orden y que no se repitan ni la clase
+predicha ni entre sí; `otra` queda fuera por el tipo `ClaseClinica`. La
+exclusión de `sin_senales` **no** la impone el validador (es un id público
+válido): la impone la regla que elige las alternativas (decisión 9), y la
+protege un test de esa regla. Con 9 etiquetas, quitar `otra`, `sin_senales` y
+la predicha deja al menos 6 candidatas, así que siempre hay 2.
 
 ### TypeScript (espejo)
 
@@ -149,6 +156,20 @@ export interface Modelo { nombre: string; version: string }
 - **Redondeo.** Quien produce el dato redondea a 3 decimales; ninguna capa lo
   valida.
 
+**Correcciones tras QA (2026-11-12).**
+
+- **`ok` incompleto.** Un bloque con `estado: "ok"` y `reporte` ausente o
+  `null`, `clase` que no es texto o `alternativas` que no es lista viola el
+  contrato, pero puede llegar por red (servicio con un bug o
+  de otra versión). `clinicoDe(una)` lo trata como `no_concluyente` con
+  `motivo: "clasificacion_fallida"`: la uña muestra el mensaje de ese motivo,
+  sin clase ni alternativas, cuenta como no concluyente en el resumen y la
+  pantalla no falla. Es el mismo punto único que ya resuelve el `clinico`
+  ausente; la UI sigue sin comprobaciones sueltas.
+- **Alternativas sin `sin_senales`.** Ver decisión 9.
+- **`etiquetas.json` con valores que no son texto.** Ver «Lo que el servicio
+  exige del modelo exportado».
+
 La unión discriminada reproduce las invariantes: el compilador impide leer
 `reporte` sin comprobar antes `estado === 'ok'`. El frontend **no** tiene un
 mapa propio de nombres de clase: los nombres llegan en `reporte.nombre` y
@@ -179,7 +200,10 @@ El servicio lee `etiquetas.json` y `metadatos.json` (formato actual) más dos
 campos nuevos, que escribe la tarea 2.3:
 
 - `metadatos.tarea == "estado_clinico"`, y las etiquetas deben ser exactamente
-  los 9 ids de la tabla.
+  los 9 ids de la tabla. Cada valor de `etiquetas.json` debe ser texto: una
+  lista, un objeto o un número en su lugar es un modelo inutilizable, no un
+  error de arranque (QA 2026-11-12: un valor no hashable lanzaba `TypeError`
+  al compararlo con la lista cerrada y tumbaba el servicio).
 - `metadatos.umbral_no_concluyente` (ya existe) y
   `metadatos.umbral_sin_senales` (nuevo). Cualquiera de los dos puede ser
   `null`.
@@ -309,6 +333,20 @@ y el servicio responde `modelo_no_entrenado`.
      de `sin_senales`, como nombres sin número (pendiente de Q5).
    - En `sin_senales` no se muestran alternativas: se mostraría «podría ser
      una línea oscura» justo después de afirmar que no se ve nada.
+   - El reverso también vale: `sin_senales` **nunca** es alternativa de una
+     señal. Las alternativas excluyen `otra`, `sin_senales` y la clase
+     predicha, y siguen siendo siempre 2.
+
+   **Descartado (2026-11-12): dejar `sin_senales` como alternativa posible.**
+   La primera versión de esta decisión solo excluía `otra` y la predicha. QA
+   encontró que, con `linea_oscura` al 0,80 y `sin_senales` segunda, la UI
+   mostraba «Otras señales parecidas: Sin señales reconocidas y …» justo
+   debajo de una recomendación de evaluación dermatológica. Leído por una
+   clienta, eso dice «puede que no tengas nada» y debilita la única acción que
+   el reporte pide. Es el mismo error que esta decisión ya evitaba en el
+   sentido contrario. Se descartó también mostrar `sin_senales` solo cuando su
+   confianza supera cierto valor: agrega un número fijado a ojo (mismo motivo
+   que en la decisión 6) y no cambia la lectura de la frase.
 
 10. **Un solo botón para toda la sección**, no uno por uña.
     - La decisión 2 del dueño dice «un botón», y una mano con cinco botones
@@ -405,4 +443,4 @@ no para **demostrar** que uno es bueno.
 | Q2 | ¿Lado mínimo de `estado_clinico`? | a) 64 px por tarea (≈ 350 fotos; `linea_mees` 18) · b) 224 y ampliar en la normalización (inventa detalle; la resolución ya está correlacionada con la clase) · c) 96 px (`linea_mees` 10, `acropaquia` 11) | a | 2.1 (solo la opción por tarea), U.4 |
 | Q3 | ¿Se programan herramientas para la limpieza o solo se valida su resultado? | a) Partición por series + informe de casi-duplicados candidatos (dHash ≤ 4, solo como ayuda para revisar a mano) · b) Solo partición por series · c) Solo validar | a. La FICHA §4 ya mostró que el hash solo no sirve para agrupar, pero sí para encontrar candidatos entre 540 fotos | 2.4 |
 | Q4 | ¿Se aceptan los umbrales M1–M4 y H1–H3? | Los propuestos · otros | Los propuestos | U.9 |
-| Q5 | ¿Se muestran las alternativas en la UI? | a) Nombres sin número, solo en `ok` ≠ `sin_senales` · b) No mostrarlas y quitarlas del contrato | a. Las pidió el dueño, y el número es lo que confunde, no el nombre | Nada: 5.2 implementa a salvo que se indique otra cosa |
+| Q5 | ¿Se muestran las alternativas en la UI? | a) Nombres sin número, solo en `ok` ≠ `sin_senales`, y nunca `sin_senales` entre ellas (decisión 9, 2026-11-12) · b) No mostrarlas y quitarlas del contrato | a. Las pidió el dueño, y el número es lo que confunde, no el nombre | Nada: 5.2 implementa a salvo que se indique otra cosa |

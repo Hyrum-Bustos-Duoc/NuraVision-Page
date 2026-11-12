@@ -127,6 +127,10 @@ No se rediscuten aquí:
   como descarte. El texto recomienda evaluación dermatológica sin nombrar ni
   descartar causas. La profesional puede cambiarlo, pero cambiar este criterio
   exige cambiar el test que lo protege.
+- **Ofrecer `sin_senales` como alternativa de una señal** (descartado el
+  2026-11-12, tras QA). Debajo de «consulta con dermatología» se leía «puede
+  que no tengas nada». El motivo completo está en la decisión 9 de
+  `design.md`.
 - **Una guarda en el código que bloquee los textos sin revisión profesional.**
   No hay modelo ni despliegue público del servicio (CORS solo localhost), así
   que una guarda en el código no protegería a nadie hoy y sí impediría la
