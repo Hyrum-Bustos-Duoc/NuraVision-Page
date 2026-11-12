@@ -123,13 +123,31 @@ export interface ReporteClinico {
 export interface AlternativaClinica { clase: ClaseClinica; nombre: string; confianza: number }
 export type Clinico =
   | { estado: 'ok'; motivo: null; clase: ClaseClinica; confianza: number;
-      alternativas: AlternativaClinica[]; reporte: ReporteClinico }
+      alternativas: [AlternativaClinica, AlternativaClinica]; reporte: ReporteClinico }
   | { estado: 'no_concluyente'; motivo: MotivoClinico; clase: null; confianza: null;
       alternativas: []; reporte: null }
-// UnaDetectada gana `clinico: Clinico`.
-// ResultadoAnalisis gana `aviso_clinico: string` y
-// `modelo_clinico: { nombre: string; version: string } | null`.
+export interface Modelo { nombre: string; version: string }
+// UnaDetectada gana `clinico?: Clinico` (ausente = servicio anterior).
+// ResultadoAnalisis gana `aviso_clinico?: string` y `modelo_clinico?: Modelo | null`.
 ```
+
+**Correcciones de contrato (revisión 1.1, 2026-11-12).**
+
+- **Servicio anterior.** En Pydantic `clinico`, `aviso_clinico` y `modelo_clinico`
+  son obligatorios; en TypeScript son opcionales, porque el frontend debe
+  tolerar un servicio que aún no los envía. La ausencia se resuelve en un solo
+  punto, `clinicoDe(una)`, que devuelve `no_concluyente` con
+  `modelo_no_entrenado`. La UI no usa `?.` suelto sobre `clinico`.
+- **Valores desconocidos.** La UI ramifica con `estado === 'ok'`; cualquier otro
+  valor se trata como no concluyente. El mensaje por motivo recibe `string` y
+  cae a un texto genérico si el motivo no se conoce (la unión cerrada de TS no
+  protege contra un string nuevo que llegue por red).
+- **Confianza.** Es la probabilidad **bruta** del softmax sobre las 9 clases,
+  sin renormalizar al quitar `otra`. Umbrales y orden de `alternativas` usan
+  ese mismo valor. Por eso `confianza` de la predicha puede ser ≥ la de cada
+  alternativa, y la suma mostrada no tiene por qué dar 1.
+- **Redondeo.** Quien produce el dato redondea a 3 decimales; ninguna capa lo
+  valida.
 
 La unión discriminada reproduce las invariantes: el compilador impide leer
 `reporte` sin comprobar antes `estado === 'ok'`. El frontend **no** tiene un
