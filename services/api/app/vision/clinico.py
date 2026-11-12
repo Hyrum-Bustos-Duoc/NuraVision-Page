@@ -125,7 +125,8 @@ def cargar_textos(ruta: Path) -> dict[str, ReporteClinico]:
     """Lee el archivo de textos y exige una entrada valida por cada id publico."""
     try:
         datos = tomllib.loads(ruta.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+    # RecursionError: un TOML muy anidado la lanza y tumbaria el arranque (QA 2026-11-12).
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, RecursionError) as exc:
         raise ClasificadorNoDisponible(f"{ruta}: no se pudo leer ({type(exc).__name__})") from exc
     if datos.get("estado_revision") not in ("pendiente", "revisado"):
         raise ClasificadorNoDisponible(f"{ruta}: estado_revision debe ser 'pendiente' o 'revisado'")
@@ -171,6 +172,10 @@ def _interprete(ruta: Path, n_clases: int) -> Callable[[np.ndarray], np.ndarray]
             f"{ruta}: entrada {tuple(ent['shape'])} y salida {tuple(sal['shape'])}; "
             f"se esperaba (1, {LADO}, {LADO}, 3) y (1, {n_clases})"
         )
+    # Un modelo cuantizado a mano (int8/uint8) carga bien y luego falla en cada una:
+    # el servicio entrega float32, asi que se rechaza ya al cargar (QA 2026-11-12).
+    if ent["dtype"] != np.float32 or sal["dtype"] != np.float32:
+        raise ClasificadorNoDisponible(f"{ruta}: el modelo debe tener entrada y salida float32")
     # Un interprete de LiteRT no admite llamadas concurrentes y FastAPI atiende en varios hilos.
     candado = threading.Lock()
 

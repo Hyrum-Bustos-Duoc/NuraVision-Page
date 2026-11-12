@@ -112,6 +112,48 @@ def test_textos_invalidos_no_cargan(tmp_path, textos):
     assert clinico.cargar_opcional(_carpeta(tmp_path), ruta) is None
 
 
+def test_textos_muy_anidados_no_cargan_ni_lanzan(tmp_path):
+    # QA 2026-11-12: un TOML con 50.000 niveles lanza RecursionError al leerlo.
+    ruta = tmp_path / "t.toml"
+    ruta.write_text("x = " + "[" * 50_000 + "]" * 50_000 + "\n", encoding="utf-8")
+    assert clinico.cargar_opcional(_carpeta(tmp_path), ruta) is None
+
+
+class _InterpreteFalso:
+    """Imita al Interpreter de LiteRT con las formas correctas y el dtype que se le pida."""
+
+    def __init__(self, dtype_entrada, dtype_salida):
+        self._d = (dtype_entrada, dtype_salida)
+
+    def __call__(self, model_path):
+        return self
+
+    def allocate_tensors(self):
+        pass
+
+    def get_input_details(self):
+        return [{"shape": np.array([1, clinico.LADO, clinico.LADO, 3]), "dtype": self._d[0], "index": 0}]
+
+    def get_output_details(self):
+        return [{"shape": np.array([1, len(ETIQUETAS)]), "dtype": self._d[1], "index": 1}]
+
+
+@pytest.mark.parametrize(
+    "entrada, salida",
+    [(np.uint8, np.float32), (np.int8, np.float32), (np.float32, np.uint8), (np.float32, np.int8)],
+    ids=["entrada_uint8", "entrada_int8", "salida_uint8", "salida_int8"],
+)
+def test_modelo_cuantizado_no_carga(tmp_path, monkeypatch, entrada, salida):
+    # QA 2026-11-12: cargaba como valido (y /salud lo daba por cargado) y fallaba en cada una.
+    monkeypatch.setattr(clinico, "Interpreter", _InterpreteFalso(entrada, salida))
+    assert clinico.cargar_opcional(_carpeta(tmp_path), RUTA_TEXTOS_CLINICOS) is None
+
+
+def test_modelo_float32_si_carga(tmp_path, monkeypatch):
+    monkeypatch.setattr(clinico, "Interpreter", _InterpreteFalso(np.float32, np.float32))
+    assert clinico.cargar_opcional(_carpeta(tmp_path), RUTA_TEXTOS_CLINICOS) is not None
+
+
 # --- por HTTP ----------------------------------------------------------------
 
 
