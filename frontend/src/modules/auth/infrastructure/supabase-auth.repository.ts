@@ -43,6 +43,27 @@ export class SupabaseAuthRepository implements AuthRepository {
       email: datos.email,
       password: datos.password,
       options: {
+        /**
+         * A donde lleva el enlace del correo de confirmacion.
+         *
+         * SIN ESTO, el enlace lo decidia `site_url` del proyecto, un valor fijo
+         * que apuntaba a localhost: quien se registraba desde el sitio publico
+         * recibia un enlace inservible.
+         *
+         * Se deriva de `window.location.origin` y no se escribe una URL fija,
+         * asi que el mismo build sirve en el dominio, en las vistas previas de
+         * Vercel y en desarrollo local.
+         *
+         * OJO: Supabase solo respeta este valor si coincide con la lista blanca
+         * `additional_redirect_urls` del proyecto; si no, lo descarta y vuelve a
+         * `site_url` SIN avisar. Las dos cosas se declaran en
+         * `supabase/config.toml`, que es lo que mantiene el codigo y el
+         * proyecto alineados.
+         *
+         * Va a /login porque es la pantalla que recibe a quien acaba de
+         * confirmar; si la cuenta tiene panel, `SiYaTienePanel` la redirige.
+         */
+        emailRedirectTo: `${window.location.origin}/login`,
         // Nombre, telefono y cumpleaños no son columnas de `auth.users`. Van
         // a `user_metadata` mientras `perfiles` no este versionada.
         data: {
