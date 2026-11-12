@@ -1,6 +1,8 @@
 """Carga y valida config.toml. Logica pura: no importa TensorFlow."""
 
+import re
 import tomllib
+import unicodedata
 from pathlib import Path
 
 RUTA_POR_DEFECTO = Path(__file__).resolve().parent.parent / "config.toml"
@@ -54,6 +56,16 @@ CLASES_CLINICAS = (
 # del entrenamiento y H1 del arnes).
 SENALES_GRAVES = ("linea_oscura", "acropaquia")
 
+# Equivalentes de los ids clinicos que tambien se rechazan fuera de
+# TAREA_CLINICA: las 9 carpetas de Nail.zip (Kaggle) tal como vienen en el zip
+# y sinonimos de linea_oscura. Se comparan ya normalizados (ver _normalizar),
+# asi que "white spot", "White-Spot" o "white_spot" son el mismo nombre.
+EQUIVALENTES_CLINICOS = (
+    "beau_s line", "black line", "clubbing", "mees_ line", "normal",
+    "onycholysis", "other", "terry_s nail", "white spot",
+    "melanoniquia", "melanonychia",
+)
+
 # Marca de las fichas de datasets externos (datasets/*/particion.toml). Esas
 # fichas tienen clases clinicas y solo sirven para particionar: si una llega
 # aqui como config de entrenamiento, se rechaza con un motivo claro.
@@ -92,10 +104,13 @@ def _validar(cfg: dict) -> None:
                 )
         else:
             # Los ids clinicos se comprueban aparte: linea_beau, una_terry o
-            # mancha_blanca no contienen ningun termino de la lista.
+            # mancha_blanca no contienen ningun termino de la lista. Todo se
+            # compara normalizado: "Mancha_Blanca" o "linea_oscura " no pueden
+            # colarse por mayusculas, espacios o acentos.
             clinicas = [
                 c for c in clases
-                if c in CLASES_CLINICAS or any(t in c.lower() for t in TERMINOS_CLINICOS)
+                if _normalizar(c) in _PROHIBIDAS
+                or any(t in _normalizar(c) for t in TERMINOS_CLINICOS)
             ]
             if clinicas:
                 raise ValueError(f"tarea {nombre}: clases clinicas no permitidas: {clinicas}")
@@ -103,6 +118,18 @@ def _validar(cfg: dict) -> None:
             raise ValueError(f"tarea {nombre}: revision_profesional usa clases inexistentes")
         if tarea.get("lado_minimo", 1) < 1:
             raise ValueError(f"tarea {nombre}: lado_minimo debe ser >= 1")
+
+
+def _normalizar(nombre: str) -> str:
+    """Minusculas, sin acentos y sin espacios, guiones, guiones bajos ni
+    apostrofos: la forma en que se comparan los nombres de clase."""
+    sin_acentos = "".join(
+        ch for ch in unicodedata.normalize("NFKD", nombre) if not unicodedata.combining(ch)
+    )
+    return re.sub(r"[\s\-_'’]", "", sin_acentos.lower())
+
+
+_PROHIBIDAS = frozenset(_normalizar(c) for c in CLASES_CLINICAS + EQUIVALENTES_CLINICOS)
 
 
 def lado_minimo(cfg: dict, nombre: str) -> int:

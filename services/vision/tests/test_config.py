@@ -71,6 +71,33 @@ def test_ids_clinicos_rechazados_en_tareas_esteticas(cfg, tarea_estetica, clase)
         _validar(malo)
 
 
+@pytest.mark.parametrize("tarea_estetica", ["forma", "estado"])
+@pytest.mark.parametrize("clase", [
+    # variantes de los ids clinicos
+    "Mancha_Blanca", "mancha blanca", "linea_oscura ", "Línea-Oscura", "Una Terry",
+    # carpetas de Nail.zip tal cual
+    "white spot", "black line", "beau_s line", "terry_s nail", "mees_ line",
+    "clubbing", "onycholysis", "normal", "other",
+    # sinonimos de linea_oscura y terminos con acento
+    "melanoniquia", "Melanonychia", "infección",
+])
+def test_variantes_y_equivalentes_clinicos_rechazados(cfg, tarea_estetica, clase):
+    malo = copy.deepcopy(cfg)
+    malo["tareas"][tarea_estetica]["clases"].append(clase)
+    with pytest.raises(ValueError, match=f"tarea {tarea_estetica}: clases clinicas"):
+        _validar(malo)
+
+
+@pytest.mark.parametrize("tarea_estetica", ["forma", "estado"])
+def test_clases_esteticas_legitimas_siguen_aceptandose(cfg, tarea_estetica):
+    # Cada clase por separado, para que un falso positivo nombre a su culpable.
+    for clase in tarea(cfg, tarea_estetica)["clases"]:
+        ok = copy.deepcopy(cfg)
+        ok["tareas"][tarea_estetica]["clases"] = [clase, "otra_estetica_x"]
+        ok["tareas"][tarea_estetica]["revision_profesional"] = []
+        _validar(ok)
+
+
 def test_estado_clinico_tiene_las_9_clases_y_revision_en_las_7_senales(cfg):
     t = tarea(cfg, "estado_clinico")
     assert set(t["clases"]) == set(CLASES_CLINICAS) and len(t["clases"]) == 9
