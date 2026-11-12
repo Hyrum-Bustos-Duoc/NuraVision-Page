@@ -1,0 +1,230 @@
+"""Senal clinica orientativa por una: carga del clasificador, entrada y abstencion.
+
+No es un diagnostico. El clasificador (.tflite exportado por
+services/vision/entrenamiento con la tarea "estado_clinico") es opcional: sin
+el, o si algo de lo que exige design.md no cuadra, cada una sale
+no_concluyente / modelo_no_entrenado y el resto del analisis sigue igual.
+
+Privacidad: nada de este modulo escribe en logs la imagen, el recorte, la
+clase, la confianza ni los textos. Solo rutas de archivos del servidor y tipos
+de excepcion.
+"""
+
+import json
+import logging
+import threading
+import tomllib
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import get_args
+
+import cv2
+import numpy as np
+from ai_edge_litert.interpreter import Interpreter
+
+from .esquemas import AlternativaClinica, ClaseClinica, Clinico, Modelo, MotivoClinico, ReporteClinico
+
+log = logging.getLogger(__name__)
+
+TAREA = "estado_clinico"
+CLASES_PUBLICAS: tuple[str, ...] = get_args(ClaseClinica)
+OTRA = "otra"
+SIN_SENALES = "sin_senales"
+# Lista cerrada (design.md, decision 2): el modelo debe traer exactamente estas
+# 9 etiquetas. Ni una mas (tampoco "melanoma") ni una menos.
+CLASES_MODELO = frozenset((*CLASES_PUBLICAS, OTRA))
+# Lado de entrada del modelo: el mismo recorte de 224 del servicio, que es el
+# lado de services/vision/config.toml. Se comprueba contra el .tflite al cargar.
+LADO = 224
+N_ALTERNATIVAS = 2
+
+
+def no_concluyente(motivo: MotivoClinico) -> Clinico:
+    return Clinico(estado="no_concluyente", motivo=motivo, clase=None, confianza=None, alternativas=[], reporte=None)
+
+
+SIN_MODELO = no_concluyente("modelo_no_entrenado")
+
+
+class ClasificadorNoDisponible(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class ClasificadorClinico:
+    # Tensor (LADO, LADO, 3) float32 -> probabilidades (n_etiquetas,). Se inyecta
+    # para poder probar la abstencion con un clasificador falso.
+    predecir: Callable[[np.ndarray], np.ndarray]
+    etiquetas: tuple[str, ...]
+    umbral_no_concluyente: float | None
+    umbral_sin_senales: float | None
+    textos: dict[str, ReporteClinico]
+    modelo: Modelo
+
+
+def entrada(recorte_bgr: np.ndarray) -> np.ndarray:
+    """Recorte BGR uint8 del servicio -> RGB float32 0-255, igual que
+    entrenamiento.datos.cargar_imagen. Confundir BGR con RGB no da error: solo
+    degrada el modelo sin que nadie lo note."""
+    return cv2.cvtColor(recorte_bgr, cv2.COLOR_BGR2RGB).astype(np.float32)
+
+
+def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
+    """Reglas 3-6 de la decision 5 de design.md, en ese orden. Las 1 y 2 estan en clasificar()."""
+    i = int(np.argmax(probs))
+    clase, confianza = c.etiquetas[i], float(probs[i])
+    if clase == OTRA:  # antes que la confianza: "otra" no se afirma ni con 0.99
+        return no_concluyente("clase_otra")
+    if c.umbral_no_concluyente is None or confianza < c.umbral_no_concluyente:
+        return no_concluyente("confianza_baja")
+    if clase == SIN_SENALES and (c.umbral_sin_senales is None or confianza < c.umbral_sin_senales):
+        return no_concluyente("confianza_baja")
+    # Ordenadas por la probabilidad bruta; sorted es estable, asi que un empate
+    # se resuelve por el orden de etiquetas.json y el resultado es reproducible.
+    candidatas = sorted(
+        (j for j, e in enumerate(c.etiquetas) if e not in (OTRA, clase)), key=lambda j: -float(probs[j])
+    )[:N_ALTERNATIVAS]
+    return Clinico(
+        estado="ok",
+        motivo=None,
+        clase=clase,
+        confianza=round(confianza, 3),
+        alternativas=[
+            AlternativaClinica(
+                clase=c.etiquetas[j], nombre=c.textos[c.etiquetas[j]].nombre, confianza=round(float(probs[j]), 3)
+            )
+            for j in candidatas
+        ],
+        reporte=c.textos[clase],
+    )
+
+
+def clasificar(clasificador: ClasificadorClinico | None, recorte_bgr: np.ndarray) -> Clinico:
+    """Bloque clinico de una una. Nunca lanza: un fallo aqui no tumba la forma ni las otras unas."""
+    if clasificador is None:
+        return SIN_MODELO
+    try:
+        probs = np.asarray(clasificador.predecir(entrada(recorte_bgr)), dtype=np.float64).reshape(-1)
+        if probs.shape != (len(clasificador.etiquetas),) or not np.all(np.isfinite(probs)):
+            raise ValueError("salida del clasificador con forma o valores invalidos")
+        return decidir(probs, clasificador)
+    except Exception as exc:  # cualquier fallo de esta una -> clasificacion_fallida, no 5xx
+        # Solo el tipo: el mensaje podria arrastrar valores del tensor o de la salida.
+        log.warning("Clasificacion clinica fallida en una una (%s)", type(exc).__name__)
+        return no_concluyente("clasificacion_fallida")
+
+
+# --- carga -------------------------------------------------------------------
+
+
+def cargar_textos(ruta: Path) -> dict[str, ReporteClinico]:
+    """Lee el archivo de textos y exige una entrada valida por cada id publico."""
+    try:
+        datos = tomllib.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        raise ClasificadorNoDisponible(f"{ruta}: no se pudo leer ({type(exc).__name__})") from exc
+    if datos.get("estado_revision") not in ("pendiente", "revisado"):
+        raise ClasificadorNoDisponible(f"{ruta}: estado_revision debe ser 'pendiente' o 'revisado'")
+    clases = datos.get("clases")
+    if not isinstance(clases, dict) or set(clases) != set(CLASES_PUBLICAS):
+        raise ClasificadorNoDisponible(f"{ruta}: [clases] debe tener exactamente los ids {sorted(CLASES_PUBLICAS)}")
+    textos = {}
+    for clase, t in clases.items():
+        try:
+            reporte = ReporteClinico.model_validate(t)
+        except ValueError as exc:
+            raise ClasificadorNoDisponible(f"{ruta}: texto de {clase} invalido") from exc
+        if not reporte.asociaciones and clase != SIN_SENALES:
+            raise ClasificadorNoDisponible(f"{ruta}: {clase} necesita al menos una asociacion")
+        textos[clase] = reporte
+    if datos["estado_revision"] == "pendiente":
+        log.warning("Textos clinicos pendientes de revision profesional (%s)", ruta)
+    return textos
+
+
+def _umbral(metadatos: dict, clave: str) -> float | None:
+    # La clave debe existir aunque valga null: un metadatos.json sin ella es de
+    # una exportacion anterior a la tarea 2.3, que no calibro ese umbral.
+    if clave not in metadatos:
+        raise ClasificadorNoDisponible(f"metadatos.json sin {clave}")
+    valor = metadatos[clave]
+    if valor is None:
+        return None
+    if isinstance(valor, bool) or not isinstance(valor, int | float) or not 0 <= valor <= 1:
+        raise ClasificadorNoDisponible(f"metadatos.json: {clave} debe ser null o un numero entre 0 y 1")
+    return float(valor)
+
+
+def _interprete(ruta: Path, n_clases: int) -> Callable[[np.ndarray], np.ndarray]:
+    try:
+        it = Interpreter(model_path=str(ruta))
+        it.allocate_tensors()
+    except (ValueError, RuntimeError) as exc:
+        raise ClasificadorNoDisponible(f"{ruta}: no es un modelo TFLite valido ({type(exc).__name__})") from exc
+    ent, sal = it.get_input_details()[0], it.get_output_details()[0]
+    if tuple(ent["shape"]) != (1, LADO, LADO, 3) or tuple(sal["shape"]) != (1, n_clases):
+        raise ClasificadorNoDisponible(
+            f"{ruta}: entrada {tuple(ent['shape'])} y salida {tuple(sal['shape'])}; "
+            f"se esperaba (1, {LADO}, {LADO}, 3) y (1, {n_clases})"
+        )
+    # Un interprete de LiteRT no admite llamadas concurrentes y FastAPI atiende en varios hilos.
+    candado = threading.Lock()
+
+    def predecir(x: np.ndarray) -> np.ndarray:
+        with candado:
+            it.set_tensor(ent["index"], x[None])
+            it.invoke()
+            return it.get_tensor(sal["index"])[0].copy()
+
+    return predecir
+
+
+def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
+    """Carpeta con modelo.tflite, etiquetas.json y metadatos.json (la de `exportado/`).
+
+    Valida todo lo barato antes de abrir el .tflite, para que un modelo de otra
+    tarea se rechace por su nombre y no por un error de forma.
+    """
+    try:
+        etiquetas_json = json.loads((carpeta / "etiquetas.json").read_text(encoding="utf-8"))
+        metadatos = json.loads((carpeta / "metadatos.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json o metadatos.json ilegible ({type(exc).__name__})") from exc
+    if not isinstance(metadatos, dict) or metadatos.get("tarea") != TAREA:
+        raise ClasificadorNoDisponible(f"{carpeta}: metadatos.tarea no es '{TAREA}'")
+    try:
+        # Formato de entrenamiento.modelo._exportar: {"0": "clase", "1": ...}.
+        etiquetas = tuple(etiquetas_json[str(i)] for i in range(len(etiquetas_json)))
+    except (KeyError, TypeError) as exc:
+        raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json no va de 0 a n-1") from exc
+    if len(etiquetas) != len(CLASES_MODELO) or set(etiquetas) != CLASES_MODELO:
+        raise ClasificadorNoDisponible(f"{carpeta}: las etiquetas no son exactamente los 9 ids de estado_clinico")
+    umbral_nc = _umbral(metadatos, "umbral_no_concluyente")
+    umbral_ss = _umbral(metadatos, "umbral_sin_senales")
+    try:
+        modelo = Modelo(nombre=str(metadatos["model"]["name"]), version=str(metadatos["model"]["version"]))
+    except (KeyError, TypeError) as exc:
+        raise ClasificadorNoDisponible(f"{carpeta}: metadatos.json sin model.name / model.version") from exc
+    textos = cargar_textos(ruta_textos)
+    return ClasificadorClinico(
+        predecir=_interprete(carpeta / "modelo.tflite", len(etiquetas)),
+        etiquetas=etiquetas,
+        umbral_no_concluyente=umbral_nc,
+        umbral_sin_senales=umbral_ss,
+        textos=textos,
+        modelo=modelo,
+    )
+
+
+def cargar_opcional(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico | None:
+    """Como cargar(), pero sin clasificador devuelve None y deja el motivo en el log."""
+    if not carpeta.is_dir():
+        # Estado normal hasta que el equipo entrene y copie el modelo (tarea U.5).
+        log.info("Sin clasificador clinico en %s: las unas saldran con modelo_no_entrenado", carpeta)
+        return None
+    try:
+        return cargar(carpeta, ruta_textos)
+    except ClasificadorNoDisponible as exc:
+        log.warning("Clasificador clinico ignorado, las unas saldran con modelo_no_entrenado: %s", exc)
+        return None

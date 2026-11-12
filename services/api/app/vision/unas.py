@@ -24,6 +24,7 @@ from mediapipe.tasks import python as mpp
 from PIL import Image
 from mediapipe.tasks.python import vision
 
+from . import clinico
 from . import forma as modulo_forma
 from .esquemas import Modelo, ResultadoAnalisis, Una
 from .segmentador import LADO as LADO_SEGMENTADOR
@@ -245,7 +246,12 @@ def _forma_predominante(unas: list[Una]) -> str | None:
 
 
 class AnalizadorUnas:
-    def __init__(self, ruta_modelo: Path, ruta_segmentador: Path | None = None):
+    def __init__(
+        self,
+        ruta_modelo: Path,
+        ruta_segmentador: Path | None = None,
+        clasificador: "clinico.ClasificadorClinico | None" = None,
+    ):
         if not ruta_modelo.is_file():
             raise ModeloNoDisponible(
                 f"Falta {ruta_modelo}. Descargalo con services/api/scripts/descargar_modelo.sh"
@@ -266,17 +272,26 @@ class AnalizadorUnas:
             except (ValueError, cv2.error) as exc:
                 # Un XML danado no debe tumbar tambien la deteccion de manos.
                 log.warning("Segmentador ignorado, las unas saldran sin forma: %s", exc)
+        # Opcional como el segmentador; lo carga quien crea el analizador
+        # (clinico.cargar_opcional) para poder inyectar uno falso en los tests.
+        self._clasificador = clasificador
         # El detector es uno solo y FastAPI atiende en varios hilos.
         self._candado = threading.Lock()
 
     def analizar(self, contenido: bytes) -> ResultadoAnalisis:
         modelo = Modelo(nombre=NOMBRE_MODELO, version=VERSION)
+        modelo_clinico = self._clasificador.modelo if self._clasificador else None
         imagen = decodificar(contenido)
         alto, ancho = imagen.shape[:2]
 
         if min(alto, ancho) < LADO_MINIMO:
             return ResultadoAnalisis(
-                estado="no_concluyente", motivo="imagen_pequena", manos=0, unas=[], modelo=modelo
+                estado="no_concluyente",
+                motivo="imagen_pequena",
+                manos=0,
+                unas=[],
+                modelo=modelo,
+                modelo_clinico=modelo_clinico,
             )
         if max(alto, ancho) > LADO_MAXIMO:
             f = LADO_MAXIMO / max(alto, ancho)
@@ -314,6 +329,7 @@ class AnalizadorUnas:
                         mano=n_mano,
                         esquinas=[(x / ancho, y / alto) for x, y in esquinas_region(region)],
                         recorte=_como_data_url(recorte),
+                        clinico=clinico.clasificar(self._clasificador, recorte),
                         **(
                             {
                                 "forma": medida.forma,
@@ -333,11 +349,27 @@ class AnalizadorUnas:
             # Con mano detectada pero sin una usable, decir "no hay mano" seria falso.
             motivo = "unas_no_visibles" if manos else "sin_mano"
             return ResultadoAnalisis(
-                estado="no_concluyente", motivo=motivo, manos=manos, unas=[], modelo=modelo
+                estado="no_concluyente",
+                motivo=motivo,
+                manos=manos,
+                unas=[],
+                modelo=modelo,
+                modelo_clinico=modelo_clinico,
             )
+        # Sin resultado clinico agregado por foto ni por mano: cada una lleva el suyo.
         return ResultadoAnalisis(
-            estado="ok", manos=manos, unas=unas, forma_predominante=_forma_predominante(unas), modelo=modelo
+            estado="ok",
+            manos=manos,
+            unas=unas,
+            forma_predominante=_forma_predominante(unas),
+            modelo=modelo,
+            modelo_clinico=modelo_clinico,
         )
+
+    @property
+    def clasifica(self) -> bool:
+        """True si hay clasificador clinico; sin el, las unas salen con modelo_no_entrenado."""
+        return self._clasificador is not None
 
     @property
     def mide_forma(self) -> bool:

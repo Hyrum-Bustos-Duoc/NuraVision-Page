@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from app.vision import forma, segmentador
+from app.vision.clinico import SIN_MODELO
 from app.vision.esquemas import Una
 from app.vision.unas import _forma_predominante
 
@@ -150,7 +151,9 @@ def test_segmentador_con_xml_danado_falla_con_valueerror(tmp_path, contenido):
 
 
 def una(f, fiable=True):
-    return Una(dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", forma=f, forma_fiable=fiable)
+    return Una(
+        dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", forma=f, forma_fiable=fiable, clinico=SIN_MODELO
+    )
 
 
 def test_predominante_la_mas_repetida():
@@ -163,4 +166,4 @@ def test_predominante_ignora_las_no_fiables():
 
 def test_predominante_none_en_empate_o_sin_formas():
     assert _forma_predominante([una("cuadrada"), una("redonda")]) is None
-    assert _forma_predominante([Una(dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x")]) is None
+    assert _forma_predominante([Una(dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", clinico=SIN_MODELO)]) is None
