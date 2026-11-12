@@ -181,9 +181,10 @@ export default function AIAnalysis() {
           </div>
 
           <div className="mt-8 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-            Tu imagen es privada y solo tú puedes verla. La forma y el estado de tus uñas son una{' '}
+            Tu imagen es privada y solo tú puedes verla. La forma de tus uñas es una{' '}
             <strong className="text-ink">orientación estética</strong>. El reporte clínico opcional
-            solo señala cuándo conviene consultar con un profesional: no es un diagnóstico médico.
+            reconoce solo algunas señales: no es un diagnóstico médico ni descarta nada. Ante
+            cualquier duda sobre tus uñas, consulta con un profesional.
           </div>
 
           <Button className="mt-8" onClick={() => setStep('upload')}>
@@ -315,9 +316,8 @@ export default function AIAnalysis() {
               </div>
 
               <div className="mt-6 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-                La forma, el estado y los servicios sugeridos son una orientación estética. El
-                reporte clínico es una señal para consultar con un profesional, no un diagnóstico
-                médico.
+                La forma y los servicios sugeridos son una orientación estética. El reporte
+                clínico es una señal para consultar con un profesional, no un diagnóstico médico.
               </div>
             </div>
           </div>

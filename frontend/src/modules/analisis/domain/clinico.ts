@@ -24,24 +24,82 @@ export const AVISO_CLINICO_POR_DEFECTO =
   'No es un diagnóstico médico ni reemplaza una evaluación clínica.'
 
 /**
- * Un `ok` que llega roto (sin reporte, sin clase o con alternativas que no son lista)
- * viola el contrato del servicio. Se trata como una clasificacion fallida: es lo que
- * es desde el punto de vista de quien mira la pantalla.
+ * Aviso a pintar sobre el bloque clinico. Un texto vacio o solo espacios equivale a
+ * no tener aviso, y `??` no lo cubre: por eso el respaldo se decide aqui. Recibe
+ * unknown porque el JSON llega por red sin validar.
+ */
+export function avisoClinicoDe(aviso: unknown): string {
+  return typeof aviso === 'string' && aviso.trim() !== '' ? aviso : AVISO_CLINICO_POR_DEFECTO
+}
+
+/**
+ * Un `ok` que llega roto viola el contrato del servicio. Se trata como una
+ * clasificacion fallida: es lo que es desde el punto de vista de quien mira la pantalla.
  */
 const CLINICO_FALLIDO: Clinico = { ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' }
 
 /**
+ * Clases que el servicio nunca envia como alternativa (ademas de la predicha). La spec
+ * prohibe mostrarlas, y si llegan el bloque entero es sospechoso: no se filtran, se
+ * descarta el ok.
+ */
+const NUNCA_ALTERNATIVA: readonly string[] = ['sin_senales', 'otra']
+
+function esTexto(v: unknown): v is string {
+  return typeof v === 'string' && v.trim() !== ''
+}
+
+function esObjeto(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+function reporteValido(r: unknown): boolean {
+  return (
+    esObjeto(r) &&
+    esTexto(r.nombre) &&
+    esTexto(r.descripcion) &&
+    esTexto(r.recomendacion) &&
+    Array.isArray(r.asociaciones) &&
+    r.asociaciones.every(esTexto)
+  )
+}
+
+/** No exige exactamente 2: la UI no depende del numero, solo de que cada una se pueda pintar. */
+function alternativasValidas(alternativas: unknown, clase: string): boolean {
+  return (
+    Array.isArray(alternativas) &&
+    alternativas.every(
+      (a) =>
+        esObjeto(a) &&
+        typeof a.clase === 'string' &&
+        a.clase !== clase &&
+        !NUNCA_ALTERNATIVA.includes(a.clase) &&
+        esTexto(a.nombre) &&
+        typeof a.confianza === 'number',
+    )
+  )
+}
+
+/**
  * Unico punto que resuelve la ausencia o rotura de `clinico`. La UI no usa `?.` sobre
- * el y ramifica solo por estado === 'ok', asi que aqui se garantiza que un `ok` trae
- * todo lo que la UI lee. Las comprobaciones parecen redundantes para TS, pero el
- * JSON llega por red y la union no lo valida.
+ * el y ramifica solo por estado === 'ok', asi que aqui se comprueba la forma completa
+ * de un `ok`: clase de texto, reporte con nombre, descripcion y recomendacion de texto
+ * no vacio y asociaciones como lista de textos, y alternativas como lista de objetos
+ * con clase, nombre de texto y confianza numerica, sin sin_senales, otra ni la clase
+ * predicha. Cualquier fallo da CLINICO_FALLIDO. Las comprobaciones parecen redundantes
+ * para TS, pero el JSON llega por red (analisis.api.ts solo lo castea) y la union no
+ * lo valida; un dato roto que llegue a la UI tumba la pagina entera.
+ *
+ * Un `no_concluyente` se devuelve tal cual: la UI solo lee su motivo, y un motivo
+ * desconocido ya tiene mensaje generico.
  */
 export function clinicoDe(una: UnaDetectada): Clinico {
   const c = una.clinico
   if (!c) return CLINICO_NO_DISPONIBLE
   if (c.estado !== 'ok') return c
-  const roto = c.reporte == null || typeof c.clase !== 'string' || !Array.isArray(c.alternativas)
-  return roto ? CLINICO_FALLIDO : c
+  const valido =
+    typeof c.clase === 'string' && reporteValido(c.reporte) && alternativasValidas(c.alternativas, c.clase)
+  return valido ? c : CLINICO_FALLIDO
 }
 
 /**

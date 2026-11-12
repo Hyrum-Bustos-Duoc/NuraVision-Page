@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { ETIQUETA_DEDO, type ResultadoAnalisis } from '../domain/analisis.types'
 import {
-  AVISO_CLINICO_POR_DEFECTO,
+  avisoClinicoDe,
   clinicoDe,
   mensajeMotivoClinico,
   resumenClinico,
@@ -52,7 +52,7 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
           ) : (
             <>
               <p className="rounded-xl bg-ivory px-4 py-3 text-xs text-ink" role="note">
-                {resultado.aviso_clinico ?? AVISO_CLINICO_POR_DEFECTO}
+                {avisoClinicoDe(resultado.aviso_clinico)}
               </p>
 
               <div className="space-y-1 text-sm text-ink" data-testid="resumen-clinico">
