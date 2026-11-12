@@ -85,8 +85,8 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
                             <div>
                               <p className="text-xs text-muted">Se ha asociado a</p>
                               <ul className="list-disc pl-5">
-                                {c.reporte.asociaciones.map((a) => (
-                                  <li key={a}>{a}</li>
+                                {c.reporte.asociaciones.map((a, k) => (
+                                  <li key={`${k}-${a}`}>{a}</li>
                                 ))}
                               </ul>
                             </div>
