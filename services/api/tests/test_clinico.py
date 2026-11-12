@@ -141,6 +141,30 @@ def test_reglas_de_abstencion(salida, umbral_nc, umbral_ss, motivo):
     assert '"otra"' not in c.model_dump_json()
 
 
+# Tabla compartida con entrenamiento.metricas (services/vision/tests/test_metricas.py):
+# si las dos copias de las reglas divergen, una de las dos suites falla. Sin esto,
+# la tabla solo probaba la copia del entrenamiento y M1-M4 podian medir un sistema
+# distinto del que despliega el servicio.
+TABLA_ABSTENCION = json.loads(
+    (Path(__file__).resolve().parents[2] / "vision" / "tests" / "casos_abstencion.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize("caso", TABLA_ABSTENCION["casos"], ids=lambda c: c["caso"])
+def test_tabla_de_abstencion_compartida_con_el_entrenamiento(caso):
+    clasificador = ClasificadorClinico(
+        predecir=lambda _x: np.array(caso["probs"]),
+        etiquetas=tuple(TABLA_ABSTENCION["clases"]),
+        umbral_no_concluyente=caso["umbral_no_concluyente"],
+        umbral_sin_senales=caso["umbral_sin_senales"],
+        textos=TEXTOS,
+        modelo=Modelo(nombre="tabla", version="test"),
+    )
+    c = clinico.clasificar(clasificador, RECORTE)
+    assert c.motivo == caso["motivo"]
+    assert c.estado == ("ok" if caso["motivo"] is None else "no_concluyente")
+
+
 @pytest.mark.parametrize("clase,p", [("linea_oscura", 0.70), ("sin_senales", 0.90), ("sin_senales", 0.95)])
 def test_en_el_umbral_o_encima_se_acepta(clase, p):
     # >=, igual que entrenamiento.metricas.evaluar_umbral: el umbral calibrado se acepta.
@@ -244,6 +268,19 @@ def test_un_modelo_que_no_cumple_no_se_carga(tmp_path, caplog, etiquetas, metada
     with caplog.at_level(logging.WARNING, logger="app.vision.clinico"):
         assert clinico.cargar_opcional(carpeta, RUTA_TEXTOS_CLINICOS) is None
     assert motivo in caplog.text
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=TypeError,
+    reason="BUG (QA 2026-11-12): set(etiquetas) en clinico.cargar queda fuera del try y un "
+    "etiquetas.json con valores no hashables lanza TypeError, que tumba el arranque del servicio. "
+    "Al arreglarlo, quitar este xfail.",
+)
+def test_etiquetas_con_valores_que_no_son_texto_no_impiden_cargar(tmp_path):
+    carpeta = _carpeta(tmp_path)
+    (carpeta / "etiquetas.json").write_text(json.dumps({str(i): [e] for i, e in enumerate(ETIQUETAS)}))
+    assert clinico.cargar_opcional(carpeta, RUTA_TEXTOS_CLINICOS) is None
 
 
 def test_metadatos_sin_umbral_sin_senales_no_se_carga(tmp_path):
