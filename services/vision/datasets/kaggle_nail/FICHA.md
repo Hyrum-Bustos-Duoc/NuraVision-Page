@@ -1,11 +1,13 @@
 # Ficha: arthitaya/nail-dataset (Kaggle)
 
-> **Uso temporal, solo particion.** Decision del responsable del proyecto del
-> 2026-10-29 para las tareas de la Gantt «Recoleccion y etiquetado del
-> dataset» (Sprint 2, solo documentacion) y «Separacion del dataset y modelo
-> base» (Sprint 3, la separacion). El entrenamiento esta en pausa. Este
-> dataset **no entrena ninguna tarea del producto** (`forma`, `estado`): sus
-> clases son condiciones clinicas de la una.
+> **Uso temporal.** Decision del responsable del proyecto del 2026-10-29 para
+> las tareas de la Gantt «Recoleccion y etiquetado del dataset» (Sprint 2,
+> solo documentacion) y «Separacion del dataset y modelo base» (Sprint 3, la
+> separacion). Este dataset **no entrena `forma` ni `estado`**: sus clases son
+> condiciones clinicas de la una. **Desde el 2026-11-12 entrena
+> `estado_clinico`** (decision del dueno, `openspec/changes/reporte-clinico-unas`),
+> solo con las carpetas renombradas y la particion por series de la seccion 10.
+> La licencia sigue sin aclarar (seccion 1).
 
 ## 1. Origen
 
@@ -112,11 +114,12 @@ Revision visual de las 540 fotos en hojas de contacto, el 2026-10-29.
 
 ## 6. Por que no sirve tal cual para el producto
 
-1. **Las clases son clinicas.** NuraVision hace observacion estetica, no
-   diagnostico (ver `../../README.md`, seccion 5). Entrenar `onycholysis`,
-   `clubbing` o `terry_s nail` convertiria el sistema en un dispositivo
-   medico de hecho, con un dataset que no lo sostiene. `config.py` rechaza
-   estas clases para las tareas del producto, tambien con su nombre en ingles.
+1. **Las clases son clinicas.** `forma` y `estado` son observacion estetica,
+   no diagnostico (ver `../../README.md`, seccion 5), y `config.py` rechaza
+   estas clases en esas tareas, tambien con su nombre en ingles. Desde el
+   2026-11-12 entrenan, renombradas, la tarea aparte `estado_clinico`, con
+   lista cerrada y abstencion (seccion 10). El riesgo de fondo no cambio: el
+   dataset no sostiene un dispositivo medico.
 2. **No cubre ninguna clase del producto**: `forma` (almendra, cuadrada,
    ovalada, redonda, stiletto) no aparece, y `estado` (cuidada,
    cuticula_descuidada, quebradiza_o_descamada, esmalte_deteriorado) tampoco.
@@ -219,3 +222,38 @@ identicos byte a byte (sha256 `8eca1e74…`).
 Aunque sean publicas, son fotos de dedos de personas reales. Se aplican las
 mismas reglas que a las fotos propias: nunca en logs, ni en el notebook, ni en
 mensajes de error.
+
+## 10. Uso en `estado_clinico` (desde el 2026-11-12)
+
+`datasets/Nail.zip` (en la raiz del repositorio, **sin ignorar en git**) es
+este dataset: su sha256 coincide byte a byte con el de la seccion 1
+(comprobado el 2026-11-12, `openspec/changes/reporte-clinico-unas/proposal.md`).
+
+Antes de entrenar, el equipo renombra las carpetas a los ids de la tarea
+(tarea U.2). `dividir` falla con los nombres originales:
+
+| Carpeta en el zip | id de `estado_clinico` | Sale del servicio |
+|---|---|---|
+| `beau_s line` | `linea_beau` | si |
+| `black line` | `linea_oscura` | si |
+| `clubbing` | `acropaquia` | si |
+| `mees_ line` | `linea_mees` | si |
+| `normal` | `sin_senales` | si |
+| `onycholysis` | `onicolisis` | si |
+| `terry_s nail` | `una_terry` | si |
+| `white spot` | `mancha_blanca` | si |
+| `other` | `otra` | **no**: el servicio responde no concluyente |
+
+- **Solo con la particion por series.** `python -m entrenamiento dividir
+  --tarea estado_clinico ... --series CSV` exige un archivo `archivo,serie`
+  que agrupe los casi-duplicados de la seccion 4 (lo escribe el equipo, tarea
+  U.3, con la ayuda de `entrenamiento/casi_duplicados.py`). Sin el, no
+  particiona.
+- **El `particion.json` de la seccion 7 no se usa para entrenar.** Es
+  aleatorio por foto y tiene fuga real entre series (seccion 4). Queda como
+  registro de la separacion del Sprint 3.
+- **Lado minimo de 64 px** para esta tarea (Q2, pendiente de confirmar):
+  quedan unas 350 fotos, `mees_ line` con 18 (seccion 3), antes de quitar
+  casi-duplicados.
+- Con esos numeros, las metricas sirven para impedir habilitar un modelo malo,
+  no para demostrar que uno es bueno (M1-M4 en `design.md`).

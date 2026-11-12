@@ -30,8 +30,11 @@ licencia, salvo el de Roboflow. Se identifican por el nombre del archivo.
 | `data.zip` | 250 fotos de dedos de lado con nivel de hemoglobina (`metadata.csv`) | Estimar hemoglobina | No |
 
 Por qué los tres últimos no sirven para `forma` ni `estado`: sus clases son
-condiciones clínicas, no cuidado cosmético, y el proyecto las excluye a
-propósito (`config.toml`, guarda de términos clínicos). Además, `data.zip`
+condiciones clínicas, no cuidado cosmético, y esas tareas las excluyen a
+propósito (`config.py`, guarda de términos e ids clínicos). Desde el
+2026-11-12 existe una tarea clínica aparte, `estado_clinico`, con una lista
+cerrada de 9 clases (§7), y ninguno de estos tres encaja en ella:
+`archive (2).zip` incluye melanoma, `Nails.v1i` es de anemia y `data.zip`
 asocia cada foto con un dato de salud de una persona, así que es sensible.
 
 ## 3. Problemas encontrados en los datos
@@ -215,7 +218,18 @@ profesional, como ya define `config.toml`.
 5. ~~Endpoint de inferencia y pantalla de subida~~: hechos (`services/api` y
    `/analisis-ia`). Falta que el análisis diga el *estado* de la uña, que sigue
    sin modelo.
-6. Reglas de recomendación (servicio y diseño) en Supabase, con su contrato
+6. **Reporte clínico por uña (`estado_clinico`)**, decisión del dueño del
+   2026-11-12 (`openspec/changes/reporte-clinico-unas`). Las herramientas
+   están listas: guarda con lista cerrada, partición por series, métricas con
+   abstención (M1-M4), informe de casi-duplicados y arnés de fotos reales
+   (`../README.md`, secciones 1 y 4). Falta lo que hace el equipo: aclarar la
+   licencia de `Nail.zip` (FICHA de `kaggle_nail`, secciones 1 y 10), renombrar
+   sus carpetas, escribir el archivo de series, entrenar en Colab, pasar el
+   arnés con 30 a 50 fotos de celular con consentimiento y conseguir la
+   revisión profesional de los textos. Con unas 350 fotos útiles y series
+   repetidas, lo más probable es que el primer modelo se abstenga casi
+   siempre.
+7. Reglas de recomendación (servicio y diseño) en Supabase, con su contrato
    de datos definido primero (ver `CLAUDE.md`, sección OpenSpec).
 
 ## 8. Cómo repetirlo

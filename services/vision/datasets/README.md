@@ -18,7 +18,7 @@ tiene los mismos archivos y reproducir la misma particion.
 
 | Dataset | Estado | Uso permitido | Ficha |
 |---|---|---|---|
-| `kaggle_nail` (arthitaya/nail-dataset v2) | **Temporal**, desde el 2026-10-29 | Solo particion. Clases clinicas: no entrena tareas del producto | [FICHA.md](kaggle_nail/FICHA.md) |
+| `kaggle_nail` (arthitaya/nail-dataset v2, = `datasets/Nail.zip`) | **Temporal**, desde el 2026-10-29. Licencia «Unknown» | No entrena `forma` ni `estado`. Desde el 2026-11-12 entrena `estado_clinico`, solo con carpetas renombradas y particion por series; su `particion.json` no se usa para entrenar | [FICHA.md](kaggle_nail/FICHA.md), seccion 10 |
 | `NailSegmentationDatasetV2` (`archive (1).zip`) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentar la una. Particion limpia en `preparacion/` | [Informe, secciones 2, 3 y 5](../docs/preparacion-modelo.md) |
 | `archive.zip` (52 fotos con mascara) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentacion, muy pocas fotos | [Informe, seccion 2](../docs/preparacion-modelo.md) |
 | `Nails.v1i.tensorflow.zip` (Roboflow, CC BY 4.0) | Revisado el 2026-11-10 | Ninguno: es de anemia | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md) |
@@ -57,5 +57,7 @@ sha256, ver su [FICHA](kaggle_nail/FICHA.md), seccion 1), con licencia
 3. Si es un dataset externo con otras clases, crea su `particion.toml` con
    `uso = "solo_particion"` y particiona con `python -m entrenamiento.externo`.
    Esa via no tiene camino hacia el entrenamiento: `config.py` rechaza una
-   ficha usada como config, y las clases de producto siguen protegidas por la
-   guarda de terminos clinicos.
+   ficha usada como config, y las clases de `forma` y `estado` siguen
+   protegidas por la guarda de terminos e ids clinicos.
+4. Un dataset clinico solo puede entrenar `estado_clinico`, renombrado a sus 9
+   ids (lista cerrada en `config.py`), con FICHA y con archivo de series.
