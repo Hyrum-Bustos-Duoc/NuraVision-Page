@@ -26,6 +26,10 @@ function mensajeDe(error: AuthError): string {
     case 'user_already_exists':
     case 'email_exists':
       return 'Ya existe una cuenta con ese correo. Inicia sesión.'
+    case 'same_password':
+      // Supabase lo rechaza al restablecer si la nueva coincide con la actual.
+      // Su texto en ingles no explica que hacer; este si.
+      return 'Esa es la contraseña que ya tenías. Escribe una distinta.'
     case 'weak_password':
       return 'La contraseña es demasiado débil. Usa al menos 8 caracteres.'
     case 'over_request_rate_limit':
@@ -43,6 +47,27 @@ export class SupabaseAuthRepository implements AuthRepository {
       email: datos.email,
       password: datos.password,
       options: {
+        /**
+         * A donde lleva el enlace del correo de confirmacion.
+         *
+         * SIN ESTO, el enlace lo decidia `site_url` del proyecto, un valor fijo
+         * que apuntaba a localhost: quien se registraba desde el sitio publico
+         * recibia un enlace inservible.
+         *
+         * Se deriva de `window.location.origin` y no se escribe una URL fija,
+         * asi que el mismo build sirve en el dominio, en las vistas previas de
+         * Vercel y en desarrollo local.
+         *
+         * OJO: Supabase solo respeta este valor si coincide con la lista blanca
+         * `additional_redirect_urls` del proyecto; si no, lo descarta y vuelve a
+         * `site_url` SIN avisar. Las dos cosas se declaran en
+         * `supabase/config.toml`, que es lo que mantiene el codigo y el
+         * proyecto alineados.
+         *
+         * Va a /login porque es la pantalla que recibe a quien acaba de
+         * confirmar; si la cuenta tiene panel, `SiYaTienePanel` la redirige.
+         */
+        emailRedirectTo: `${window.location.origin}/login`,
         // Nombre, telefono y cumpleaños no son columnas de `auth.users`. Van
         // a `user_metadata` mientras `perfiles` no este versionada.
         data: {
@@ -79,6 +104,40 @@ export class SupabaseAuthRepository implements AuthRepository {
   async cerrarSesion(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) throw new Error(mensajeDe(error))
+  }
+
+  /**
+   * Pide el correo de recuperacion.
+   *
+   * `redirectTo` lo decide quien llama y llega ya armado con el origen real.
+   * Supabase solo lo respeta si coincide con `additional_redirect_urls` del
+   * proyecto; si no, lo descarta EN SILENCIO y usa `site_url`. Las dos cosas
+   * estan declaradas en `supabase/config.toml`.
+   *
+   * NO SE PROPAGA EL ERROR DE "no existe esa cuenta". Supabase ya responde
+   * igual haya cuenta o no, y aqui se mantiene: lo unico que se deja salir son
+   * los fallos que quien escribe puede resolver —un formato invalido o haber
+   * pedido demasiados correos seguidos—. Distinguir mas convertiria la pantalla
+   * en un detector de correos registrados.
+   */
+  async solicitarRecuperacion(email: string, destino: string): Promise<void> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: destino,
+    })
+    if (error) throw new Error(mensajeDe(error))
+  }
+
+  async cambiarPassword(password: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw new Error(mensajeDe(error))
+  }
+
+  alRecuperarPassword(escucha: () => void): () => void {
+    const { data } = supabase.auth.onAuthStateChange((evento) => {
+      if (evento === 'PASSWORD_RECOVERY') escucha()
+    })
+
+    return () => data.subscription.unsubscribe()
   }
 
   async refrescarSesion(): Promise<void> {

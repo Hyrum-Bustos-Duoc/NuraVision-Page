@@ -1,11 +1,10 @@
 import { esFechaISO, FECHA_NACIMIENTO_MINIMA, hoyISO } from '@/shared/lib/calendario'
 import type { AuthRepository } from '../domain/auth.repository'
 import type { DatosRegistro, ResultadoRegistro } from '../domain/auth.types'
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** Minimo de Supabase por defecto. Subirlo aqui no lo hace cumplir en la base. */
-const LARGO_MINIMO_PASSWORD = 8
+// Las mismas reglas que aplica el restablecimiento de contraseña. Importadas y
+// no repetidas: si el registro exigiera mas que la recuperacion, se podria
+// dejar la cuenta con una contraseña que el registro habria rechazado.
+import { EMAIL_RE, LARGO_MINIMO_PASSWORD } from '../domain/password.reglas'
 
 /**
  * Crea una cuenta.

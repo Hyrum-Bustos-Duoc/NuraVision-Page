@@ -193,7 +193,7 @@ export default function Checkout() {
                   activa={entrega === 'retiro'}
                   onElegir={() => setEntregaElegida('retiro')}
                   titulo="Retiro en Estudio Nura"
-                  detalle="Av. Libertad 1250 · listo en 2 horas"
+                  detalle="Calle Ramón de la Cerda 22, Limache · listo en 2 horas"
                   costo="Gratis"
                 />
                 <OpcionRadio
