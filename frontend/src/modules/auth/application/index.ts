@@ -5,6 +5,13 @@
 export { registrar } from './registrar.usecase'
 export { iniciarSesion } from './iniciar-sesion.usecase'
 export { cerrarSesion } from './cerrar-sesion.usecase'
+export { solicitarRecuperacion, cambiarPassword } from './recuperar-password.usecase'
+export {
+  LARGO_MINIMO_PASSWORD,
+  motivoParaNoCambiarPassword,
+  motivoParaNoUsarEmail,
+} from '../domain/password.reglas'
+export { leerErrorDeEnlace, type ErrorDeEnlace } from '../domain/recuperacion.enlace'
 export type {
   Credenciales,
   DatosRegistro,
