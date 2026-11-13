@@ -32,6 +32,8 @@ import Landing from '@/pages/Landing'
 import { SiYaTienePanel } from '@/shared/components/SiYaTienePanel'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
+import OlvideContrasena from '@/pages/OlvideContrasena'
+import RestablecerContrasena from '@/pages/RestablecerContrasena'
 import Services from '@/modules/servicios/ui/Services'
 import ServiceDetail from '@/modules/servicios/ui/ServiceDetail'
 import Professionals from '@/pages/Professionals'
@@ -126,6 +128,19 @@ export default function App() {
                   </SiYaTienePanel>
                 }
               />
+              <Route
+                path="olvide-contrasena"
+                element={
+                  <SiYaTienePanel>
+                    <OlvideContrasena />
+                  </SiYaTienePanel>
+                }
+              />
+              {/* SIN `SiYaTienePanel`, y no es un olvido: el enlace del correo
+                  ABRE SESION al aterrizar aqui. Envuelta, una profesional o la
+                  administradora saldrian disparadas a su panel sin llegar a ver
+                  el formulario, que es justo lo que vinieron a usar. */}
+              <Route path="restablecer-contrasena" element={<RestablecerContrasena />} />
 
               <Route element={<ClientLayout />}>
                 <Route index element={<Landing />} />
