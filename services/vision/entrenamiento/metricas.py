@@ -5,7 +5,7 @@ import math
 import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 
-from .config import OTRA, SENALES_GRAVES, SIN_SENALES
+from .config import CLASES_NUNCA_NOMBRADAS, OTRA, SENALES_GRAVES, SIN_SENALES
 
 # Criterios para habilitar el modelo de estado_clinico (design.md de
 # reporte-clinico-unas). Son la propuesta, pendiente de Q4: si el dueno los
@@ -308,8 +308,12 @@ def wilson(aciertos: int, n: int, z: float = 1.96) -> tuple[float, float] | None
 
 
 def evaluacion_clinica(probs_val: np.ndarray, y_val, probs_test: np.ndarray, y_test,
-                       clases: list[str], umbral: float | None) -> dict:
+                       clases: list[str], umbral: float | None, clases_no_fiables=frozenset()) -> dict:
     """Calibra umbral_sin_senales en val y mide test DESPUES de abstenerse.
+
+    Se abstiene como el servicio: clases_no_fiables del modelo mas
+    CLASES_NUNCA_NOMBRADAS, que se suman siempre (igual que clinico.cargar).
+    Sin ellas, M3 y M4 contarian como aceptadas fotos que el servicio nunca nombra.
 
     Por clase real, las cuatro columnas suman n: aceptadas correctas,
     abstenidas, aceptadas como otra clase (que no sea sin_senales) y aceptadas
@@ -318,7 +322,9 @@ def evaluacion_clinica(probs_val: np.ndarray, y_val, probs_test: np.ndarray, y_t
     umbral_ss = calibrar_umbral_sin_senales(probs_val, y_val, clases, umbral)
     pred = probs_test.argmax(axis=1)
     y = np.asarray(y_test)
-    aceptada = np.array([motivo_abstencion(p, clases, umbral, umbral_ss) is None for p in probs_test], dtype=bool)
+    no_fiables = frozenset(clases_no_fiables) | CLASES_NUNCA_NOMBRADAS
+    aceptada = np.array([motivo_abstencion(p, clases, umbral, umbral_ss, clases_no_fiables=no_fiables) is None
+                         for p in probs_test], dtype=bool)
     i_ss = clases.index(SIN_SENALES)
     como_ss = aceptada & (pred == i_ss) & (y != i_ss)
 

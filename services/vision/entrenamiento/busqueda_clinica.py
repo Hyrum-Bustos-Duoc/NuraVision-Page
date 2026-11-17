@@ -573,7 +573,8 @@ def final(cfg: dict, manifiesto: dict, motivos: dict, raiz: Path, salida: Path) 
         "test_por_variante": {v: metricas.metricas(y_test, pp.argmax(1), clases) | {
             "max_abs_dif_vs_keras": float(np.abs(pp - p_keras).max())} for v, pp in p_test_lite.items()},
         "umbral": {"oof": metricas.evaluar_umbral(oof_t, y, umbral), "test": metricas.evaluar_umbral(p_test, y_test, umbral)},
-        "clinico": metricas.evaluacion_clinica(val_t, y_val, p_test, y_test, clases, umbral),
+        "clinico": metricas.evaluacion_clinica(val_t, y_val, p_test, y_test, clases, umbral,
+                                               extra_rob["clases_no_fiables"] if rob else frozenset()),
         "calibracion": {"oof_sin_t": metricas.ece(oof, y)["ece"], "oof_con_t": metricas.ece(oof_t, y)["ece"],
                         "test_sin_t": metricas.ece(p_sin_t, y_test), "test_con_t": metricas.ece(p_test, y_test)},
         "accuracy_ic95": metricas.wilson(int((pred == y_test).sum()), len(y_test)),

@@ -169,8 +169,9 @@ def test_evaluacion_clinica_por_clase_suma_n_y_m1_no_cumple():
     e = _evaluacion(filas, y)
     assert e["umbral_sin_senales"] == 0.70
     acro = e["por_clase"]["acropaquia"]
+    # La de 0,9 tambien se abstiene: acropaquia esta en CLASES_NUNCA_NOMBRADAS.
     assert (acro["n"], acro["aceptadas_correctas"], acro["abstenidas"], acro["aceptadas_otra_clase"],
-            acro["aceptadas_sin_senales"]) == (3, 1, 1, 0, 1)
+            acro["aceptadas_sin_senales"]) == (3, 0, 2, 0, 1)
     assert e["por_clase"]["linea_oscura"]["aceptadas_otra_clase"] == 1
     assert e["por_clase"]["otra"]["abstenidas"] == 1
     for m in e["por_clase"].values():
@@ -178,8 +179,24 @@ def test_evaluacion_clinica_por_clase_suma_n_y_m1_no_cumple():
     a = e["aceptacion"]
     assert a["M1"] == {"valor": 1, "limite": 0, "tipo": "max", "cumple": False}
     assert a["M2"]["valor"] == 1 and a["M2"]["cumple"]
-    assert a["M3"]["valor"] == pytest.approx(1 / 3) and not a["M3"]["cumple"]
-    assert a["M4"]["valor"] == pytest.approx(3 / 5) and a["M4"]["cumple"]
+    assert a["M3"]["valor"] == 0.0 and not a["M3"]["cumple"]
+    assert a["M4"]["valor"] == pytest.approx(2 / 5) and a["M4"]["cumple"]
+
+
+def test_evaluacion_clinica_no_acepta_lo_que_el_servicio_no_nombra():
+    # Cuatro aciertos confiados: linea_mees y acropaquia (nunca nombradas),
+    # una_terry (no fiable segun el modelo) y linea_beau (la unica que sale).
+    MEES, TERRY = C9.index("linea_mees"), C9.index("una_terry")
+    filas = [_fila(MEES, 0.95), _fila(ACRO, 0.95), _fila(TERRY, 0.95), _fila(BEAU, 0.95)]
+    y = [MEES, ACRO, TERRY, BEAU]
+    val = np.array([_fila(SS, 0.95), _fila(BEAU, 0.9)])
+    e = metricas.evaluacion_clinica(val, [SS, BEAU], np.array(filas), y, C9, 0.70, {"una_terry": "precision_baja"})
+    assert e["aceptacion"]["M4"]["valor"] == pytest.approx(1 / 4)
+    assert e["aceptacion"]["M3"]["valor"] == 1.0
+    for c in ("linea_mees", "acropaquia", "una_terry"):
+        assert (e["por_clase"][c]["aceptadas_correctas"], e["por_clase"][c]["abstenidas"]) == (0, 1)
+    # Sin no fiables del modelo, las nunca nombradas se abstienen igual.
+    assert _evaluacion(filas, y)["aceptacion"]["M4"]["valor"] == pytest.approx(2 / 4)
 
 
 def test_evaluacion_clinica_sin_umbral_no_acepta_nada():
