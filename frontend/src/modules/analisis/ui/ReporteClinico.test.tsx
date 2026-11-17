@@ -20,14 +20,14 @@ const NOMBRES: Record<ClaseClinica, string> = {
   sin_senales: 'Sin señales reconocidas',
 }
 
-function ok(clase: ClaseClinica, confianza = 0.873): Clinico {
+function ok(clase: ClaseClinica, confianza = 0.873): Extract<Clinico, { estado: 'ok' }> {
   return {
     estado: 'ok',
     motivo: null,
     clase,
     confianza,
     alternativas: [
-      { clase: 'linea_mees', nombre: NOMBRES.linea_mees, confianza: 0.061 },
+      { clase: 'mancha_blanca', nombre: NOMBRES.mancha_blanca, confianza: 0.061 },
       { clase: 'onicolisis', nombre: NOMBRES.onicolisis, confianza: 0.042 },
     ],
     reporte: {
@@ -43,7 +43,7 @@ function nc(motivo: MotivoClinico): Clinico {
   return { estado: 'no_concluyente', motivo, clase: null, confianza: null, alternativas: [], reporte: null }
 }
 
-function una(clinico: Clinico | undefined, dedo: Dedo = 'indice', mano = 1): UnaDetectada {
+function una(clinico: Clinico, dedo: Dedo | null = 'indice', mano: number | null = 1): UnaDetectada {
   return {
     dedo,
     mano,
@@ -54,7 +54,8 @@ function una(clinico: Clinico | undefined, dedo: Dedo = 'indice', mano = 1): Una
     punta: null,
     forma_fiable: false,
     contorno: [],
-    ...(clinico ? { clinico } : {}),
+    calidad: { brillo: 128, lado_origen: 400 },
+    clinico,
   }
 }
 
@@ -62,6 +63,7 @@ function resultado(unas: UnaDetectada[], extra: Partial<ResultadoAnalisis> = {})
   return {
     estado: 'ok',
     motivo: null,
+    modo: 'mano_completa',
     manos: 1,
     unas,
     forma_predominante: null,
@@ -147,14 +149,14 @@ describe('ReporteClinico: contenido', () => {
     expect(panel).toHaveTextContent('Descripción de linea_beau')
     expect(panel).toHaveTextContent('Asociación de linea_beau')
     expect(panel).toHaveTextContent('Consulta con un profesional sobre linea_beau')
-    expect(panel).toHaveTextContent('Otras señales parecidas: Línea de Mees y Onicólisis.')
+    expect(panel).toHaveTextContent('Otras señales parecidas: Mancha blanca y Onicólisis.')
   })
 
   it('sin_senales no muestra alternativas', async () => {
     const panel = await abrir(resultado([una(ok('sin_senales'))]))
     expect(panel).toHaveTextContent('Sin señales reconocidas')
     expect(panel).not.toHaveTextContent('Otras señales parecidas')
-    expect(panel).not.toHaveTextContent('Línea de Mees')
+    expect(panel).not.toHaveTextContent('Mancha blanca')
   })
 
   it('no muestra porcentajes ni valores de confianza', async () => {
@@ -168,7 +170,7 @@ describe('ReporteClinico: contenido', () => {
     expect(texto).not.toMatch(/0[.,]0[46]/)
   })
 
-  it.each<MotivoClinico>(['confianza_baja', 'clase_otra', 'clasificacion_fallida'])(
+  it.each<MotivoClinico>(['foto_insuficiente', 'confianza_baja', 'clase_otra', 'clase_no_fiable', 'clasificacion_fallida'])(
     'no concluyente por %s: su mensaje, sin clase ni alternativas',
     async (motivo) => {
       const panel = await abrir(resultado([una(nc(motivo)), una(ok('linea_beau'), 'medio')]))
@@ -178,6 +180,35 @@ describe('ReporteClinico: contenido', () => {
       Object.values(NOMBRES).forEach((n) => expect(primera).not.toHaveTextContent(n))
     },
   )
+
+  it('senal_inespecifica: reporte genérico sin asociaciones, alternativas, número ni campos vacíos', async () => {
+    const inespecifica: Clinico = {
+      estado: 'senal_inespecifica',
+      motivo: null,
+      clase: null,
+      confianza: null,
+      alternativas: [],
+      reporte: {
+        nombre: 'Señal sin identificar',
+        descripcion: 'Se ve alguna señal, pero no se puede decir cuál.',
+        asociaciones: [],
+        recomendacion: 'Muestra la uña a un profesional.',
+      },
+      p_alguna_senal: 0.734,
+    }
+    const panel = await abrir(resultado([una(inespecifica), una(nc('confianza_baja'), 'medio')]))
+    const [tarjeta] = within(panel).getAllByTestId('clinico-una')
+    expect(tarjeta).toHaveTextContent('Señal sin identificar')
+    expect(tarjeta).toHaveTextContent('Se ve alguna señal, pero no se puede decir cuál.')
+    expect(tarjeta).toHaveTextContent('Muestra la uña a un profesional.')
+    expect(tarjeta).not.toHaveTextContent('Se ha asociado a')
+    expect(tarjeta).not.toHaveTextContent('Otras señales parecidas')
+    expect(tarjeta).not.toHaveTextContent(/73|%|null|undefined/)
+    Object.values(NOMBRES).forEach((n) => expect(tarjeta).not.toHaveTextContent(n))
+    expect(within(panel).getByTestId('resumen-clinico')).toHaveTextContent(
+      'De 2 uñas, 1 muestra una señal para consultar, 0 no muestran señales reconocidas y 1 no fue concluyente.',
+    )
+  })
 
   it('un motivo desconocido muestra el mensaje genérico y no falla', async () => {
     const raro: Clinico = JSON.parse(
@@ -213,10 +244,14 @@ describe('ReporteClinico: contenido', () => {
     expect(within(panel).queryByTestId('resumen-clinico')).not.toBeInTheDocument()
   })
 
-  it('servicio anterior sin `clinico` ni aviso_clinico: no revienta y dice que no está disponible', async () => {
-    const r = resultado([una(undefined), una(undefined, 'medio')])
-    delete r.aviso_clinico
-    delete r.modelo_clinico
+  it('sin `clinico` ni aviso_clinico (fuera de contrato): no revienta y dice que no está disponible', async () => {
+    // El replacer quita los campos al serializar: llega como una respuesta que no los trae.
+    const quitar = ['clinico', 'aviso_clinico', 'modelo_clinico']
+    const r: ResultadoAnalisis = JSON.parse(
+      JSON.stringify(resultado([una(nc('confianza_baja')), una(nc('confianza_baja'), 'medio')]), (k, v) =>
+        quitar.includes(k) ? undefined : v,
+      ),
+    )
     const panel = await abrir(r)
     expect(panel).toHaveTextContent('El reporte clínico aún no está disponible.')
     expect(within(panel).queryAllByTestId('clinico-una')).toHaveLength(0)
@@ -250,6 +285,58 @@ describe('ReporteClinico: contenido', () => {
     expect(resumen).toHaveTextContent('Mano 1: De 1 uña, 1 muestra una señal para consultar')
     expect(resumen).toHaveTextContent('Mano 2: De 1 uña, 0 muestran una señal para consultar, 0 no muestran señales reconocidas y 1 no fue concluyente.')
     expect(within(panel).getAllByTestId('clinico-una')[1]).toHaveTextContent('Índice · mano 2')
+  })
+
+  it.each<ClaseClinica>(['linea_mees', 'acropaquia'])(
+    '%s como clase predicha no se nombra: mensaje genérico y cuenta como no concluyente',
+    async (clase) => {
+      const panel = await abrir(resultado([una(ok(clase)), una(ok('linea_beau'), 'medio')]))
+      const [oculta, visible] = within(panel).getAllByTestId('clinico-una')
+      expect(oculta).toHaveTextContent(mensajeMotivoClinico('motivo_desconocido'))
+      expect(oculta).not.toHaveTextContent(NOMBRES[clase])
+      expect(oculta).not.toHaveTextContent(`Descripción de ${clase}`)
+      expect(oculta).not.toHaveTextContent('Otras señales parecidas')
+      expect(visible).toHaveTextContent('Línea de Beau')
+      expect(within(panel).getByTestId('resumen-clinico')).toHaveTextContent(
+        'De 2 uñas, 1 muestra una señal para consultar, 0 no muestran señales reconocidas y 1 no fue concluyente.',
+      )
+    },
+  )
+
+  it('linea_mees y acropaquia como alternativas se quitan; el resto se muestra', async () => {
+    const c = ok('linea_beau')
+    const conOcultas: Clinico = {
+      ...c,
+      alternativas: [
+        { clase: 'linea_mees', nombre: NOMBRES.linea_mees, confianza: 0.06 },
+        { clase: 'onicolisis', nombre: NOMBRES.onicolisis, confianza: 0.04 },
+      ],
+    }
+    const soloOcultas: Clinico = {
+      ...ok('una_terry'),
+      alternativas: [
+        { clase: 'acropaquia', nombre: NOMBRES.acropaquia, confianza: 0.06 },
+        { clase: 'linea_mees', nombre: NOMBRES.linea_mees, confianza: 0.04 },
+      ],
+    }
+    const panel = await abrir(resultado([una(conOcultas), una(soloOcultas, 'medio')]))
+    const [primera, segunda] = within(panel).getAllByTestId('clinico-una')
+    expect(primera).toHaveTextContent('Otras señales parecidas: Onicólisis.')
+    expect(segunda).toHaveTextContent('Uña de Terry')
+    expect(segunda).not.toHaveTextContent('Otras señales parecidas')
+    expect(panel).not.toHaveTextContent(NOMBRES.linea_mees)
+    expect(panel).not.toHaveTextContent(NOMBRES.acropaquia)
+  })
+
+  it('primer_plano (dedo y mano null): sin rótulo de dedo ni "mano", y el reporte se pinta', async () => {
+    const panel = await abrir(resultado([una(ok('linea_beau'), null, null)], { modo: 'primer_plano', manos: 0 }))
+    const tarjeta = within(panel).getByTestId('clinico-una')
+    expect(tarjeta.firstElementChild).toHaveTextContent('Línea de Beau')
+    expect(tarjeta).not.toHaveTextContent(/mano|null|undefined/i)
+    expect(within(panel).getByTestId('resumen-clinico')).toHaveTextContent(
+      'De 1 uña, 1 muestra una señal para consultar, 0 no muestran señales reconocidas y 0 no fueron concluyentes.',
+    )
+    expect(within(panel).getByTestId('resumen-clinico')).not.toHaveTextContent(/Mano/)
   })
 
   it('no persiste nada en localStorage ni sessionStorage', async () => {

@@ -55,6 +55,11 @@ CLASES_CLINICAS = (
 # Senales en las que decir sin_senales seria el error mas grave (metricas M1
 # del entrenamiento y H1 del arnes).
 SENALES_GRAVES = ("linea_oscura", "acropaquia")
+# Decision de producto 2026-11-17: el servicio no nombra nunca estas senales,
+# con ningun modelo (services/api/app/vision/clinico.py, misma constante; un
+# test de services/api comprueba que las dos copias coinciden). Las metricas de
+# aceptacion (M1-M4) deben medir ese sistema, no uno que todavia las nombra.
+CLASES_NUNCA_NOMBRADAS = frozenset({"linea_mees", "acropaquia"})
 
 # Equivalentes de los ids clinicos que tambien se rechazan fuera de
 # TAREA_CLINICA. Igual que TERMINOS_CLINICOS y los ids, se buscan como

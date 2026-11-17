@@ -20,6 +20,9 @@
 #   - sin_senales no dice que la una este sana.
 #   - Una tabla por cada id (8). "otra" no tiene texto: nunca se muestra.
 #   - asociaciones solo puede quedar vacia en sin_senales.
+#   - [senal_inespecifica] es el reporte cuando el sistema ve alguna senal pero
+#     no puede decir cual. No nombra ni insinua ninguna senal concreta y sus
+#     asociaciones van vacias (una causa delataria la senal).
 
 estado_revision = "pendiente"   # "pendiente" | "revisado"
 revisado_por = ""               # nombre y profesion de quien reviso
@@ -92,3 +95,9 @@ nombre = "Sin señales reconocidas"
 descripcion = "En esta uña no se reconoce ninguna de las señales que el sistema sabe identificar. Eso no garantiza que no haya ningún cambio: el sistema conoce pocas señales y puede equivocarse."
 asociaciones = []
 recomendacion = "Ante cualquier cambio en las uñas, conviene consultar con un profesional de la salud aunque este resultado no muestre señales."
+
+[senal_inespecifica]
+nombre = "Señal sin identificar"
+descripcion = "En esta uña se ve alguna de las señales que el sistema conoce, pero no puede decir con seguridad cuál. Puede equivocarse: es una observación orientativa."
+asociaciones = []
+recomendacion = "Conviene mostrar la uña a un profesional de la salud para que la valore en persona."

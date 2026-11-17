@@ -5,7 +5,7 @@ import math
 import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 
-from .config import OTRA, SENALES_GRAVES, SIN_SENALES
+from .config import CLASES_NUNCA_NOMBRADAS, OTRA, SENALES_GRAVES, SIN_SENALES
 
 # Criterios para habilitar el modelo de estado_clinico (design.md de
 # reporte-clinico-unas). Son la propuesta, pendiente de Q4: si el dueno los
@@ -75,6 +75,43 @@ def evaluar_umbral(probs: np.ndarray, y_true, umbral: float | None) -> dict:
     }
 
 
+def con_temperatura(probs: np.ndarray, t: float) -> np.ndarray:
+    """softmax(log p / t). Equivale a dividir los logits por t: el argmax no
+    cambia, solo cuanto se confia en el."""
+    z = np.log(np.clip(probs, 1e-12, 1.0)) / t
+    z -= z.max(axis=1, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def ajustar_temperatura(probs: np.ndarray, y_true) -> float:
+    """Temperature scaling (Guo et al., 2017): la t que minimiza la log loss en
+    las predicciones de validacion. Rejilla logaritmica de 0.25 a 8: fuera de
+    ese rango la red estaria tan mal calibrada que el problema seria otro."""
+    y = np.asarray(y_true)
+
+    def nll(t: float) -> float:
+        return float(-np.log(np.clip(con_temperatura(probs, t)[np.arange(len(y)), y], 1e-12, None)).mean())
+
+    return float(min(np.geomspace(0.25, 8, 401), key=nll))
+
+
+def ece(probs: np.ndarray, y_true, bins: int = 10) -> dict:
+    """Expected Calibration Error con bins de igual ancho sobre la confianza
+    maxima, y la tabla de fiabilidad (confianza media vs. acierto por bin)."""
+    confianza = probs.max(axis=1)
+    acierto = probs.argmax(axis=1) == np.asarray(y_true)
+    bordes = np.linspace(0, 1, bins + 1)
+    tabla, total = [], 0.0
+    for lo, hi in zip(bordes[:-1], bordes[1:]):
+        m = (confianza > lo) & (confianza <= hi)
+        if m.any():
+            total += m.mean() * abs(confianza[m].mean() - acierto[m].mean())
+            tabla.append({"bin": [float(lo), float(hi)], "n": int(m.sum()),
+                          "confianza": float(confianza[m].mean()), "acierto": float(acierto[m].mean())})
+    return {"ece": float(total), "fiabilidad": tabla}
+
+
 def por_subgrupo(archivos: list[str], y_true, y_pred, subgrupos: dict[str, dict[str, str]]) -> dict:
     """Accuracy por cada valor de cada dimension anotada (tono_piel, luz...).
 
@@ -106,25 +143,37 @@ def elegir_ganador(resultados: list[dict]) -> dict:
 # --- estado_clinico: abstencion ----------------------------------------------
 
 def motivo_abstencion(probs: np.ndarray, clases: list[str], umbral: float | None,
-                      umbral_sin_senales: float | None) -> str | None:
-    """Motivo de no_concluyente de UNA prediccion, o None si se acepta.
+                      umbral_sin_senales: float | None, *, clases_no_fiables=frozenset(),
+                      umbral_alguna_senal: float | None = None) -> str | None:
+    """Motivo de no_concluyente de UNA prediccion, "senal_inespecifica", o None si se acepta.
 
-    Reglas 3 a 6 de la decision 5 de design.md, en ese orden. Las reglas 1
-    (sin modelo) y 2 (excepcion) solo existen en el servicio. El servicio
-    (services/api/app/vision) no puede importar este modulo (no tiene
-    scikit-learn), asi que duplica estas reglas y las dos copias se prueban
-    con la misma tabla: tests/casos_abstencion.json. Confianza = probabilidad
-    bruta del softmax sobre las 9 clases, sin redondear.
+    Reglas 3 a 6 de la decision 5 de design.md, despues clases_no_fiables y por
+    ultimo senal_inespecifica, en ese orden. Las reglas 1 (sin modelo), 2
+    (excepcion) y foto_insuficiente (antes del modelo) solo existen en el
+    servicio. El servicio (services/api/app/vision) no puede importar este
+    modulo (no tiene scikit-learn), asi que duplica estas reglas y las dos
+    copias se prueban con la misma tabla: tests/casos_abstencion.json.
+    Confianza = probabilidad bruta del softmax sobre las 9 clases, sin redondear.
+
+    Sin los dos argumentos de palabra clave son solo las reglas 3 a 6: asi las
+    usan la calibracion y clases_no_fiables, que no pueden depender de si mismas.
     """
     i = int(np.argmax(probs))
     confianza = float(probs[i])
     if clases[i] == OTRA:
-        return "clase_otra"
-    if umbral is None or confianza < umbral:
-        return "confianza_baja"
-    if clases[i] == SIN_SENALES and (umbral_sin_senales is None or confianza < umbral_sin_senales):
-        return "confianza_baja"
-    return None
+        motivo = "clase_otra"
+    elif umbral is None or confianza < umbral:
+        motivo = "confianza_baja"
+    elif clases[i] == SIN_SENALES and (umbral_sin_senales is None or confianza < umbral_sin_senales):
+        motivo = "confianza_baja"
+    elif clases[i] in clases_no_fiables:
+        motivo = "clase_no_fiable"
+    else:
+        return None
+    p_senal = sum(float(p) for c, p in zip(clases, probs) if c not in (SIN_SENALES, OTRA))
+    if umbral_alguna_senal is not None and p_senal >= umbral_alguna_senal:
+        return "senal_inespecifica"
+    return motivo
 
 
 def calibrar_umbral_sin_senales(probs: np.ndarray, y_true, clases: list[str], umbral: float | None) -> float | None:
@@ -150,6 +199,102 @@ def calibrar_umbral_sin_senales(probs: np.ndarray, y_true, clases: list[str], um
     return max(float(por_encima.min()), umbral)
 
 
+def _apta(brillo: dict[str, np.ndarray], nombres: list[str], brillo_minimo: float) -> np.ndarray:
+    return np.concatenate([np.asarray(brillo[k]) >= brillo_minimo for k in nombres])
+
+
+def mezcla_apta(probs: dict[str, np.ndarray], brillo: dict[str, np.ndarray], y_true,
+                brillo_minimo: float) -> tuple[np.ndarray, np.ndarray]:
+    """(probabilidades, etiquetas) de la mezcla que calibra, en el orden de calibrar_mezcla."""
+    nombres = list(probs)
+    apta = _apta(brillo, nombres, brillo_minimo)
+    return np.concatenate([probs[k] for k in nombres])[apta], np.tile(np.asarray(y_true), len(nombres))[apta]
+
+
+def calibrar_mezcla(probs: dict[str, np.ndarray], brillo: dict[str, np.ndarray], y_true, clases: list[str],
+                    precision_objetivo: float, brillo_minimo: float) -> dict:
+    """Temperatura y umbrales sobre la mezcla de la vista limpia y sus copias
+    degradadas (todas OOF, mismas fotos). Calibrar solo con la limpia promete
+    la precision objetivo y la incumple en fotos oscuras o borrosas: el
+    2026-11-17 la precision de las aceptadas (0,90 en la limpia) bajaba en 9
+    de 11 degradaciones, hasta 0,56 con la foto muy oscura.
+
+    Las copias con brillo < brillo_minimo no cuentan: el servicio las rechaza
+    antes del modelo (foto_insuficiente). Las copias de una misma foto no son
+    independientes; la mezcla sirve para calibrar, no como intervalo de confianza.
+    """
+    nombres = list(probs)
+    y = np.asarray(y_true)
+    yy = np.tile(y, len(nombres))
+    raw = np.concatenate([probs[k] for k in nombres])
+    apta = _apta(brillo, nombres, brillo_minimo)
+    t = ajustar_temperatura(raw[apta], yy[apta])
+    p = con_temperatura(raw, t)
+    umbral = calibrar_umbral(p[apta], yy[apta], precision_objetivo)
+    umbral_ss = calibrar_umbral_sin_senales(p[apta], yy[apta], clases, umbral)
+    acepta = apta & np.array([motivo_abstencion(f, clases, umbral, umbral_ss) is None for f in p])
+    pred = p.argmax(axis=1)
+    por_conjunto = {}
+    for j, k in enumerate(nombres):
+        sl = slice(j * len(y), (j + 1) * len(y))
+        a = acepta[sl]
+        por_conjunto[k] = {
+            "apta": float(apta[sl].mean()),
+            "cobertura": float(a.mean()),
+            "precision_aceptadas": float((pred[sl][a] == y[a]).mean()) if a.any() else None,
+            "f1_macro": metricas(y, pred[sl], clases)["f1_macro"],
+        }
+    return {"temperatura": t, "umbral": umbral, "umbral_sin_senales": umbral_ss,
+            "cobertura_mezcla": float(acepta.mean()),
+            "precision_mezcla": float((pred[acepta] == yy[acepta]).mean()) if acepta.any() else None,
+            "por_conjunto": por_conjunto}
+
+
+def calibrar_umbral_senal(probs: np.ndarray, y_true, clases: list[str], precision_objetivo: float) -> float | None:
+    """Menor umbral sobre p(alguna senal) = suma de las 7 senales tal que, entre
+    las fotos que lo superan, al menos precision_objetivo tiene una senal real.
+    `otra` cuenta como negativa (mezcla esmalte con patologias: el lado seguro).
+
+    Solo umbrales >= 0.5: las senales juntas tienen que ser mayoria. None = no
+    se afirma nunca. No nombra cual senal.
+    """
+    senales = [i for i, c in enumerate(clases) if c not in (SIN_SENALES, OTRA)]
+    p = probs[:, senales].sum(axis=1)
+    es_senal = np.isin(np.asarray(y_true), senales)
+    for umbral in np.unique(p[p >= 0.5]):
+        if es_senal[p >= umbral].mean() >= precision_objetivo:
+            return float(umbral)
+    return None
+
+
+def clases_no_fiables(probs: np.ndarray, y_true, clases: list[str], umbral: float | None,
+                      umbral_sin_senales: float | None, minimo_fotos: int, precision_objetivo: float) -> dict[str, str]:
+    """Clase -> motivo, para las que el modelo no deberia nombrar aunque supere el umbral.
+
+    - pocas_fotos: menos de `minimo_fotos` en train+val; no hay con que validarla.
+    - sin_aceptadas: ninguna prediccion aceptada en OOF; su precision es desconocida.
+    - precision_baja: el limite superior de Wilson (95 %) de la precision de sus
+      aceptadas esta por debajo del objetivo, es decir, los datos muestran que
+      falla mas de lo prometido, no solo que hay pocos.
+    `probs` son OOF de fotos independientes (la vista limpia), no la mezcla.
+    """
+    y = np.asarray(y_true)
+    pred = probs.argmax(axis=1)
+    aceptada = np.array([motivo_abstencion(f, clases, umbral, umbral_sin_senales) is None for f in probs], dtype=bool)
+    salida = {}
+    for i, c in enumerate(clases):
+        if c == OTRA:  # nunca se nombra
+            continue
+        k = aceptada & (pred == i)
+        if (y == i).sum() < minimo_fotos:
+            salida[c] = "pocas_fotos"
+        elif not k.any():
+            salida[c] = "sin_aceptadas"
+        elif wilson(int((k & (y == i)).sum()), int(k.sum()))[1] < precision_objetivo:
+            salida[c] = "precision_baja"
+    return salida
+
+
 def wilson(aciertos: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
     """Intervalo de confianza del 95 % de Wilson para una proporcion. Con pocas
     fotos (o con 0 o n aciertos) el intervalo normal se sale de [0, 1]."""
@@ -163,8 +308,12 @@ def wilson(aciertos: int, n: int, z: float = 1.96) -> tuple[float, float] | None
 
 
 def evaluacion_clinica(probs_val: np.ndarray, y_val, probs_test: np.ndarray, y_test,
-                       clases: list[str], umbral: float | None) -> dict:
+                       clases: list[str], umbral: float | None, clases_no_fiables=frozenset()) -> dict:
     """Calibra umbral_sin_senales en val y mide test DESPUES de abstenerse.
+
+    Se abstiene como el servicio: clases_no_fiables del modelo mas
+    CLASES_NUNCA_NOMBRADAS, que se suman siempre (igual que clinico.cargar).
+    Sin ellas, M3 y M4 contarian como aceptadas fotos que el servicio nunca nombra.
 
     Por clase real, las cuatro columnas suman n: aceptadas correctas,
     abstenidas, aceptadas como otra clase (que no sea sin_senales) y aceptadas
@@ -173,7 +322,9 @@ def evaluacion_clinica(probs_val: np.ndarray, y_val, probs_test: np.ndarray, y_t
     umbral_ss = calibrar_umbral_sin_senales(probs_val, y_val, clases, umbral)
     pred = probs_test.argmax(axis=1)
     y = np.asarray(y_test)
-    aceptada = np.array([motivo_abstencion(p, clases, umbral, umbral_ss) is None for p in probs_test], dtype=bool)
+    no_fiables = frozenset(clases_no_fiables) | CLASES_NUNCA_NOMBRADAS
+    aceptada = np.array([motivo_abstencion(p, clases, umbral, umbral_ss, clases_no_fiables=no_fiables) is None
+                         for p in probs_test], dtype=bool)
     i_ss = clases.index(SIN_SENALES)
     como_ss = aceptada & (pred == i_ss) & (y != i_ss)
 

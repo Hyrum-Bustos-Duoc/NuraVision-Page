@@ -18,6 +18,7 @@ const AVISO = 'Observacion estetica orientativa. No es un diagnostico medico.'
 const OK = {
   estado: 'ok',
   motivo: null,
+  modo: 'mano_completa',
   manos: 1,
   unas: [
     {
@@ -35,6 +36,7 @@ const OK = {
       punta: null,
       forma_fiable: false,
       contorno: [],
+      calidad: { brillo: 128, lado_origen: 400 },
     },
   ],
   forma_predominante: null,

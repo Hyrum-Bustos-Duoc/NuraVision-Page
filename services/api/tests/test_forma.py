@@ -14,7 +14,7 @@ import pytest
 
 from app.vision import forma, segmentador
 from app.vision.clinico import SIN_MODELO
-from app.vision.esquemas import Una
+from app.vision.esquemas import CalidadUna, Una
 from app.vision.unas import _forma_predominante
 
 
@@ -152,7 +152,8 @@ def test_segmentador_con_xml_danado_falla_con_valueerror(tmp_path, contenido):
 
 def una(f, fiable=True):
     return Una(
-        dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", forma=f, forma_fiable=fiable, clinico=SIN_MODELO
+        dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", forma=f, forma_fiable=fiable,
+        calidad=CalidadUna(brillo=120.0, lado_origen=224), clinico=SIN_MODELO,
     )
 
 
@@ -166,4 +167,4 @@ def test_predominante_ignora_las_no_fiables():
 
 def test_predominante_none_en_empate_o_sin_formas():
     assert _forma_predominante([una("cuadrada"), una("redonda")]) is None
-    assert _forma_predominante([Una(dedo="indice", mano=1, esquinas=[(0, 0)] * 4, recorte="x", clinico=SIN_MODELO)]) is None
+    assert _forma_predominante([una(None)]) is None

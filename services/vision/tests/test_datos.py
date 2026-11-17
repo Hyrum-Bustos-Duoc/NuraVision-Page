@@ -305,3 +305,17 @@ def test_estado_clinico_con_carpetas_de_kaggle_sin_renombrar_falla(tmp_path):
     series.write_text("archivo,serie\n")
     with pytest.raises(ValueError, match="no coinciden"):
         _particionar(cargar_config(), "estado_clinico", tmp_path / "estado_clinico", tmp_path / "s", series)
+
+
+def test_pliegues_no_parten_una_serie_y_cubren_todo(dataset, tmp_path):
+    filas = [(f"almendra/0{i}.jpg", "s1") for i in range(4)] + [(f"ovalada/0{i}.jpg", "s2") for i in (2, 3)]
+    m, _ = _particion_con_series(dataset, filas, tmp_path)
+    items = [a for a in m["archivos"] if a["particion"] != "test"]
+    folds = datos.pliegues(items, CLASES, 3, 7)
+    evaluados = np.concatenate([ev for _, ev in folds])
+    assert sorted(evaluados) == list(range(len(items)))  # cada foto se evalua una sola vez
+    for tr, ev in folds:
+        assert not set(tr) & set(ev)
+        series_tr = {items[i]["serie"] for i in tr if items[i]["serie"]}
+        assert not series_tr & {items[i]["serie"] for i in ev if items[i]["serie"]}
+    assert datos.pliegues(items, CLASES, 3, 7)[0][1].tolist() == folds[0][1].tolist()  # reproducible

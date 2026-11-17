@@ -196,6 +196,19 @@ def dividir(validas: list[dict], clases: list[str], val: float, test: float, sem
     }
 
 
+def pliegues(items: list[dict], clases: list[str], n: int, semilla: int) -> list[tuple[np.ndarray, np.ndarray]]:
+    """K pliegues (indices train, indices evaluados) estratificados por clase y
+    agrupados por serie: una serie nunca queda a ambos lados. Una foto sin
+    serie es su propio grupo. Para la validacion cruzada de busqueda_clinica."""
+    # Import local: services/api/tests importa este modulo con un sklearn
+    # simulado que solo trae class_weight (el API no instala scikit-learn).
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    y = [clases.index(i["clase"]) for i in items]
+    g = [i.get("serie") or f"foto:{i['archivo']}" for i in items]
+    return list(StratifiedGroupKFold(n, shuffle=True, random_state=semilla).split(np.zeros(len(y)), y, g))
+
+
 def _huella(archivos: list[dict]) -> str:
     return hashlib.sha256(json.dumps(archivos, sort_keys=True).encode()).hexdigest()
 

@@ -34,7 +34,7 @@ const SIN_SENALES = {
   asociaciones: [],
   recomendacion: 'Ante cualquier cambio en las uñas, conviene consultar con un profesional de la salud.',
 }
-const NOMBRE_MEES = 'Línea blanca transversal'
+const NOMBRE_ONICOLISIS = 'Uña despegada del lecho'
 const NOMBRE_OSCURA = 'Banda oscura longitudinal'
 // Todo lo que no puede estar en el DOM antes de pulsar el boton.
 const TEXTOS_CLINICOS = [
@@ -42,7 +42,7 @@ const TEXTOS_CLINICOS = [
   BEAU.descripcion,
   BEAU.recomendacion,
   SIN_SENALES.nombre,
-  NOMBRE_MEES,
+  NOMBRE_ONICOLISIS,
   NOMBRE_OSCURA,
   AVISO_CLINICO,
   'linea_beau',
@@ -55,7 +55,7 @@ const ok = (clase: string, reporte: typeof BEAU) => ({
   clase,
   confianza: 0.873,
   alternativas: [
-    { clase: 'linea_mees', nombre: NOMBRE_MEES, confianza: 0.051 },
+    { clase: 'onicolisis', nombre: NOMBRE_ONICOLISIS, confianza: 0.051 },
     { clase: 'linea_oscura', nombre: NOMBRE_OSCURA, confianza: 0.032 },
   ],
   reporte,
@@ -85,6 +85,7 @@ const una = (dedo: string, clinico?: object) => ({
   punta: 0.9,
   forma_fiable: true,
   contorno: [],
+  calidad: { brillo: 128, lado_origen: 400 },
   ...(clinico ? { clinico } : {}),
 })
 
@@ -92,6 +93,7 @@ const una = (dedo: string, clinico?: object) => ({
 const resultado = (unas: object[], modeloClinico?: typeof MODELO_CLINICO | null) => ({
   estado: 'ok',
   motivo: null,
+  modo: 'mano_completa',
   manos: 1,
   unas,
   forma_predominante: 'ovalada',
@@ -217,7 +219,7 @@ test.describe('Reporte clínico: con resultado', () => {
     expect(orden.every((p) => p >= 0)).toBe(true)
     expect(orden).toEqual([...orden].sort((a, b) => a - b))
     // Alternativas solo como nombres.
-    await expect(beau).toContainText(`Otras señales parecidas: ${NOMBRE_MEES} y ${NOMBRE_OSCURA}.`)
+    await expect(beau).toContainText(`Otras señales parecidas: ${NOMBRE_ONICOLISIS} y ${NOMBRE_OSCURA}.`)
 
     // sin_senales no sugiere alternativas justo despues de decir que no ve nada.
     await expect(unas.nth(1)).toContainText(SIN_SENALES.nombre)

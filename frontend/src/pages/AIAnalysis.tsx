@@ -130,7 +130,7 @@ export default function AIAnalysis() {
         setResultado(r)
         setStep('result')
       } else {
-        // Sin mano o foto muy pequena: no es un fallo, se le dice que hacer.
+        // Sin mano ni una de cerca, o foto muy pequena: no es un fallo, se le dice que hacer.
         setErrorAnalisis(mensajeNoConcluyente(r.motivo))
       }
     } catch (error) {

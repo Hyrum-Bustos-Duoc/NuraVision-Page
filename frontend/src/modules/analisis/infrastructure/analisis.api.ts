@@ -3,6 +3,7 @@ import {
   type CodigoErrorAnalisis,
   type ResultadoAnalisis,
 } from '../domain/analisis.types'
+import { esObjeto } from '../domain/clinico'
 
 /**
  * Direccion del servicio de vision (services/api). En local es uvicorn en el
@@ -32,6 +33,11 @@ const CODIGOS_DEL_API: readonly string[] = [
   'imagen_muy_grande',
   'modelo_no_disponible',
 ]
+
+// Literal de ResultadoAnalisis.estado y Modo en esquemas.py. senal_inespecifica es un
+// estado del bloque clinico de cada una, no del resultado.
+const ESTADOS: readonly unknown[] = ['ok', 'no_concluyente']
+const MODOS: readonly unknown[] = ['mano_completa', 'primer_plano']
 
 function errorDe(codigo: CodigoErrorAnalisis): ErrorAnalisis {
   return new ErrorAnalisis(codigo, MENSAJES[codigo])
@@ -75,13 +81,71 @@ export async function analizarFoto(foto: File, senal?: AbortSignal): Promise<Res
   }
 
   if (!respuesta.ok) throw errorDe(await codigoDeRespuesta(respuesta))
+  let datos: unknown
   try {
-    return (await respuesta.json()) as ResultadoAnalisis
+    datos = await respuesta.json()
   } catch (error) {
     // El cuerpo tambien se aborta: cambiar de foto mientras llega el JSON.
     if (error instanceof DOMException && error.name === 'AbortError') throw errorDe('cancelado')
     throw errorDe('servicio_no_disponible')
   }
+  // Mismo trato que un cuerpo ilegible: el servicio no cumple su contrato.
+  if (!resultadoValido(datos)) throw errorDe('servicio_no_disponible')
+  return datos as ResultadoAnalisis
+}
+
+/**
+ * Lo que el servicio garantiza y la UI da por hecho; un cuerpo que lo incumple es un
+ * servicio que no habla este contrato. El bloque clinico no se valida aqui: lo valida
+ * clinicoDe, una por una, sin tumbar el resto del resultado.
+ *
+ * - Los Literal de `estado` y `modo`, y `manos` entero >= 0 (Field(ge=0)).
+ * - `calidad` en cada una (esquemas.py, CalidadUna): el servicio la mide siempre.
+ * - `esquinas` en cada una: ResultadoUnas las recorre sin defenderse y una ausente
+ *   tumbaba la pantalla. Tambien en primer_plano, donde no se pintan: Pydantic las exige.
+ * - ResultadoAnalisis._invariantes: ok si y solo si hay modo y al menos una una;
+ *   primer_plano con 0 manos y exactamente 1 una sin dedo, mano ni forma (el
+ *   clasificador ve la foto entera y no separa varias); mano_completa con dedo y mano
+ *   en cada una. Sin esto, un ok vacio pasaria a la pantalla de resultados sin unas.
+ *
+ * `modo` y `forma` ausentes cuentan como null: forma tiene default None en Pydantic, y
+ * un no_concluyente sin modo no cambia nada de lo que se pinta.
+ */
+function resultadoValido(datos: unknown): boolean {
+  if (!esObjeto(datos) || !Array.isArray(datos.unas)) return false
+  if (!ESTADOS.includes(datos.estado) || (datos.modo != null && !MODOS.includes(datos.modo))) return false
+  if (typeof datos.manos !== 'number' || !Number.isInteger(datos.manos) || datos.manos < 0) return false
+  const unas = datos.unas.filter(esObjeto)
+  if (unas.length !== datos.unas.length) return false
+  if (!unas.every((u) => calidadValida(u.calidad) && esquinasValidas(u.esquinas))) return false
+
+  const ok = datos.estado === 'ok'
+  if (ok !== (datos.modo != null) || ok !== (unas.length > 0)) return false
+  if (datos.modo === 'primer_plano') {
+    return datos.manos === 0 && unas.length === 1 && unas[0].dedo === null && unas[0].mano === null && unas[0].forma == null
+  }
+  return unas.every((u) => u.dedo != null && u.mano != null)
+}
+
+/** Una.esquinas: exactamente 4 pares (x, y) de float; Pydantic no acota el rango. */
+function esquinasValidas(e: unknown): boolean {
+  return (
+    Array.isArray(e) &&
+    e.length === 4 &&
+    e.every((p) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n)))
+  )
+}
+
+function calidadValida(c: unknown): boolean {
+  return (
+    esObjeto(c) &&
+    typeof c.brillo === 'number' &&
+    c.brillo >= 0 &&
+    c.brillo <= 255 &&
+    typeof c.lado_origen === 'number' &&
+    Number.isInteger(c.lado_origen) &&
+    c.lado_origen >= 0
+  )
 }
 
 /** Texto para el estado "no concluyente": que paso y que hacer. */
@@ -92,5 +156,9 @@ export function mensajeNoConcluyente(motivo: ResultadoAnalisis['motivo']): strin
   if (motivo === 'imagen_pequena') {
     return 'La foto es muy pequeña para ver tus uñas. Acércate un poco o usa una foto de mayor tamaño.'
   }
-  return 'No encontramos una mano en la foto. Abre la mano mostrando el dorso, con las uñas hacia la cámara y buena luz natural.'
+  // sin_mano: no hay mano, y si el servicio tiene primer_plano activo, la foto tampoco
+  // parece una sola una de cerca. Ese modo puede estar apagado en el servidor, asi que el
+  // consejo principal es la mano completa (no depende de ese modo) y no se afirma que se busco
+  // una una de cerca.
+  return 'No encontramos una mano en la foto. Toma otra donde se vea la mano completa, abierta, con el dorso y las uñas hacia la cámara y buena luz natural. Si fotografías una sola uña, que salga bien enfocada y ocupe casi toda la foto.'
 }

@@ -28,6 +28,7 @@ const una = (dedo: string, clinico: object) => ({
   punta: 0.9,
   forma_fiable: true,
   contorno: [],
+  calidad: { brillo: 128, lado_origen: 400 },
   clinico,
 })
 
@@ -49,6 +50,7 @@ test('un ok con reporte vacío no deja la página en blanco al abrir el reporte'
       json: {
         estado: 'ok',
         motivo: null,
+        modo: 'mano_completa',
         manos: 1,
         unas: [una('indice', okConReporte({}))],
         forma_predominante: 'ovalada',

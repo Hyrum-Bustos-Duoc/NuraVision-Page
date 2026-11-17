@@ -1,11 +1,14 @@
 import { Kicker } from '@/shared/ui/ui'
-import { ETIQUETA_DEDO, ETIQUETA_FORMA, type ResultadoAnalisis } from '../domain/analisis.types'
+import { ETIQUETA_DEDO, ETIQUETA_FORMA, rotuloUna, type ResultadoAnalisis } from '../domain/analisis.types'
 import { ReporteClinico } from './ReporteClinico'
 
 /**
  * Foto de la clienta con cada una enmarcada, y el recorte de cada una al lado.
  * Ademas de localizarlas, dice la forma de cada una (regla geometrica sobre su
  * contorno). La senal clinica orientativa queda tras el boton de ReporteClinico.
+ *
+ * En primer_plano la foto es una sola una de cerca: no hay recuadro que dibujar (seria
+ * el borde de la foto), ni dedo, ni forma (el servicio no la mide sin la mano).
  */
 export function ResultadoUnas({
   resultado,
@@ -18,6 +21,7 @@ export function ResultadoUnas({
   const variasManos = manos > 1
   const medidas = unas.filter((u) => u.forma).length
   const predominante = resultado.forma_predominante
+  const primerPlano = resultado.modo === 'primer_plano'
 
   return (
     <section aria-labelledby="titulo-unas-detectadas" className="mt-8">
@@ -32,7 +36,12 @@ export function ResultadoUnas({
         data-testid="forma-resumen"
       >
         <p className="text-xs uppercase tracking-wide text-muted">Forma de tus uñas</p>
-        {predominante ? (
+        {primerPlano ? (
+          <p className="mt-1 text-sm text-ink">
+            En una foto de cerca de una sola uña no medimos la forma. Para conocerla, sube una
+            foto de la mano completa, con los dedos estirados y de frente a la cámara.
+          </p>
+        ) : predominante ? (
           <p className="mt-1 font-serif text-[24px] font-light text-ink">
             {ETIQUETA_FORMA[predominante]}
           </p>
@@ -55,74 +64,80 @@ export function ResultadoUnas({
         {/* El SVG ocupa exactamente la caja de la imagen y usa coordenadas 0..1,
             las mismas en que el servicio entrega las esquinas. */}
         <div className="relative overflow-hidden rounded-2xl border border-line-soft">
-          <img src={fotoUrl} alt="Tu fotografía con las uñas marcadas" className="block h-auto w-full" />
-          <svg
-            viewBox="0 0 1 1"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full text-olive-600"
-            aria-hidden="true"
-          >
-            {unas.map((u) => (
-              <polygon
-                key={`${u.mano}-${u.dedo}`}
-                points={u.esquinas.map(([x, y]) => `${x},${y}`).join(' ')}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-          </svg>
+          <img
+            src={fotoUrl}
+            alt={primerPlano ? 'Tu fotografía' : 'Tu fotografía con las uñas marcadas'}
+            className="block h-auto w-full"
+          />
+          {!primerPlano && (
+            <svg
+              viewBox="0 0 1 1"
+              preserveAspectRatio="none"
+              className="absolute inset-0 h-full w-full text-olive-600"
+              aria-hidden="true"
+            >
+              {unas.map((u) => (
+                <polygon
+                  key={`${u.mano}-${u.dedo}`}
+                  points={u.esquinas.map(([x, y]) => `${x},${y}`).join(' ')}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </svg>
+          )}
         </div>
 
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {unas.map((u) => (
-            <li
-              key={`${u.mano}-${u.dedo}`}
-              className="overflow-hidden rounded-xl border border-line-soft bg-paper"
-            >
-              <div className="relative">
-                <img
-                  src={u.recorte}
-                  alt={`Uña del dedo ${ETIQUETA_DEDO[u.dedo].toLowerCase()}`}
-                  className="aspect-square w-full object-cover"
-                />
-                {u.contorno.length > 2 && (
-                  <svg
-                    viewBox="0 0 1 1"
-                    preserveAspectRatio="none"
-                    className="absolute inset-0 h-full w-full text-olive-600"
-                    aria-hidden="true"
-                  >
-                    <polygon
-                      points={u.contorno.map(([x, y]) => `${x},${y}`).join(' ')}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </svg>
-                )}
-              </div>
-              <p className="px-3 py-2 text-xs text-muted">
-                {ETIQUETA_DEDO[u.dedo]}
-                {variasManos && ` · mano ${u.mano}`}
-              </p>
-              <p className="px-3 pb-2 text-xs text-ink" data-testid="forma-una">
-                {u.forma
-                  ? `${ETIQUETA_FORMA[u.forma]}${u.forma_fiable ? '' : ' (estimación poco fiable)'}`
-                  : 'Forma no medida'}
-              </p>
-            </li>
-          ))}
+          {unas.map((u) => {
+            const rotulo = rotuloUna(u, variasManos)
+            return (
+              <li
+                key={`${u.mano}-${u.dedo}`}
+                className="overflow-hidden rounded-xl border border-line-soft bg-paper"
+              >
+                <div className="relative">
+                  <img
+                    src={u.recorte}
+                    alt={u.dedo ? `Uña del dedo ${ETIQUETA_DEDO[u.dedo].toLowerCase()}` : 'Tu uña vista de cerca'}
+                    className="aspect-square w-full object-cover"
+                  />
+                  {u.contorno.length > 2 && (
+                    <svg
+                      viewBox="0 0 1 1"
+                      preserveAspectRatio="none"
+                      className="absolute inset-0 h-full w-full text-olive-600"
+                      aria-hidden="true"
+                    >
+                      <polygon
+                        points={u.contorno.map(([x, y]) => `${x},${y}`).join(' ')}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                  )}
+                </div>
+                {rotulo && <p className="px-3 pt-2 text-xs text-muted">{rotulo}</p>}
+                <p className="px-3 py-2 text-xs text-ink" data-testid="forma-una">
+                  {u.forma
+                    ? `${ETIQUETA_FORMA[u.forma]}${u.forma_fiable ? '' : ' (estimación poco fiable)'}`
+                    : 'Forma no medida'}
+                </p>
+              </li>
+            )
+          })}
         </ul>
       </div>
 
       <p className="mt-4 text-xs text-muted-light">
-        Los recuadros son una zona aproximada de cada uña. La línea verde sobre cada recorte es el
-        contorno que usamos para medir la forma; si no calza con tu uña, la forma tampoco es
-        confiable. Almendra y stiletto se confunden fácil con uñas vistas de lado. Tu foto se
-        analiza al momento y no la conservamos.
+        {primerPlano
+          ? 'Analizamos la foto completa como una sola uña vista de cerca. Sin ver la mano no sabemos de qué dedo es ni medimos su forma.'
+          : 'Los recuadros son una zona aproximada de cada uña. La línea verde sobre cada recorte es el contorno que usamos para medir la forma; si no calza con tu uña, la forma tampoco es confiable. Almendra y stiletto se confunden fácil con uñas vistas de lado.'}{' '}
+        Tu foto se analiza al momento y no la conservamos.
       </p>
 
       {/* key por foto: un resultado nuevo empieza con el reporte colapsado. */}

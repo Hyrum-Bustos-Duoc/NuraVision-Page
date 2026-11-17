@@ -5,3 +5,9 @@ tensorflow==2.21.0
 keras==3.15.1
 scikit-learn==1.9.1
 pillow==13.0.0
+# Entorno local (macOS arm64, Python 3.14, sin Python 3.11-3.13 disponible) con el
+# que se entreno estado_clinico el 2026-11-17: tensorflow==2.22.0rc1 (2.21.0 no
+# publica rueda cp314), keras==3.15.1 instalado con --no-deps despues de
+# desinstalar keras-nightly (TF 2.22rc1 lo arrastra y ambos escriben en keras/),
+# scikit-learn==1.9.1, pillow==13.0.0 y ai-edge-litert==2.3.0 (verificacion del
+# .tflite con el mismo motor que el servicio).

@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from app import main
 from app.main import RUTA_TEXTOS_CLINICOS, app
 from app.vision import clinico
-from tests.test_clinico import ETIQUETAS, RECORTE, _analizador, _carpeta, _foto, falso, modelo_presente
+from tests.test_clinico import CALIDAD, ETIQUETAS, RECORTE, _analizador, _carpeta, _foto, falso, modelo_presente
 
 
 def _numeradas(etiquetas) -> dict:
@@ -125,11 +125,14 @@ class _InterpreteFalso:
     def __init__(self, dtype_entrada, dtype_salida):
         self._d = (dtype_entrada, dtype_salida)
 
-    def __call__(self, model_path):
+    def __call__(self, model_path, **_opciones):
         return self
 
     def allocate_tensors(self):
         pass
+
+    def get_tensor_details(self):
+        return []  # sin tensor de embedding: el clasificador carga igual, sin primer plano
 
     def get_input_details(self):
         return [{"shape": np.array([1, clinico.LADO, clinico.LADO, 3]), "dtype": self._d[0], "index": 0}]
@@ -198,14 +201,15 @@ def _alternativas_validas(c, predicha):
     assert c.alternativas[0].confianza >= c.alternativas[1].confianza
 
 
-@pytest.mark.parametrize("predicha", [e for e in ETIQUETAS if e != "otra"])
+# Las nunca nombradas no dan ok con ninguna confianza: las prueba test_clinico.py.
+@pytest.mark.parametrize("predicha", [e for e in ETIQUETAS if e != "otra" and e not in clinico.CLASES_NUNCA_NOMBRADAS])
 @pytest.mark.parametrize("segunda", ["sin_senales", "otra", None])
 def test_toda_clase_predicha_da_dos_alternativas_validas(predicha, segunda):
     v = dict.fromkeys(ETIQUETAS, 0.0)
     v[predicha] = 0.95
     if segunda and segunda != predicha:
         v[segunda] = 0.05
-    c = clinico.clasificar(falso(np.array([v[e] for e in ETIQUETAS]), 0.7, 0.9), RECORTE)
+    c = clinico.clasificar(falso(np.array([v[e] for e in ETIQUETAS]), 0.7, 0.9), RECORTE, CALIDAD)
     _alternativas_validas(c, predicha)
 
 
@@ -213,7 +217,7 @@ def test_toda_clase_predicha_da_dos_alternativas_validas(predicha, segunda):
 def test_sin_senales_con_probabilidad_extrema(p):
     v = np.zeros(9)
     v[ETIQUETAS.index("sin_senales")] = p
-    c = clinico.clasificar(falso(v, 0.7, 0.0), RECORTE)
+    c = clinico.clasificar(falso(v, 0.7, 0.0), RECORTE, CALIDAD)
     _alternativas_validas(c, "sin_senales")
     assert 0 <= c.confianza <= 1
 
@@ -222,24 +226,25 @@ def test_softmax_float32_que_pasa_de_1():
     # En float32 la clase puede valer 1.0000001: redondeada a 3 decimales es 1.0.
     v = np.zeros(9, np.float32)
     v[0] = np.float32(1.0000001)
-    _alternativas_validas(clinico.clasificar(falso(v), RECORTE), ETIQUETAS[0])
+    _alternativas_validas(clinico.clasificar(falso(v), RECORTE, CALIDAD), ETIQUETAS[0])
 
 
 def test_empate_entre_otra_y_sin_senales_gana_la_primera_etiqueta():
     # argmax toma "otra" (indice 3) antes que "sin_senales" (5): se abstiene.
     v = np.zeros(9)
     v[3] = v[5] = 0.5
-    assert clinico.clasificar(falso(v, 0.0, 0.0), RECORTE).motivo == "clase_otra"
+    assert clinico.clasificar(falso(v, 0.0, 0.0), RECORTE, CALIDAD).motivo == "clase_otra"
 
 
 def test_salida_uniforme_con_umbral_cero():
-    c = clinico.clasificar(falso(np.full(9, 1 / 9), 0.0, 0.0), RECORTE)
+    c = clinico.clasificar(falso(np.full(9, 1 / 9), 0.0, 0.0), RECORTE, CALIDAD)
     _alternativas_validas(c, ETIQUETAS[0])
-    assert [a.clase for a in c.alternativas] == ["linea_oscura", "acropaquia"]
+    # Empate total: el orden de etiquetas, saltando acropaquia (nunca se nombra).
+    assert [a.clase for a in c.alternativas] == ["linea_oscura", "onicolisis"]
 
 
 def test_logits_sin_softmax_son_clasificacion_fallida():
     # Un modelo exportado sin softmax da valores > 1: el contrato los rechaza y
     # la una sale no_concluyente en vez de un 5xx.
-    c = clinico.clasificar(falso(np.linspace(-3, 5, 9), 0.0, 0.0), RECORTE)
+    c = clinico.clasificar(falso(np.linspace(-3, 5, 9), 0.0, 0.0), RECORTE, CALIDAD)
     assert c == clinico.no_concluyente("clasificacion_fallida")
