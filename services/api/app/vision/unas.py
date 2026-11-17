@@ -41,7 +41,7 @@ from .segmentador import Segmentador
 log = logging.getLogger(__name__)
 
 NOMBRE_MODELO = "mediapipe-hand-landmarker"
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 # (articulacion distal, punta) de cada dedo, segun la numeracion de MediaPipe.
 DEDOS = {
@@ -345,13 +345,15 @@ class AnalizadorUnas:
                     borderMode=cv2.BORDER_REPLICATE,
                 )
                 medida = self._medir_forma(imagen, region)
+                calidad = clinico.medir_calidad(recorte, region.lado)
                 unas.append(
                     Una(
                         dedo=dedo,
                         mano=n_mano,
                         esquinas=[(x / ancho, y / alto) for x, y in esquinas_region(region)],
                         recorte=_como_data_url(recorte),
-                        clinico=clinico.clasificar(self._clasificador, recorte),
+                        calidad=calidad,
+                        clinico=clinico.clasificar(self._clasificador, recorte, calidad),
                         **(
                             {
                                 "forma": medida.forma,
@@ -371,12 +373,15 @@ class AnalizadorUnas:
             # Solo sin mano: con mano a la vista, la foto entera no es una sola una.
             recorte = recorte_primer_plano(imagen)
             if clinico.parece_una(self._clasificador, recorte):
+                # El recorte es la foto entera: su lado de origen es el lado menor.
+                calidad = clinico.medir_calidad(recorte, min(alto, ancho))
                 una = Una(
                     dedo=None,
                     mano=None,
                     esquinas=ESQUINAS_FOTO,
                     recorte=_como_data_url(recorte),
-                    clinico=clinico.clasificar(self._clasificador, recorte),
+                    calidad=calidad,
+                    clinico=clinico.clasificar(self._clasificador, recorte, calidad),
                 )
                 return ResultadoAnalisis(
                     estado="ok",

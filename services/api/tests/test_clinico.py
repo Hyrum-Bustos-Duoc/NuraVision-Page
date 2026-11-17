@@ -7,6 +7,7 @@ esto mide si el modelo acierta; mide que el servicio decide, se abstiene y
 degrada como dice design.md.
 """
 
+import dataclasses
 import json
 import logging
 import re
@@ -26,7 +27,7 @@ from app import main
 from app.main import RUTA_MODELO, RUTA_TEXTOS_CLINICOS, app
 from app.vision import clinico
 from app.vision.clinico import CLASES_PUBLICAS, ClasificadorClinico, cargar_textos
-from app.vision.esquemas import Clinico, Modelo
+from app.vision.esquemas import CalidadUna, Clinico, Modelo
 from app.vision.unas import AnalizadorUnas
 
 TEXTOS = cargar_textos(RUTA_TEXTOS_CLINICOS)
@@ -37,6 +38,8 @@ ETIQUETAS = (
     "sin_senales", "onicolisis", "una_terry", "mancha_blanca",
 )
 RECORTE = np.zeros((224, 224, 3), np.uint8)
+# Calidad sobrada: las pruebas de reglas no deben pasar por la compuerta de calidad.
+CALIDAD = CalidadUna(brillo=120.0, lado_origen=224)
 
 
 def probs(principal: str, p: float, **otras: float) -> np.ndarray:
@@ -118,7 +121,7 @@ def test_las_combinaciones_invalidas_no_se_pueden_construir(cambios):
 
 def test_resultado_concluyente_trae_clase_redondeada_alternativas_y_reporte():
     # "otra" es la segunda mas probable: no puede colarse en las alternativas.
-    c = clinico.clasificar(falso(probs("linea_beau", 0.87349, otra=0.06, linea_mees=0.03, una_terry=0.0201)), RECORTE)
+    c = clinico.clasificar(falso(probs("linea_beau", 0.87349, otra=0.06, linea_mees=0.03, una_terry=0.0201)), RECORTE, CALIDAD)
     assert (c.estado, c.motivo, c.clase, c.confianza) == ("ok", None, "linea_beau", 0.873)
     assert [(a.clase, a.confianza) for a in c.alternativas] == [("linea_mees", 0.03), ("una_terry", 0.02)]
     assert [a.nombre for a in c.alternativas] == [TEXTOS["linea_mees"].nombre, TEXTOS["una_terry"].nombre]
@@ -127,14 +130,14 @@ def test_resultado_concluyente_trae_clase_redondeada_alternativas_y_reporte():
 
 def test_alternativas_empatadas_salen_en_el_orden_de_las_etiquetas():
     # Todas las demas a partes iguales: el resultado no puede variar entre ejecuciones.
-    c = clinico.clasificar(falso(probs("una_terry", 0.92)), RECORTE)
+    c = clinico.clasificar(falso(probs("una_terry", 0.92)), RECORTE, CALIDAD)
     assert [a.clase for a in c.alternativas] == ["linea_beau", "linea_oscura"]
 
 
 def test_sin_senales_nunca_se_ofrece_como_alternativa_de_una_senal():
     # QA 2026-11-12: con linea_oscura al 0.80 y sin_senales segunda, la UI decia
     # "podria ser: Sin senales reconocidas", lo contrario de la recomendacion.
-    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, linea_mees=0.02)), RECORTE)
+    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, linea_mees=0.02)), RECORTE, CALIDAD)
     assert c.estado == "ok"
     assert [a.clase for a in c.alternativas] == ["onicolisis", "linea_mees"]
 
@@ -152,7 +155,7 @@ def test_sin_senales_nunca_se_ofrece_como_alternativa_de_una_senal():
     ids=["otra_099", "otra_sin_umbrales", "bajo_umbral", "sin_umbral", "sin_senales_bajo_su_umbral", "sin_senales_nunca"],
 )
 def test_reglas_de_abstencion(salida, umbral_nc, umbral_ss, motivo):
-    c = clinico.clasificar(falso(salida, umbral_nc, umbral_ss), RECORTE)
+    c = clinico.clasificar(falso(salida, umbral_nc, umbral_ss), RECORTE, CALIDAD)
     assert c == clinico.no_concluyente(motivo)
     assert '"otra"' not in c.model_dump_json()
 
@@ -175,21 +178,26 @@ def test_tabla_de_abstencion_compartida_con_el_entrenamiento(caso):
         umbral_sin_senales=caso["umbral_sin_senales"],
         textos=TEXTOS,
         modelo=Modelo(nombre="tabla", version="test"),
+        clases_no_fiables=frozenset(caso.get("clases_no_fiables", [])),
+        umbral_alguna_senal=caso.get("umbral_alguna_senal"),
     )
-    c = clinico.clasificar(clasificador, RECORTE)
-    assert c.motivo == caso["motivo"]
-    assert c.estado == ("ok" if caso["motivo"] is None else "no_concluyente")
+    c = clinico.clasificar(clasificador, RECORTE, CALIDAD)
+    decision = caso["decision"]
+    if decision == "senal_inespecifica":
+        assert (c.estado, c.motivo) == ("senal_inespecifica", None)
+    else:
+        assert (c.estado, c.motivo) == ("ok" if decision is None else "no_concluyente", decision)
 
 
 @pytest.mark.parametrize("clase,p", [("linea_oscura", 0.70), ("sin_senales", 0.90), ("sin_senales", 0.95)])
 def test_en_el_umbral_o_encima_se_acepta(clase, p):
     # >=, igual que entrenamiento.metricas.evaluar_umbral: el umbral calibrado se acepta.
-    c = clinico.clasificar(falso(probs(clase, p)), RECORTE)
+    c = clinico.clasificar(falso(probs(clase, p)), RECORTE, CALIDAD)
     assert (c.estado, c.clase) == ("ok", clase)
 
 
 def test_sin_clasificador_es_modelo_no_entrenado():
-    assert clinico.clasificar(None, RECORTE) == clinico.no_concluyente("modelo_no_entrenado")
+    assert clinico.clasificar(None, RECORTE, CALIDAD) == clinico.no_concluyente("modelo_no_entrenado")
 
 
 def _explota(_x):
@@ -202,7 +210,147 @@ def _explota(_x):
     ids=["excepcion", "nan", "forma_distinta"],
 )
 def test_un_fallo_al_clasificar_es_clasificacion_fallida(salida):
-    assert clinico.clasificar(falso(salida), RECORTE) == clinico.no_concluyente("clasificacion_fallida")
+    assert clinico.clasificar(falso(salida), RECORTE, CALIDAD) == clinico.no_concluyente("clasificacion_fallida")
+
+
+# --- calidad, clases no fiables y senal_inespecifica ------------------------
+# Reglas de la ronda 2 (aprobadas por el dueno el 2026-11-17). Cada una sale de un
+# campo de metadatos.json; sin el campo, la regla no se aplica (modelo instalado).
+
+NO_FIABLES = frozenset({"acropaquia", "linea_mees"})
+
+
+def con_reglas(salida, **campos) -> ClasificadorClinico:
+    return dataclasses.replace(falso(salida), **campos)
+
+
+def _no_llamar(_x):
+    raise AssertionError("una foto insuficiente no se le pasa al modelo")
+
+
+@pytest.mark.parametrize(
+    "calidad,campos",
+    [
+        (CalidadUna(brillo=39.99, lado_origen=224), {"brillo_minimo": 40.0}),
+        (CalidadUna(brillo=120.0, lado_origen=63), {"lado_minimo": 64}),
+        (CalidadUna(brillo=10.0, lado_origen=10), {"brillo_minimo": 40.0, "lado_minimo": 64}),
+    ],
+    ids=["oscura", "zona_pequena", "las_dos"],
+)
+def test_foto_insuficiente_se_decide_antes_del_modelo(calidad, campos):
+    c = clinico.clasificar(con_reglas(_no_llamar, **campos), RECORTE, calidad)
+    assert c == clinico.no_concluyente("foto_insuficiente")
+
+
+def test_en_la_calidad_minima_se_clasifica():
+    c = con_reglas(probs("linea_beau", 0.9), brillo_minimo=40.0, lado_minimo=64)
+    assert clinico.clasificar(c, RECORTE, CalidadUna(brillo=40.0, lado_origen=64)).estado == "ok"
+
+
+def test_sin_calidad_minima_una_foto_oscura_se_clasifica_como_hoy():
+    oscura = CalidadUna(brillo=0.0, lado_origen=1)
+    assert clinico.clasificar(falso(probs("linea_beau", 0.9)), RECORTE, oscura).estado == "ok"
+
+
+def test_sin_modelo_va_antes_que_la_calidad():
+    c = clinico.clasificar(None, RECORTE, CalidadUna(brillo=0.0, lado_origen=0))
+    assert c == clinico.SIN_MODELO
+
+
+def test_medir_calidad_mide_el_brillo_del_entrenamiento_y_trunca_el_lado(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "vision"))
+    from entrenamiento import degradaciones
+
+    recorte = np.random.default_rng(20261117).integers(0, 256, (224, 224, 3), dtype=np.uint8)
+    calidad = clinico.medir_calidad(recorte, 63.9)
+    # degradaciones.brillo recibe RGB (lo que ve el modelo); el servicio tiene BGR.
+    assert calidad.brillo == degradaciones.brillo(cv2.cvtColor(recorte, cv2.COLOR_BGR2RGB))
+    assert calidad.lado_origen == 63
+
+
+@pytest.mark.parametrize("clase", sorted(NO_FIABLES))
+def test_una_clase_no_fiable_no_se_nombra_aunque_supere_el_umbral(clase):
+    c = clinico.clasificar(con_reglas(probs(clase, 0.95), clases_no_fiables=NO_FIABLES), RECORTE, CALIDAD)
+    assert c == clinico.no_concluyente("clase_no_fiable")
+
+
+def test_una_clase_no_fiable_nunca_es_alternativa():
+    salida = probs("linea_beau", 0.8, acropaquia=0.1, linea_mees=0.05, una_terry=0.02, onicolisis=0.01)
+    c = clinico.clasificar(con_reglas(salida, clases_no_fiables=NO_FIABLES), RECORTE, CALIDAD)
+    assert c.estado == "ok"
+    assert [a.clase for a in c.alternativas] == ["una_terry", "onicolisis"]
+    # Sin la regla (modelo instalado), las mismas probabilidades si las nombran.
+    assert [a.clase for a in clinico.clasificar(falso(salida), RECORTE, CALIDAD).alternativas] == [
+        "acropaquia", "linea_mees"
+    ]
+
+
+def test_senal_inespecifica_no_nombra_ninguna_clase_y_trae_su_probabilidad():
+    # acropaquia confiada (no fiable) y las senales juntas sobre el umbral.
+    salida = probs("acropaquia", 0.9, linea_mees=0.04, sin_senales=0.01, otra=0.01)
+    c = clinico.clasificar(
+        con_reglas(salida, clases_no_fiables=NO_FIABLES, umbral_alguna_senal=0.855), RECORTE, CALIDAD
+    )
+    assert (c.estado, c.motivo, c.clase, c.confianza, c.alternativas) == ("senal_inespecifica", None, None, None, [])
+    assert c.p_alguna_senal == 0.98
+    assert c.reporte == TEXTOS[clinico.SENAL_INESPECIFICA]
+    cuerpo = c.model_dump_json()
+    assert [x for x in (*CLASES_PUBLICAS, '"otra"') if x in cuerpo] == []
+    assert [k for k in CLASES_PUBLICAS if TEXTOS[k].nombre in cuerpo] == []
+
+
+def test_bajo_umbral_alguna_senal_se_abstiene_con_su_motivo():
+    salida = probs("linea_beau", 0.5, linea_oscura=0.3, sin_senales=0.2)
+    c = clinico.clasificar(con_reglas(salida, umbral_alguna_senal=0.855), RECORTE, CALIDAD)
+    assert c == clinico.no_concluyente("confianza_baja")
+
+
+def test_una_senal_aceptada_no_pasa_a_senal_inespecifica():
+    c = clinico.clasificar(con_reglas(probs("linea_oscura", 0.95), umbral_alguna_senal=0.5), RECORTE, CALIDAD)
+    assert (c.estado, c.clase) == ("ok", "linea_oscura")
+
+
+SI = {
+    **NC, "estado": "senal_inespecifica", "motivo": None, "p_alguna_senal": 0.9,
+    "reporte": TEXTOS[clinico.SENAL_INESPECIFICA].model_dump(),
+}
+
+
+def test_contrato_de_senal_inespecifica_y_motivos_nuevos():
+    Clinico(**SI)
+    Clinico(**{**NC, "motivo": "foto_insuficiente"})
+    Clinico(**{**NC, "motivo": "clase_no_fiable"})
+
+
+@pytest.mark.parametrize(
+    "cambios",
+    [
+        {**SI, "p_alguna_senal": None},
+        {**SI, "reporte": None},
+        {**SI, "motivo": "confianza_baja"},
+        {**SI, "clase": "linea_beau"},
+        {**SI, "confianza": 0.5},
+        {**SI, "alternativas": ALT},
+        {**SI, "reporte": REPORTE},  # el de linea_beau trae asociaciones
+        {**SI, "p_alguna_senal": 1.2},
+        {**OK, "p_alguna_senal": 0.9},
+        {**NC, "p_alguna_senal": 0.9},
+    ],
+    ids=[
+        "si_sin_p", "si_sin_reporte", "si_con_motivo", "si_con_clase", "si_con_confianza", "si_con_alternativas",
+        "si_reporte_con_asociaciones", "si_p_fuera_de_rango", "ok_con_p", "nc_con_p",
+    ],
+)
+def test_combinaciones_invalidas_de_senal_inespecifica(cambios):
+    with pytest.raises(ValidationError):
+        Clinico(**cambios)
+
+
+@pytest.mark.parametrize("calidad", [{"brillo": 255.1, "lado_origen": 1}, {"brillo": -1, "lado_origen": 1},
+                                     {"brillo": 1, "lado_origen": -1}])
+def test_calidad_fuera_de_rango_no_se_construye(calidad):
+    with pytest.raises(ValidationError):
+        CalidadUna(**calidad)
 
 
 # --- entrada identica a la del entrenamiento --------------------------------
@@ -305,6 +453,62 @@ def test_textos_sin_una_clase_impiden_cargar(tmp_path):
         clinico.cargar(_carpeta(tmp_path), ruta)
 
 
+def _cargar_sin_tflite(tmp_path, monkeypatch, **metadatos) -> ClasificadorClinico:
+    """cargar() con todo real salvo el interprete, para probar lo que lee de metadatos.json."""
+    monkeypatch.setattr(clinico, "_interprete", lambda _ruta, _n: (lambda _x: probs("linea_beau", 0.9), None))
+    return clinico.cargar(_carpeta(tmp_path, **metadatos), RUTA_TEXTOS_CLINICOS)
+
+
+def test_metadatos_sin_las_reglas_nuevas_cargan_sin_aplicarlas(tmp_path, monkeypatch):
+    # Es el caso del modelo instalado (0.1.0): su comportamiento no cambia.
+    c = _cargar_sin_tflite(tmp_path, monkeypatch)
+    assert (c.brillo_minimo, c.lado_minimo, c.clases_no_fiables, c.umbral_alguna_senal) == (None, None, frozenset(), None)
+
+
+def test_metadatos_con_las_reglas_nuevas_las_cargan(tmp_path, monkeypatch):
+    c = _cargar_sin_tflite(
+        tmp_path, monkeypatch,
+        calidad_minima={"brillo": 40, "lado_origen": 64},
+        clases_no_fiables={"acropaquia": "precision_baja", "linea_mees": "pocas_fotos"},
+        umbral_alguna_senal=0.855,
+    )
+    assert (c.brillo_minimo, c.lado_minimo, c.umbral_alguna_senal) == (40.0, 64, 0.855)
+    assert c.clases_no_fiables == NO_FIABLES
+
+
+def test_umbral_alguna_senal_null_no_rescata_nada(tmp_path, monkeypatch):
+    assert _cargar_sin_tflite(tmp_path, monkeypatch, umbral_alguna_senal=None).umbral_alguna_senal is None
+
+
+@pytest.mark.parametrize(
+    "metadatos,motivo",
+    [
+        ({"calidad_minima": {"brillo": 40}}, "calidad_minima"),
+        ({"calidad_minima": [40, 64]}, "calidad_minima"),
+        ({"calidad_minima": {"brillo": 300, "lado_origen": 64}}, "calidad_minima.brillo"),
+        ({"calidad_minima": {"brillo": True, "lado_origen": 64}}, "calidad_minima.brillo"),
+        ({"calidad_minima": {"brillo": 40, "lado_origen": 64.5}}, "calidad_minima.lado_origen"),
+        ({"calidad_minima": {"brillo": 40, "lado_origen": -1}}, "calidad_minima.lado_origen"),
+        ({"clases_no_fiables": {"otra": "x"}}, "clases_no_fiables"),
+        ({"clases_no_fiables": ["acropaquia"]}, "clases_no_fiables"),
+        ({"clases_no_fiables": dict.fromkeys(["linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis"], "x")},
+         "menos de 3"),
+        ({"umbral_alguna_senal": 0.4}, ">= 0.5"),
+        ({"umbral_alguna_senal": "0.9"}, "umbral_alguna_senal"),
+        ({"umbral_alguna_senal": 1.5}, "umbral_alguna_senal"),
+    ],
+    ids=[
+        "calidad_sin_lado", "calidad_lista", "brillo_fuera_de_rango", "brillo_bool", "lado_decimal", "lado_negativo",
+        "no_fiable_otra", "no_fiables_lista", "no_fiables_dejan_dos_senales",
+        "alguna_senal_bajo_un_medio", "alguna_senal_texto", "alguna_senal_fuera_de_rango",
+    ],
+)
+def test_reglas_nuevas_mal_formadas_impiden_cargar(tmp_path, caplog, metadatos, motivo):
+    with caplog.at_level(logging.WARNING, logger="app.vision.clinico"):
+        assert clinico.cargar_opcional(_carpeta(tmp_path, **metadatos), RUTA_TEXTOS_CLINICOS) is None
+    assert motivo in caplog.text
+
+
 # --- textos clinicos ---------------------------------------------------------
 
 
@@ -328,7 +532,28 @@ CAUSAS_LINEA_OSCURA = [
 
 
 def test_el_archivo_trae_un_texto_por_cada_id_publico_y_ninguno_para_otra():
-    assert set(TEXTOS) == set(CLASES_PUBLICAS)
+    assert set(TEXTOS) == {*CLASES_PUBLICAS, clinico.SENAL_INESPECIFICA}
+
+
+def test_el_texto_de_senal_inespecifica_no_nombra_ni_insinua_ninguna_senal():
+    texto = _todo(clinico.SENAL_INESPECIFICA)
+    assert TEXTOS[clinico.SENAL_INESPECIFICA].asociaciones == []
+    assert [k for k in CLASES_PUBLICAS if _plano(TEXTOS[k].nombre) in texto] == []
+    # Palabras de los nombres de cada senal que bastarian para adivinarla.
+    pistas = ["surco", "banda", "franja", "linea", "curvad", "ensanch", "separad", "despeg", "blanc", "mancha"]
+    assert [p for p in pistas if p in texto] == []
+
+
+@pytest.mark.parametrize("seccion", ["sin_seccion", "con_asociaciones"])
+def test_textos_sin_reporte_generico_valido_impiden_cargar(tmp_path, seccion):
+    texto = RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8")
+    inicio = texto.index("\n[senal_inespecifica]")  # la tabla, no su mencion en la cabecera
+    resto = "" if seccion == "sin_seccion" else texto[inicio:].replace("asociaciones = []", 'asociaciones = ["x"]')
+    texto = texto[:inicio] + resto
+    ruta = tmp_path / "textos.toml"
+    ruta.write_text(texto, encoding="utf-8")
+    with pytest.raises(clinico.ClasificadorNoDisponible, match="senal_inespecifica"):
+        clinico.cargar_textos(ruta)
 
 
 def test_el_archivo_nace_pendiente_de_revision_profesional():
@@ -339,14 +564,14 @@ def test_el_archivo_nace_pendiente_de_revision_profesional():
     assert "PENDIENTE DE REVISION PROFESIONAL" in RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("clase", CLASES_PUBLICAS)
+@pytest.mark.parametrize("clase", [*CLASES_PUBLICAS, clinico.SENAL_INESPECIFICA])
 def test_ningun_texto_usa_lenguaje_de_diagnostico(clase):
     texto = _todo(clase)
     usadas = [p for p in PROHIBIDAS if re.search(rf"\b{p}\b", texto)]
     assert usadas == []
 
 
-@pytest.mark.parametrize("clase", CLASES_PUBLICAS)
+@pytest.mark.parametrize("clase", [*CLASES_PUBLICAS, clinico.SENAL_INESPECIFICA])
 def test_toda_recomendacion_nombra_a_un_profesional(clase):
     reco = _plano(TEXTOS[clase].recomendacion)
     assert any(p in reco for p in ("profesional", "dermatolog", "medic"))
@@ -434,6 +659,17 @@ def test_falla_la_segunda_de_tres_unas_y_las_otras_siguen(caplog):
     assert [u.clinico.estado for u in con.unas] == ["ok", "no_concluyente", "ok"]
     assert _sin_clinico(con) == _sin_clinico(sin)  # la forma no cambia por el bloque clinico
     assert con.modelo_clinico == Modelo(nombre="clasificador-falso", version="test")
+
+
+@pytest.mark.skipif(not modelo_presente, reason="falta models/hand_landmarker.task")
+@pytest.mark.parametrize("lado_minimo,estado", [(84, "ok"), (85, "no_concluyente")])
+def test_la_calidad_de_cada_una_sale_de_su_recorte_y_de_su_zona(lado_minimo, estado):
+    # En _mano_tres_dedos el tramo articulacion-punta mide 70 px: la zona, 70 * 1.2 = 84.
+    r = _analizador(con_reglas(probs("linea_beau", 0.9), brillo_minimo=40.0, lado_minimo=lado_minimo)).analizar(_foto())
+    assert {(u.calidad.lado_origen, round(u.calidad.brillo, 6)) for u in r.unas} == {(84, 180.0)}
+    assert {u.clinico.estado for u in r.unas} == {estado}
+    if estado == "no_concluyente":
+        assert {u.clinico.motivo for u in r.unas} == {"foto_insuficiente"}
 
 
 @pytest.mark.skipif(not modelo_presente, reason="falta models/hand_landmarker.task")

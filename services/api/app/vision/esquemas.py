@@ -34,8 +34,10 @@ ClaseClinica = Literal[
 ]
 MotivoClinico = Literal[
     "modelo_no_entrenado",  # no hay clasificador clinico utilizable cargado
+    "foto_insuficiente",  # recorte bajo la calidad_minima del modelo; no se le pregunta
     "confianza_baja",  # bajo el umbral, o el modelo no tiene umbral
     "clase_otra",  # la clase predicha es "otra"
+    "clase_no_fiable",  # la clase predicha esta en clases_no_fiables del modelo; no se nombra
     "clasificacion_fallida",  # excepcion al clasificar ESTA una
 ]
 
@@ -55,14 +57,33 @@ class AlternativaClinica(BaseModel):
     confianza: float = Field(ge=0, le=1)
 
 
+class CalidadUna(BaseModel):
+    """Medicion (no interpretacion) del recorte que ve el clasificador clinico.
+
+    Solo brillo y lado: son lo que el modelo usa para decidir foto_insuficiente.
+    La nitidez se probo y no separo fotos buenas de malas (services/vision,
+    degradaciones.py), asi que no se mide.
+    """
+
+    # Media del gris BT.601 (0-255) del recorte de 224, como degradaciones.brillo.
+    brillo: float = Field(ge=0, le=255)
+    # Lado, en pixeles de la foto (ya reducida a LADO_MAXIMO), de la zona de la que
+    # sale el recorte. En primer_plano, el lado menor de la foto.
+    lado_origen: int = Field(ge=0)
+
+
 class Clinico(BaseModel):
     """Senal clinica orientativa de una una, o la abstencion con su motivo.
 
     Cuando no es concluyente no viaja ninguna suposicion (ni clase ni
     alternativas): si se expusieran, la abstencion dejaria de servir.
+    senal_inespecifica: el modelo no puede nombrar una clase, pero la suma de
+    las 7 senales supera umbral_alguna_senal. Se dice que se ve alguna senal, sin
+    decir cual: ni clase, ni alternativas, ni motivo (el motivo delataria si la
+    clase era una no fiable).
     """
 
-    estado: Literal["ok", "no_concluyente"]
+    estado: Literal["ok", "no_concluyente", "senal_inespecifica"]
     motivo: MotivoClinico | None
     clase: ClaseClinica | None
     # Probabilidad bruta del softmax sobre las 9 clases (sin renormalizar al
@@ -70,9 +91,23 @@ class Clinico(BaseModel):
     confianza: float | None = Field(ge=0, le=1)
     alternativas: list[AlternativaClinica]
     reporte: ReporteClinico | None
+    # Suma de las probabilidades brutas de las 7 senales, redondeada a 3 decimales.
+    # Solo en senal_inespecifica, donde hace de confianza del hallazgo.
+    p_alguna_senal: float | None = Field(default=None, ge=0, le=1)
 
     @model_validator(mode="after")
     def _invariantes(self) -> "Clinico":
+        if self.estado != "senal_inespecifica" and self.p_alguna_senal is not None:
+            raise ValueError("p_alguna_senal solo va en senal_inespecifica")
+        if self.estado == "senal_inespecifica":
+            if self.p_alguna_senal is None or self.reporte is None:
+                raise ValueError("senal_inespecifica exige p_alguna_senal y reporte")
+            if self.motivo is not None or self.clase is not None or self.confianza is not None or self.alternativas:
+                raise ValueError("senal_inespecifica no lleva motivo, clase, confianza ni alternativas")
+            # Una asociacion es una causa posible de UNA senal: delataria cual se vio.
+            if self.reporte.asociaciones:
+                raise ValueError("el reporte de senal_inespecifica no lleva asociaciones")
+            return self
         if self.estado == "no_concluyente":
             if self.motivo is None:
                 raise ValueError("no_concluyente exige motivo")
@@ -123,6 +158,8 @@ class Una(BaseModel):
     forma_fiable: bool = False
     # Contorno de la una en coordenadas 0..1 del recorte (x, y). Vacio si no hay forma.
     contorno: list[tuple[float, float]] = Field(default_factory=list)
+    # Siempre presente, tambien sin clasificador clinico: es una medicion del recorte.
+    calidad: CalidadUna
     # Siempre presente: sin clasificador clinico es no_concluyente/modelo_no_entrenado.
     clinico: Clinico
 

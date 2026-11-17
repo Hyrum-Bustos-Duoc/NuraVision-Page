@@ -26,7 +26,7 @@ import cv2
 import numpy as np
 from ai_edge_litert.interpreter import Interpreter
 
-from .esquemas import AlternativaClinica, ClaseClinica, Clinico, Modelo, MotivoClinico, ReporteClinico
+from .esquemas import AlternativaClinica, CalidadUna, ClaseClinica, Clinico, Modelo, MotivoClinico, ReporteClinico
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +37,9 @@ SIN_SENALES = "sin_senales"
 # Lista cerrada (design.md, decision 2): el modelo debe traer exactamente estas
 # 9 etiquetas. Ni una mas (tampoco "melanoma") ni una menos.
 CLASES_MODELO = frozenset((*CLASES_PUBLICAS, OTRA))
+SENALES = frozenset(CLASES_PUBLICAS) - {SIN_SENALES}
+# Clave de textos_clinicos.toml con el reporte de senal_inespecifica, que no nombra senal.
+SENAL_INESPECIFICA = "senal_inespecifica"
 # Lado de entrada del modelo: el mismo recorte de 224 del servicio, que es el
 # lado de services/vision/config.toml. Se comprueba contra el .tflite al cargar.
 LADO = 224
@@ -79,6 +82,16 @@ class ClasificadorClinico:
     embeber: Callable[[np.ndarray], np.ndarray] | None = None
     # None si no hay referencia valida para este modelo: sin ella no hay primer_plano.
     referencia: ReferenciaUna | None = None
+    # Lo que sigue lo trae el metadatos.json de los modelos entrenados con robustez
+    # (busqueda_clinica final). Si falta, su regla no se aplica: es el comportamiento
+    # de los modelos anteriores, que no lo calibraron.
+    # calidad_minima.brillo y .lado_origen: por debajo, foto_insuficiente sin preguntar al modelo.
+    brillo_minimo: float | None = None
+    lado_minimo: int | None = None
+    # Clases que el modelo nunca nombra (ni como clase ni como alternativa).
+    clases_no_fiables: frozenset[str] = frozenset()
+    # Minimo de p(alguna senal) para responder senal_inespecifica en vez de abstenerse.
+    umbral_alguna_senal: float | None = None
 
 
 def entrada(recorte_bgr: np.ndarray) -> np.ndarray:
@@ -88,21 +101,65 @@ def entrada(recorte_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(recorte_bgr, cv2.COLOR_BGR2RGB).astype(np.float32)
 
 
-def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
-    """Reglas 3-6 de la decision 5 de design.md, en ese orden. Las 1 y 2 estan en clasificar()."""
+def medir_calidad(recorte_bgr: np.ndarray, lado_origen: float) -> CalidadUna:
+    """Brillo del recorte y lado de la zona de la foto de la que sale.
+
+    El brillo es el de degradaciones.brillo de services/vision sobre el mismo
+    tensor que ve el modelo: si se midiera distinto, brillo_minimo no
+    significaria lo mismo que al calibrar (lo prueba test_clinico.py).
+    """
+    gris = entrada(recorte_bgr).astype(np.float64) @ np.array([0.299, 0.587, 0.114])
+    # Sin redondear: la compuerta compara este valor y redondear moveria el borde.
+    # El lado se trunca: un lado de 63,9 px no llega a 64.
+    return CalidadUna(brillo=float(gris.mean()), lado_origen=int(lado_origen))
+
+
+def _motivo(probs: np.ndarray, c: ClasificadorClinico) -> MotivoClinico | None:
+    """Reglas 3-6 de la decision 5 de design.md y despues clases_no_fiables. None = se nombra."""
     i = int(np.argmax(probs))
     clase, confianza = c.etiquetas[i], float(probs[i])
     if clase == OTRA:  # antes que la confianza: "otra" no se afirma ni con 0.99
-        return no_concluyente("clase_otra")
+        return "clase_otra"
     if c.umbral_no_concluyente is None or confianza < c.umbral_no_concluyente:
-        return no_concluyente("confianza_baja")
+        return "confianza_baja"
     if clase == SIN_SENALES and (c.umbral_sin_senales is None or confianza < c.umbral_sin_senales):
-        return no_concluyente("confianza_baja")
+        return "confianza_baja"
+    # Despues de los umbrales: una clase no fiable con confianza baja sigue siendo
+    # confianza_baja, y el motivo solo dice que hubo una no fiable cuando importa.
+    if clase in c.clases_no_fiables:
+        return "clase_no_fiable"
+    return None
+
+
+def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
+    """Reglas 3-6 de design.md, clases_no_fiables y senal_inespecifica, en ese orden.
+    Las reglas 1, 2 y foto_insuficiente estan en clasificar(). Mismas reglas que
+    entrenamiento.metricas.motivo_abstencion (tabla casos_abstencion.json)."""
+    motivo = _motivo(probs, c)
+    if motivo is not None:
+        # Rescata la abstencion cuando las 7 senales juntas son claras aunque
+        # ninguna lo sea sola. Con "otra" tambien: su umbral se calibro contandola
+        # como negativa, asi que ya esta descontada en la precision.
+        p_senal = float(sum(p for e, p in zip(c.etiquetas, probs, strict=True) if e in SENALES))
+        if c.umbral_alguna_senal is not None and p_senal >= c.umbral_alguna_senal:
+            return Clinico(
+                estado="senal_inespecifica",
+                motivo=None,
+                clase=None,
+                confianza=None,
+                alternativas=[],
+                reporte=c.textos[SENAL_INESPECIFICA],
+                p_alguna_senal=min(round(p_senal, 3), 1.0),
+            )
+        return no_concluyente(motivo)
+    i = int(np.argmax(probs))
+    clase, confianza = c.etiquetas[i], float(probs[i])
     # Ordenadas por la probabilidad bruta; sorted es estable, asi que un empate
     # se resuelve por el orden de etiquetas.json y el resultado es reproducible.
     # Nunca se ofrece "sin_senales" como alternativa de una senal: sugeriria que
     # la persona podria no tener nada y debilitaria la recomendacion (QA 2026-11-12).
-    excluidas = {OTRA, SIN_SENALES, clase}
+    # Tampoco una clase no fiable: no se nombra en ningun campo.
+    excluidas = {OTRA, SIN_SENALES, clase, *c.clases_no_fiables}
     candidatas = sorted(
         (j for j, e in enumerate(c.etiquetas) if e not in excluidas), key=lambda j: -float(probs[j])
     )[:N_ALTERNATIVAS]
@@ -121,15 +178,21 @@ def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
     )
 
 
-def clasificar(clasificador: ClasificadorClinico | None, recorte_bgr: np.ndarray) -> Clinico:
+def clasificar(c: ClasificadorClinico | None, recorte_bgr: np.ndarray, calidad: CalidadUna) -> Clinico:
     """Bloque clinico de una una. Nunca lanza: un fallo aqui no tumba la forma ni las otras unas."""
-    if clasificador is None:
+    if c is None:
         return SIN_MODELO
+    # Antes del modelo: sus umbrales se calibraron sin las fotos bajo calidad_minima
+    # (metricas.calibrar_mezcla), asi que sobre ellas no prometen nada.
+    if (c.brillo_minimo is not None and calidad.brillo < c.brillo_minimo) or (
+        c.lado_minimo is not None and calidad.lado_origen < c.lado_minimo
+    ):
+        return no_concluyente("foto_insuficiente")
     try:
-        probs = np.asarray(clasificador.predecir(entrada(recorte_bgr)), dtype=np.float64).reshape(-1)
-        if probs.shape != (len(clasificador.etiquetas),) or not np.all(np.isfinite(probs)):
+        probs = np.asarray(c.predecir(entrada(recorte_bgr)), dtype=np.float64).reshape(-1)
+        if probs.shape != (len(c.etiquetas),) or not np.all(np.isfinite(probs)):
             raise ValueError("salida del clasificador con forma o valores invalidos")
-        return decidir(probs, clasificador)
+        return decidir(probs, c)
     except Exception as exc:  # cualquier fallo de esta una -> clasificacion_fallida, no 5xx
         # Solo el tipo: el mensaje podria arrastrar valores del tensor o de la salida.
         log.warning("Clasificacion clinica fallida en una una (%s)", type(exc).__name__)
@@ -183,6 +246,13 @@ def cargar_textos(ruta: Path) -> dict[str, ReporteClinico]:
         if not reporte.asociaciones and clase != SIN_SENALES:
             raise ClasificadorNoDisponible(f"{ruta}: {clase} necesita al menos una asociacion")
         textos[clase] = reporte
+    try:
+        textos[SENAL_INESPECIFICA] = ReporteClinico.model_validate(datos.get(SENAL_INESPECIFICA))
+    except ValueError as exc:
+        raise ClasificadorNoDisponible(f"{ruta}: falta [{SENAL_INESPECIFICA}] o es invalido") from exc
+    # Igual que en Clinico: una asociacion delataria cual senal se vio.
+    if textos[SENAL_INESPECIFICA].asociaciones:
+        raise ClasificadorNoDisponible(f"{ruta}: [{SENAL_INESPECIFICA}] no puede tener asociaciones")
     if datos["estado_revision"] == "pendiente":
         log.warning("Textos clinicos pendientes de revision profesional (%s)", ruta)
     return textos
@@ -199,6 +269,45 @@ def _umbral(metadatos: dict, clave: str) -> float | None:
     if isinstance(valor, bool) or not isinstance(valor, int | float) or not 0 <= valor <= 1:
         raise ClasificadorNoDisponible(f"metadatos.json: {clave} debe ser null o un numero entre 0 y 1")
     return float(valor)
+
+
+def _calidad_minima(metadatos: dict) -> tuple[float | None, int | None]:
+    """(brillo_minimo, lado_minimo). Sin la clave, (None, None): no hay compuerta."""
+    if "calidad_minima" not in metadatos:
+        return None, None
+    datos = metadatos["calidad_minima"]
+    try:
+        brillo, lado = datos["brillo"], datos["lado_origen"]
+    except (KeyError, TypeError) as exc:
+        raise ClasificadorNoDisponible("metadatos.json: calidad_minima debe traer brillo y lado_origen") from exc
+    if isinstance(brillo, bool) or not isinstance(brillo, int | float) or not 0 <= brillo <= 255:
+        raise ClasificadorNoDisponible("metadatos.json: calidad_minima.brillo debe estar entre 0 y 255")
+    if isinstance(lado, bool) or not isinstance(lado, int) or lado < 0:
+        raise ClasificadorNoDisponible("metadatos.json: calidad_minima.lado_origen debe ser un entero >= 0")
+    return float(brillo), lado
+
+
+def _clases_no_fiables(metadatos: dict) -> frozenset[str]:
+    """Claves de metadatos.clases_no_fiables ({clase: motivo}). Sin la clave, ninguna."""
+    datos = metadatos.get("clases_no_fiables", {})
+    if not isinstance(datos, dict) or not set(datos) <= set(CLASES_PUBLICAS):
+        raise ClasificadorNoDisponible(f"metadatos.json: clases_no_fiables solo admite ids de {sorted(CLASES_PUBLICAS)}")
+    # ok exige 2 alternativas, que no pueden ser la clase predicha ni una no fiable.
+    if len(SENALES - set(datos)) < N_ALTERNATIVAS + 1:
+        raise ClasificadorNoDisponible("metadatos.json: clases_no_fiables deja menos de 3 senales nombrables")
+    return frozenset(datos)
+
+
+def _umbral_alguna_senal(metadatos: dict) -> float | None:
+    if "umbral_alguna_senal" not in metadatos:
+        return None
+    umbral = _umbral(metadatos, "umbral_alguna_senal")
+    # Por debajo de 0,5 las senales juntas no son mayoria y se afirmaria "alguna
+    # senal" con mas probabilidad de que no haya ninguna: falso positivo alarmista.
+    # metricas.calibrar_umbral_senal tampoco baja de ahi.
+    if umbral is not None and umbral < 0.5:
+        raise ClasificadorNoDisponible("metadatos.json: umbral_alguna_senal debe ser null o >= 0.5")
+    return umbral
 
 
 def _interprete(
@@ -309,6 +418,9 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
         raise ClasificadorNoDisponible(f"{carpeta}: las etiquetas no son exactamente los 9 ids de estado_clinico")
     umbral_nc = _umbral(metadatos, "umbral_no_concluyente")
     umbral_ss = _umbral(metadatos, "umbral_sin_senales")
+    brillo_minimo, lado_minimo = _calidad_minima(metadatos)
+    no_fiables = _clases_no_fiables(metadatos)
+    umbral_senal = _umbral_alguna_senal(metadatos)
     try:
         modelo = Modelo(nombre=str(metadatos["model"]["name"]), version=str(metadatos["model"]["version"]))
     except (KeyError, TypeError) as exc:
@@ -324,6 +436,10 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
         modelo=modelo,
         embeber=embeber,
         referencia=_referencia(carpeta, embeber),
+        brillo_minimo=brillo_minimo,
+        lado_minimo=lado_minimo,
+        clases_no_fiables=no_fiables,
+        umbral_alguna_senal=umbral_senal,
     )
 
 

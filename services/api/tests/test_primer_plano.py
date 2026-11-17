@@ -108,6 +108,7 @@ def test_sin_mano_y_aceptada_sale_una_sola_una_de_primer_plano():
     assert u.esquinas == unas.ESQUINAS_FOTO
     assert u.recorte.startswith("data:image/jpeg;base64,")
     assert (u.clinico.estado, u.clinico.clase) == ("ok", "linea_beau")
+    assert u.calidad.lado_origen == 480  # el lado menor de la foto de 640x480
     assert r.forma_predominante is None
 
 
@@ -138,7 +139,8 @@ def test_con_mano_no_se_consulta_la_puerta():
 
 # --- contrato ----------------------------------------------------------------
 
-UNA_PP = {"dedo": None, "mano": None, "esquinas": unas.ESQUINAS_FOTO, "recorte": "x", "clinico": clinico.SIN_MODELO}
+UNA_PP = {"dedo": None, "mano": None, "esquinas": unas.ESQUINAS_FOTO, "recorte": "x",
+          "calidad": {"brillo": 120.0, "lado_origen": 640}, "clinico": clinico.SIN_MODELO}
 BASE = {"manos": 0, "modelo": Modelo(nombre="m", version="1"), "modelo_clinico": None}
 
 
