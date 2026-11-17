@@ -55,6 +55,7 @@ async function analizar(page: Page, unas: unknown[], aviso_clinico: unknown) {
       json: {
         estado: 'ok',
         motivo: null,
+        modo: 'mano_completa',
         manos: 1,
         unas,
         forma_predominante: 'ovalada',

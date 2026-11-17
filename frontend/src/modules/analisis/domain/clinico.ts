@@ -127,6 +127,23 @@ function alternativasValidas(alternativas: unknown, clase: ClaseClinica): boolea
 }
 
 /**
+ * Lo que no viaja en una abstencion (no_concluyente, senal_inespecifica): exponer una
+ * suposicion de clase la anularia. `=== null` y no `== null`: en Pydantic son campos
+ * obligatorios, un JSON sin ellos no cumple el contrato.
+ */
+function sinSuposicion(c: Clinico): boolean {
+  return c.clase === null && c.confianza === null && Array.isArray(c.alternativas) && c.alternativas.length === 0
+}
+
+/**
+ * p_alguna_senal solo va en senal_inespecifica. `== null` y no `=== null`: en Pydantic
+ * tiene default None, asi que puede faltar.
+ */
+function sinAlgunaSenal(c: Clinico): boolean {
+  return c.p_alguna_senal == null
+}
+
+/**
  * Unico punto que resuelve la ausencia o rotura de `clinico`. La UI no usa `?.` sobre
  * el y ramifica solo por estado ('ok' y 'senal_inespecifica' pintan reporte), asi que
  * aqui se comprueba un `ok` con las mismas invariantes que Pydantic: motivo null,
@@ -140,13 +157,20 @@ function alternativasValidas(alternativas: unknown, clase: ClaseClinica): boolea
  * Despues de validar aplica CLASES_OCULTAS: una clase oculta da CLINICO_OCULTO y una
  * alternativa oculta se quita.
  *
- * Una `senal_inespecifica` se reconstruye con solo su reporte y p_alguna_senal: si el
- * servicio colara una clase o alternativas, no llegan a la UI. Un reporte roto o con
- * asociaciones (delatarian la senal), o un p_alguna_senal fuera de 0..1, da
- * CLINICO_FALLIDO.
+ * Una `senal_inespecifica` y un `no_concluyente` siguen las mismas invariantes que
+ * Pydantic, y cualquier fallo da tambien CLINICO_FALLIDO en vez de pintarse quitando lo
+ * que sobra: un servicio que cuela una clase en una abstencion esta roto, y su motivo
+ * (o su reporte) no es de fiar.
+ * - senal_inespecifica: reporte valido sin asociaciones (delatarian la senal),
+ *   p_alguna_senal en 0..1, y ni motivo ni suposicion (ver sinSuposicion).
+ * - no_concluyente: motivo de texto, ni reporte, ni suposicion, ni p_alguna_senal.
+ * - ok: lo descrito al principio, y ademas sin p_alguna_senal.
  *
- * Un `no_concluyente` se devuelve tal cual: la UI solo lee su motivo, y un motivo
- * desconocido ya tiene mensaje generico.
+ * Unica divergencia deliberada con Pydantic: el motivo de un no_concluyente se exige
+ * texto, no uno de MotivoClinico. Un motivo de una version futura del servicio debe
+ * mostrar el mensaje generico (mensajeMotivoClinico), no "no pudimos revisar esta una".
+ * Un estado desconocido se devuelve tal cual por la misma razon: la UI y el resumen lo
+ * tratan como no concluyente.
  */
 export function clinicoDe(una: UnaDetectada): Clinico {
   const c = una.clinico
@@ -155,14 +179,21 @@ export function clinicoDe(una: UnaDetectada): Clinico {
   if (!c) return CLINICO_NO_DISPONIBLE
   if (c.estado === 'senal_inespecifica') {
     const valido =
-      reporteValido(c.reporte) && c.reporte.asociaciones.length === 0 && esProbabilidad(c.p_alguna_senal)
-    if (!valido) return CLINICO_FALLIDO
-    const { reporte, p_alguna_senal } = c
-    return { estado: 'senal_inespecifica', motivo: null, clase: null, confianza: null, alternativas: [], reporte, p_alguna_senal }
+      c.motivo === null &&
+      sinSuposicion(c) &&
+      reporteValido(c.reporte) &&
+      c.reporte.asociaciones.length === 0 &&
+      esProbabilidad(c.p_alguna_senal)
+    return valido ? c : CLINICO_FALLIDO
+  }
+  if (c.estado === 'no_concluyente') {
+    const valido = esTexto(c.motivo) && c.reporte === null && sinSuposicion(c) && sinAlgunaSenal(c)
+    return valido ? c : CLINICO_FALLIDO
   }
   if (c.estado !== 'ok') return c
   const valido =
     c.motivo === null &&
+    sinAlgunaSenal(c) &&
     esClaseClinica(c.clase) &&
     esProbabilidad(c.confianza) &&
     reporteValido(c.reporte) &&

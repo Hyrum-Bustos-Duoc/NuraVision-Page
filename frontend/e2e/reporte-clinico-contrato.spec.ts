@@ -50,6 +50,7 @@ test('un ok con reporte vacío no deja la página en blanco al abrir el reporte'
       json: {
         estado: 'ok',
         motivo: null,
+        modo: 'mano_completa',
         manos: 1,
         unas: [una('indice', okConReporte({}))],
         forma_predominante: 'ovalada',

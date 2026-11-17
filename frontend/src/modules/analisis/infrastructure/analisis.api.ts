@@ -85,18 +85,35 @@ export async function analizarFoto(foto: File, senal?: AbortSignal): Promise<Res
     throw errorDe('servicio_no_disponible')
   }
   // Mismo trato que un cuerpo ilegible: el servicio no cumple su contrato.
-  if (!unasConCalidad(datos)) throw errorDe('servicio_no_disponible')
+  if (!resultadoValido(datos)) throw errorDe('servicio_no_disponible')
   return datos as ResultadoAnalisis
 }
 
 /**
- * `calidad` es obligatoria en cada una desde que el servicio la mide siempre
- * (esquemas.py, CalidadUna). Una una sin ella, o con valores fuera de rango, es un
- * servicio que no habla este contrato. El resto del cuerpo no se valida aqui: el
- * bloque clinico lo valida clinicoDe.
+ * Lo que el servicio garantiza y la UI da por hecho; un cuerpo que lo incumple es un
+ * servicio que no habla este contrato. El bloque clinico no se valida aqui: lo valida
+ * clinicoDe, una por una, sin tumbar el resto del resultado.
+ *
+ * - `calidad` en cada una (esquemas.py, CalidadUna): el servicio la mide siempre.
+ * - ResultadoAnalisis._invariantes: ok si y solo si hay modo y al menos una una;
+ *   primer_plano con 0 manos y exactamente 1 una sin dedo, mano ni forma (el
+ *   clasificador ve la foto entera y no separa varias); mano_completa con dedo y mano
+ *   en cada una. Sin esto, un ok vacio pasaria a la pantalla de resultados sin unas.
+ *
+ * `modo` y `forma` ausentes cuentan como null: forma tiene default None en Pydantic, y
+ * un no_concluyente sin modo no cambia nada de lo que se pinta.
  */
-function unasConCalidad(datos: unknown): boolean {
-  return esObjeto(datos) && Array.isArray(datos.unas) && datos.unas.every((u) => esObjeto(u) && calidadValida(u.calidad))
+function resultadoValido(datos: unknown): boolean {
+  if (!esObjeto(datos) || !Array.isArray(datos.unas)) return false
+  const unas = datos.unas.filter(esObjeto)
+  if (unas.length !== datos.unas.length || !unas.every((u) => calidadValida(u.calidad))) return false
+
+  const ok = datos.estado === 'ok'
+  if (ok !== (datos.modo != null) || ok !== (unas.length > 0)) return false
+  if (datos.modo === 'primer_plano') {
+    return datos.manos === 0 && unas.length === 1 && unas[0].dedo === null && unas[0].mano === null && unas[0].forma == null
+  }
+  return unas.every((u) => u.dedo != null && u.mano != null)
 }
 
 function calidadValida(c: unknown): boolean {
@@ -119,6 +136,9 @@ export function mensajeNoConcluyente(motivo: ResultadoAnalisis['motivo']): strin
   if (motivo === 'imagen_pequena') {
     return 'La foto es muy pequeña para ver tus uñas. Acércate un poco o usa una foto de mayor tamaño.'
   }
-  // sin_mano: no hay mano y la foto tampoco parece una sola uña vista de cerca.
-  return 'No encontramos una mano en la foto, ni una uña vista de cerca. Muestra la mano abierta con el dorso y las uñas hacia la cámara, o acerca la cámara a una sola uña para que ocupe casi toda la foto, con buena luz natural.'
+  // sin_mano: no hay mano, y si el servicio tiene primer_plano activo, la foto tampoco
+  // parece una sola una de cerca. Ese modo puede estar apagado en el servidor, asi que el
+  // consejo principal es la mano completa (no depende de ese modo) y no se afirma que se busco
+  // una una de cerca.
+  return 'No encontramos una mano en la foto. Toma otra donde se vea la mano completa, abierta, con el dorso y las uñas hacia la cámara y buena luz natural. Si fotografías una sola uña, que salga bien enfocada y ocupe casi toda la foto.'
 }

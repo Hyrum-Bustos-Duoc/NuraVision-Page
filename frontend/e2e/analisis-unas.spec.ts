@@ -65,6 +65,7 @@ test.describe('Analisis de unas', () => {
         json: {
           estado: 'ok',
           motivo: null,
+          modo: 'mano_completa',
           manos: 1,
           unas: [una('pulgar'), una('indice')],
           forma_predominante: null,
@@ -91,6 +92,7 @@ test.describe('Analisis de unas', () => {
         json: {
           estado: 'ok',
           motivo: null,
+          modo: 'mano_completa',
           manos: 1,
           unas: [
             conForma('pulgar', 'cuadrada'),
@@ -118,7 +120,7 @@ test.describe('Analisis de unas', () => {
   test('si no se pudo medir la forma lo dice en vez de inventar una', async ({ page }) => {
     await page.route('**/vision/analizar', (route) =>
       route.fulfill({
-        json: { estado: 'ok', motivo: null, manos: 1, unas: [una('indice')], forma_predominante: null, aviso: AVISO, modelo: MODELO },
+        json: { estado: 'ok', motivo: null, modo: 'mano_completa', manos: 1, unas: [una('indice')], forma_predominante: null, aviso: AVISO, modelo: MODELO },
       }),
     )
     await irASubirFoto(page)

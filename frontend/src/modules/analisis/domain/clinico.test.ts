@@ -40,7 +40,7 @@ function ok(clase: ClaseClinica): Extract<Clinico, { estado: 'ok' }> {
   }
 }
 
-function nc(motivo: MotivoClinico): Clinico {
+function nc(motivo: MotivoClinico): Extract<Clinico, { estado: 'no_concluyente' }> {
   return { estado: 'no_concluyente', motivo, clase: null, confianza: null, alternativas: [], reporte: null }
 }
 
@@ -89,6 +89,9 @@ describe('clinicoDe', () => {
     ['con alternativas repetidas', { alternativas: [ALT_OK, ALT_OK] }],
     ['con alternativas de menor a mayor confianza', { alternativas: [ALT_OK, { clase: 'onicolisis', nombre: 'x', confianza: 0.05 }] }],
     ['con una alternativa de confianza mayor que 1', { alternativas: [{ clase: 'onicolisis', nombre: 'x', confianza: 1.5 }, ALT_OK] }],
+    // p_alguna_senal solo va en senal_inespecifica (Clinico._invariantes).
+    ['con p_alguna_senal', { p_alguna_senal: 0.7 }],
+    ['con p_alguna_senal 0', { p_alguna_senal: 0 }],
   ])('un ok %s se trata como no concluyente por clasificacion_fallida', (_, rotura) => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), ...rotura }))
     expect(clinicoDe(una(1, roto))).toMatchObject({
@@ -136,15 +139,60 @@ describe('clinicoDe', () => {
     expect(clinicoDe(una(1, inespecifica()))).toEqual(inespecifica())
   })
 
-  it('senal_inespecifica que cuela clase o alternativas (servicio roto) las pierde', () => {
-    const colada: Clinico = JSON.parse(
-      JSON.stringify({ ...inespecifica(), motivo: 'clase_no_fiable', clase: 'linea_beau', confianza: 0.4, alternativas: [{ clase: 'onicolisis', nombre: 'Onicólisis', confianza: 0.1 }] }),
+  it('un ok con p_alguna_senal null o ausente es válido', () => {
+    const c = { ...ok('linea_beau'), p_alguna_senal: null }
+    expect(clinicoDe(una(1, c))).toBe(c)
+  })
+
+  it('no_concluyente válido se devuelve tal cual, con p_alguna_senal null o ausente', () => {
+    const c = nc('confianza_baja')
+    expect(clinicoDe(una(1, c))).toBe(c)
+    const conNull: Clinico = { ...nc('foto_insuficiente'), p_alguna_senal: null }
+    expect(clinicoDe(una(1, conNull))).toBe(conNull)
+  })
+
+  it('no_concluyente con un motivo que esta versión no conoce se acepta (mensaje genérico)', () => {
+    const futuro: Clinico = JSON.parse(JSON.stringify({ ...nc('confianza_baja'), motivo: 'motivo_futuro' }))
+    expect(clinicoDe(una(1, futuro))).toBe(futuro)
+  })
+
+  // Clinico._invariantes en esquemas.py: motivo obligatorio y ninguna suposición.
+  it.each([
+    ['con motivo null', { motivo: null }],
+    ['sin motivo', { motivo: undefined }],
+    ['con motivo vacío', { motivo: ' ' }],
+    ['con clase', { clase: 'linea_mees' }],
+    ['con clase sin_senales', { clase: 'sin_senales' }],
+    ['con confianza', { confianza: 0.4 }],
+    ['con confianza 0', { confianza: 0 }],
+    ['sin confianza', { confianza: undefined }],
+    ['con alternativas', { alternativas: [ALT_OK] }],
+    ['con alternativas que no son lista', { alternativas: null }],
+    ['con reporte', { reporte: REPORTE_GENERICO }],
+    ['sin reporte', { reporte: undefined }],
+    ['con p_alguna_senal', { p_alguna_senal: 0.71 }],
+  ])('no_concluyente %s cae a clasificacion_fallida sin nada en memoria', (_, rotura) => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...nc('confianza_baja'), ...rotura }))
+    expect(clinicoDe(una(1, roto))).toEqual({ ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' })
+  })
+
+  it('el caso del QA: no_concluyente sin motivo con clase linea_mees, reporte y p_alguna_senal', () => {
+    const roto: Clinico = JSON.parse(
+      JSON.stringify({ estado: 'no_concluyente', motivo: null, clase: 'linea_mees', confianza: 0.6, alternativas: [], reporte: REPORTE_GENERICO, p_alguna_senal: 0.8 }),
     )
-    expect(clinicoDe(una(1, colada))).toEqual(inespecifica())
+    const c = clinicoDe(una(1, roto))
+    expect(c).toEqual({ ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' })
+    expect(JSON.stringify(c)).not.toMatch(/linea_mees|Señal sin identificar|0\.8/)
   })
 
   it.each([
     ['sin reporte', { reporte: null }],
+    // Pydantic rechaza una senal_inespecifica con cualquier suposición: no se pinta quitándola.
+    ['con motivo', { motivo: 'clase_no_fiable' }],
+    ['con clase', { clase: 'linea_beau' }],
+    ['con confianza', { confianza: 0.4 }],
+    ['con alternativas', { alternativas: [{ clase: 'onicolisis', nombre: 'Onicólisis', confianza: 0.1 }] }],
+    ['sin alternativas', { alternativas: undefined }],
     ['con asociaciones (delatarian la señal)', { reporte: { ...REPORTE_GENERICO, asociaciones: ['Psoriasis'] } }],
     ['con nombre vacio', { reporte: { ...REPORTE_GENERICO, nombre: ' ' } }],
     ['sin p_alguna_senal', { p_alguna_senal: undefined }],

@@ -93,6 +93,7 @@ const una = (dedo: string, clinico?: object) => ({
 const resultado = (unas: object[], modeloClinico?: typeof MODELO_CLINICO | null) => ({
   estado: 'ok',
   motivo: null,
+  modo: 'mano_completa',
   manos: 1,
   unas,
   forma_predominante: 'ovalada',

@@ -18,6 +18,7 @@ const AVISO = 'Observacion estetica orientativa. No es un diagnostico medico.'
 const OK = {
   estado: 'ok',
   motivo: null,
+  modo: 'mano_completa',
   manos: 1,
   unas: [
     {
