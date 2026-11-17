@@ -201,7 +201,8 @@ def _alternativas_validas(c, predicha):
     assert c.alternativas[0].confianza >= c.alternativas[1].confianza
 
 
-@pytest.mark.parametrize("predicha", [e for e in ETIQUETAS if e != "otra"])
+# Las nunca nombradas no dan ok con ninguna confianza: las prueba test_clinico.py.
+@pytest.mark.parametrize("predicha", [e for e in ETIQUETAS if e != "otra" and e not in clinico.CLASES_NUNCA_NOMBRADAS])
 @pytest.mark.parametrize("segunda", ["sin_senales", "otra", None])
 def test_toda_clase_predicha_da_dos_alternativas_validas(predicha, segunda):
     v = dict.fromkeys(ETIQUETAS, 0.0)
@@ -238,7 +239,8 @@ def test_empate_entre_otra_y_sin_senales_gana_la_primera_etiqueta():
 def test_salida_uniforme_con_umbral_cero():
     c = clinico.clasificar(falso(np.full(9, 1 / 9), 0.0, 0.0), RECORTE, CALIDAD)
     _alternativas_validas(c, ETIQUETAS[0])
-    assert [a.clase for a in c.alternativas] == ["linea_oscura", "acropaquia"]
+    # Empate total: el orden de etiquetas, saltando acropaquia (nunca se nombra).
+    assert [a.clase for a in c.alternativas] == ["linea_oscura", "onicolisis"]
 
 
 def test_logits_sin_softmax_son_clasificacion_fallida():

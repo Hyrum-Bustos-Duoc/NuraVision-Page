@@ -27,7 +27,7 @@ from app import main
 from app.main import RUTA_MODELO, RUTA_TEXTOS_CLINICOS, app
 from app.vision import clinico
 from app.vision.clinico import CLASES_PUBLICAS, ClasificadorClinico, cargar_textos
-from app.vision.esquemas import CalidadUna, Clinico, Modelo
+from app.vision.esquemas import AlternativaClinica, CalidadUna, Clinico, Modelo, ReporteClinico
 from app.vision.unas import AnalizadorUnas
 
 TEXTOS = cargar_textos(RUTA_TEXTOS_CLINICOS)
@@ -53,7 +53,11 @@ def probs(principal: str, p: float, **otras: float) -> np.ndarray:
 
 
 def falso(salida, umbral_nc: float | None = 0.70, umbral_ss: float | None = 0.90) -> ClasificadorClinico:
-    """`salida`: vector fijo, o funcion (tensor -> vector) para simular fallos."""
+    """`salida`: vector fijo, o funcion (tensor -> vector) para simular fallos.
+
+    Con CLASES_NUNCA_NOMBRADAS como no fiables, igual que lo deja cargar() con
+    cualquier modelo: un falso sin ellas probaria salidas que no pueden ocurrir.
+    """
     return ClasificadorClinico(
         predecir=salida if callable(salida) else (lambda _x: salida),
         etiquetas=ETIQUETAS,
@@ -61,6 +65,7 @@ def falso(salida, umbral_nc: float | None = 0.70, umbral_ss: float | None = 0.90
         umbral_sin_senales=umbral_ss,
         textos=TEXTOS,
         modelo=Modelo(nombre="clasificador-falso", version="test"),
+        clases_no_fiables=clinico.CLASES_NUNCA_NOMBRADAS,
     )
 
 
@@ -121,10 +126,10 @@ def test_las_combinaciones_invalidas_no_se_pueden_construir(cambios):
 
 def test_resultado_concluyente_trae_clase_redondeada_alternativas_y_reporte():
     # "otra" es la segunda mas probable: no puede colarse en las alternativas.
-    c = clinico.clasificar(falso(probs("linea_beau", 0.87349, otra=0.06, linea_mees=0.03, una_terry=0.0201)), RECORTE, CALIDAD)
+    c = clinico.clasificar(falso(probs("linea_beau", 0.87349, otra=0.06, onicolisis=0.03, una_terry=0.0201)), RECORTE, CALIDAD)
     assert (c.estado, c.motivo, c.clase, c.confianza) == ("ok", None, "linea_beau", 0.873)
-    assert [(a.clase, a.confianza) for a in c.alternativas] == [("linea_mees", 0.03), ("una_terry", 0.02)]
-    assert [a.nombre for a in c.alternativas] == [TEXTOS["linea_mees"].nombre, TEXTOS["una_terry"].nombre]
+    assert [(a.clase, a.confianza) for a in c.alternativas] == [("onicolisis", 0.03), ("una_terry", 0.02)]
+    assert [a.nombre for a in c.alternativas] == [TEXTOS["onicolisis"].nombre, TEXTOS["una_terry"].nombre]
     assert c.reporte == TEXTOS["linea_beau"]
 
 
@@ -137,9 +142,9 @@ def test_alternativas_empatadas_salen_en_el_orden_de_las_etiquetas():
 def test_sin_senales_nunca_se_ofrece_como_alternativa_de_una_senal():
     # QA 2026-11-12: con linea_oscura al 0.80 y sin_senales segunda, la UI decia
     # "podria ser: Sin senales reconocidas", lo contrario de la recomendacion.
-    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, linea_mees=0.02)), RECORTE, CALIDAD)
+    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, mancha_blanca=0.02)), RECORTE, CALIDAD)
     assert c.estado == "ok"
-    assert [a.clase for a in c.alternativas] == ["onicolisis", "linea_mees"]
+    assert [a.clase for a in c.alternativas] == ["onicolisis", "mancha_blanca"]
 
 
 @pytest.mark.parametrize(
@@ -275,14 +280,12 @@ def test_una_clase_no_fiable_no_se_nombra_aunque_supere_el_umbral(clase):
 
 
 def test_una_clase_no_fiable_nunca_es_alternativa():
-    salida = probs("linea_beau", 0.8, acropaquia=0.1, linea_mees=0.05, una_terry=0.02, onicolisis=0.01)
-    c = clinico.clasificar(con_reglas(salida, clases_no_fiables=NO_FIABLES), RECORTE, CALIDAD)
+    # Una no fiable del metadatos.json (una_terry) junto a las dos que nunca se nombran.
+    salida = probs("linea_beau", 0.8, acropaquia=0.1, una_terry=0.05, linea_mees=0.02, onicolisis=0.015, mancha_blanca=0.01)
+    no_fiables = clinico.CLASES_NUNCA_NOMBRADAS | {"una_terry"}
+    c = clinico.clasificar(con_reglas(salida, clases_no_fiables=no_fiables), RECORTE, CALIDAD)
     assert c.estado == "ok"
-    assert [a.clase for a in c.alternativas] == ["una_terry", "onicolisis"]
-    # Sin la regla (modelo instalado), las mismas probabilidades si las nombran.
-    assert [a.clase for a in clinico.clasificar(falso(salida), RECORTE, CALIDAD).alternativas] == [
-        "acropaquia", "linea_mees"
-    ]
+    assert [a.clase for a in c.alternativas] == ["onicolisis", "mancha_blanca"]
 
 
 def test_senal_inespecifica_no_nombra_ninguna_clase_y_trae_su_probabilidad():
@@ -460,9 +463,34 @@ def _cargar_sin_tflite(tmp_path, monkeypatch, **metadatos) -> ClasificadorClinic
 
 
 def test_metadatos_sin_las_reglas_nuevas_cargan_sin_aplicarlas(tmp_path, monkeypatch):
-    # Es el caso del modelo instalado (0.1.0): su comportamiento no cambia.
+    # Es el caso del modelo instalado (0.1.0). Salvo CLASES_NUNCA_NOMBRADAS, que no
+    # depende del modelo (decision de producto 2026-11-17).
     c = _cargar_sin_tflite(tmp_path, monkeypatch)
-    assert (c.brillo_minimo, c.lado_minimo, c.clases_no_fiables, c.umbral_alguna_senal) == (None, None, frozenset(), None)
+    assert (c.brillo_minimo, c.lado_minimo, c.umbral_alguna_senal) == (None, None, None)
+    assert c.clases_no_fiables == clinico.CLASES_NUNCA_NOMBRADAS
+
+
+def test_sin_clases_no_fiables_en_metadatos_nunca_se_nombran_linea_mees_ni_acropaquia(tmp_path, monkeypatch):
+    # Modelo instalado 0.1.0: su metadatos.json no trae clases_no_fiables y antes
+    # de la decision 2026-11-17 enviaba estas dos en clase, reporte y alternativas.
+    salida = [probs("acropaquia", 0.95)]
+    monkeypatch.setattr(clinico, "_interprete", lambda _ruta, _n: (lambda _x: salida[0], None))
+    c = clinico.cargar(_carpeta(tmp_path), RUTA_TEXTOS_CLINICOS)
+
+    assert clinico.clasificar(c, RECORTE, CALIDAD) == clinico.no_concluyente("clase_no_fiable")
+    salida[0] = probs("linea_beau", 0.8, acropaquia=0.1, linea_mees=0.05, una_terry=0.02, onicolisis=0.01)
+    r = clinico.clasificar(c, RECORTE, CALIDAD)
+    assert (r.estado, r.clase) == ("ok", "linea_beau")
+    assert [a.clase for a in r.alternativas] == ["una_terry", "onicolisis"]  # las 2 siguientes nombrables
+
+    # Barrido con semilla fija: ninguna salida del modelo las saca en ningun campo.
+    rng = np.random.default_rng(20261117)
+    for _ in range(500):
+        salida[0] = rng.dirichlet(np.full(len(ETIQUETAS), 0.3))
+        r = clinico.clasificar(c, RECORTE, CALIDAD)
+        nombradas = {r.clase, *(a.clase for a in r.alternativas)}
+        assert nombradas.isdisjoint(clinico.CLASES_NUNCA_NOMBRADAS)
+        assert r.reporte not in [TEXTOS[k] for k in clinico.CLASES_NUNCA_NOMBRADAS]
 
 
 def test_metadatos_con_las_reglas_nuevas_las_cargan(tmp_path, monkeypatch):
@@ -493,13 +521,15 @@ def test_umbral_alguna_senal_null_no_rescata_nada(tmp_path, monkeypatch):
         ({"clases_no_fiables": ["acropaquia"]}, "clases_no_fiables"),
         ({"clases_no_fiables": dict.fromkeys(["linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis"], "x")},
          "menos de 3"),
+        # Tres del metadatos mas las dos nunca nombradas: se cuenta la union.
+        ({"clases_no_fiables": dict.fromkeys(["linea_beau", "linea_oscura", "onicolisis"], "x")}, "menos de 3"),
         ({"umbral_alguna_senal": 0.4}, ">= 0.5"),
         ({"umbral_alguna_senal": "0.9"}, "umbral_alguna_senal"),
         ({"umbral_alguna_senal": 1.5}, "umbral_alguna_senal"),
     ],
     ids=[
         "calidad_sin_lado", "calidad_lista", "brillo_fuera_de_rango", "brillo_bool", "lado_decimal", "lado_negativo",
-        "no_fiable_otra", "no_fiables_lista", "no_fiables_dejan_dos_senales",
+        "no_fiable_otra", "no_fiables_lista", "no_fiables_dejan_dos_senales", "no_fiables_mas_nunca_nombradas_dejan_dos",
         "alguna_senal_bajo_un_medio", "alguna_senal_texto", "alguna_senal_fuera_de_rango",
     ],
 )
@@ -554,6 +584,26 @@ def test_textos_sin_reporte_generico_valido_impiden_cargar(tmp_path, seccion):
     ruta.write_text(texto, encoding="utf-8")
     with pytest.raises(clinico.ClasificadorNoDisponible, match="senal_inespecifica"):
         clinico.cargar_textos(ruta)
+
+
+@pytest.mark.parametrize("asociacion", ['""', '"   "'], ids=["vacia", "solo_espacios"])
+def test_una_asociacion_vacia_impide_cargar(tmp_path, asociacion):
+    # Debe fallar al arrancar, no salir en pantalla como una vineta vacia.
+    texto = RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8").replace("asociaciones = [\n", f"asociaciones = [\n  {asociacion},\n", 1)
+    ruta = tmp_path / "textos.toml"
+    ruta.write_text(texto, encoding="utf-8")
+    with pytest.raises(clinico.ClasificadorNoDisponible, match="texto de linea_beau invalido"):
+        clinico.cargar_textos(ruta)
+
+
+def test_las_asociaciones_se_cargan_sin_espacios_sobrantes():
+    reporte = ReporteClinico(nombre="n", descripcion="d", asociaciones=["  causa  "], recomendacion="r")
+    assert reporte.asociaciones == ["causa"]
+
+
+def test_una_alternativa_sin_nombre_no_se_construye():
+    with pytest.raises(ValidationError):
+        AlternativaClinica(clase="onicolisis", nombre="", confianza=0.1)
 
 
 def test_el_archivo_nace_pendiente_de_revision_profesional():

@@ -47,6 +47,11 @@ N_ALTERNATIVAS = 2
 # Media de los embeddings de las fotos de ajuste y umbral de coseno para el camino
 # primer_plano. Lo escribe scripts/referencia_primer_plano.py junto al modelo.
 ARCHIVO_REFERENCIA = "referencia_primer_plano.json"
+# Decision de producto 2026-11-17: estas dos senales no se nombran nunca, con
+# ningun modelo, traiga o no su metadatos.json clases_no_fiables. cargar() las
+# suma a las no fiables del modelo; decidir() no cambia, para seguir siendo la
+# misma regla que entrenamiento.metricas.motivo_abstencion.
+CLASES_NUNCA_NOMBRADAS = frozenset({"linea_mees", "acropaquia"})
 # Salida del pooling global de MobileNetV3, la entrada de la capa densa final.
 TENSOR_EMBEDDING = re.compile(r"/avg_pool(_\d+)?/Mean$")
 
@@ -88,7 +93,9 @@ class ClasificadorClinico:
     # calidad_minima.brillo y .lado_origen: por debajo, foto_insuficiente sin preguntar al modelo.
     brillo_minimo: float | None = None
     lado_minimo: int | None = None
-    # Clases que el modelo nunca nombra (ni como clase ni como alternativa).
+    # Clases que el modelo nunca nombra (ni como clase ni como alternativa). A
+    # diferencia del resto de este bloque, cargar() nunca la deja vacia: siempre
+    # incluye CLASES_NUNCA_NOMBRADAS.
     clases_no_fiables: frozenset[str] = frozenset()
     # Minimo de p(alguna senal) para responder senal_inespecifica en vez de abstenerse.
     umbral_alguna_senal: float | None = None
@@ -288,14 +295,16 @@ def _calidad_minima(metadatos: dict) -> tuple[float | None, int | None]:
 
 
 def _clases_no_fiables(metadatos: dict) -> frozenset[str]:
-    """Claves de metadatos.clases_no_fiables ({clase: motivo}). Sin la clave, ninguna."""
+    """Claves de metadatos.clases_no_fiables ({clase: motivo}) mas CLASES_NUNCA_NOMBRADAS."""
     datos = metadatos.get("clases_no_fiables", {})
     if not isinstance(datos, dict) or not set(datos) <= set(CLASES_PUBLICAS):
         raise ClasificadorNoDisponible(f"metadatos.json: clases_no_fiables solo admite ids de {sorted(CLASES_PUBLICAS)}")
+    no_fiables = frozenset(datos) | CLASES_NUNCA_NOMBRADAS
     # ok exige 2 alternativas, que no pueden ser la clase predicha ni una no fiable.
-    if len(SENALES - set(datos)) < N_ALTERNATIVAS + 1:
+    # Se cuenta con la union: son las que de verdad quedan fuera.
+    if len(SENALES - no_fiables) < N_ALTERNATIVAS + 1:
         raise ClasificadorNoDisponible("metadatos.json: clases_no_fiables deja menos de 3 senales nombrables")
-    return frozenset(datos)
+    return no_fiables
 
 
 def _umbral_alguna_senal(metadatos: dict) -> float | None:

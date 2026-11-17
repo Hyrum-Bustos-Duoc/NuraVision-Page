@@ -4,9 +4,9 @@ El mismo shape lo consume el frontend (frontend/src/modules/analisis/domain).
 Si cambia un campo aqui, hay que cambiarlo alla.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 AVISO = "Observacion estetica orientativa. No es un diagnostico medico."
 # Texto exacto de design.md (reporte-clinico-unas). Lleva tildes porque se
@@ -47,13 +47,15 @@ class ReporteClinico(BaseModel):
     # Lo que se ve, no lo que la persona padece.
     descripcion: str = Field(min_length=1)
     # Vacia solo en sin_senales; lo exige quien carga los textos (clinico.py).
-    asociaciones: list[str]
+    # Cada item sin espacios sobrantes y no vacio: un textos_clinicos.toml con
+    # asociaciones = [""] debe fallar al cargar, no salir como vineta vacia.
+    asociaciones: list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]]
     recomendacion: str = Field(min_length=1)
 
 
 class AlternativaClinica(BaseModel):
     clase: ClaseClinica
-    nombre: str
+    nombre: str = Field(min_length=1)
     confianza: float = Field(ge=0, le=1)
 
 
