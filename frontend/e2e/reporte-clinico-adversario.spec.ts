@@ -90,9 +90,10 @@ test('unas mezcladas ok y rotas: las rotas fallan solas y la página sigue enter
   const unas = page.getByTestId('clinico-una')
   await expect(unas).toHaveCount(5)
   await expect(unas.nth(0)).toContainText('Línea de Beau')
-  for (const i of [1, 2, 3]) await expect(unas.nth(i)).toContainText(FALLIDA)
-  // `confianza` del bloque no se valida porque la UI nunca la pinta.
-  await expect(unas.nth(4)).toContainText('Línea de Beau')
+  // Desde 681e7a8 clinicoDe exige confianza 0..1 como Pydantic: 'alta' es un ok roto,
+  // aunque la UI nunca pinte el numero.
+  for (const i of [1, 2, 3, 4]) await expect(unas.nth(i)).toContainText(FALLIDA)
+  await expect(unas.nth(4)).not.toContainText('Línea de Beau')
   await expect(page.getByRole('note')).toContainText('No es un diagnóstico médico')
   await expect(page.getByTestId('reporte-clinico')).not.toContainText('Sin señales reconocidas')
   await expect(page.getByTestId('forma-resumen')).toContainText('Ovalada')
