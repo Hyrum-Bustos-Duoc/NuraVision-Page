@@ -140,11 +140,11 @@ describe('carruseles', () => {
   const bucket = 'https://abc.supabase.co/storage/v1/object/public/contenido/carrusel-estudio-1.jpg'
   const leer = (carruseles: unknown) => contenidoDesdeGuardado(CONTENIDO_POR_DEFECTO, { carruseles }, permitida).carruseles
 
-  it('sin nada guardado usa las fotos locales del sitio', () => {
+  it('sin nada guardado usa las fotos del bucket del sitio', () => {
     expect(leer(undefined)).toEqual(CONTENIDO_POR_DEFECTO.carruseles)
-    expect(CONTENIDO_POR_DEFECTO.carruseles.estudio[0]).toBe('/carrusel/inicio/inicio-01.jpg')
+    expect(CONTENIDO_POR_DEFECTO.carruseles.estudio[0]).toMatch(/\/storage\/v1\/object\/public\/contenido\/carrusel\/inicio\/inicio-01\.jpg$/)
     expect(CONTENIDO_POR_DEFECTO.carruseles.tienda).toHaveLength(22)
-    expect([...CONTENIDO_POR_DEFECTO.carruseles.estudio, ...CONTENIDO_POR_DEFECTO.carruseles.tienda].every(permitida)).toBe(true)
+    expect([...CONTENIDO_POR_DEFECTO.carruseles.estudio, ...CONTENIDO_POR_DEFECTO.carruseles.tienda].every(crearFiltroImagenes(`${import.meta.env.VITE_SUPABASE_URL}/`))).toBe(true)
   })
 
   it('respeta una lista guardada valida y su orden', () => {
