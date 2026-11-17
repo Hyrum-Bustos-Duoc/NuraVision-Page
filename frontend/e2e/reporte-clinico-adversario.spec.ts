@@ -30,6 +30,7 @@ const una = (dedo: string, clinico: unknown) => ({
   punta: 0.9,
   forma_fiable: true,
   contorno: [],
+  calidad: { brillo: 128, lado_origen: 400 },
   clinico,
 })
 

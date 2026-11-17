@@ -35,6 +35,7 @@ const OK = {
       punta: null,
       forma_fiable: false,
       contorno: [],
+      calidad: { brillo: 128, lado_origen: 400 },
     },
   ],
   forma_predominante: null,

@@ -25,6 +25,7 @@ const una = (dedo: string) => ({
   punta: null,
   forma_fiable: false,
   contorno: [],
+  calidad: { brillo: 128, lado_origen: 400 },
 })
 
 const conForma = (dedo: string, forma: string, fiable = true) => ({
