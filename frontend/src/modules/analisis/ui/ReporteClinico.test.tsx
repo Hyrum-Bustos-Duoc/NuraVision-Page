@@ -198,6 +198,14 @@ describe('ReporteClinico: contenido', () => {
     expect(primera).toHaveTextContent(mensajeMotivoClinico('desconocido'))
   })
 
+  it('un ok sin reporte (servicio roto) no deja la página en blanco: cae a clasificacion_fallida', async () => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), reporte: null }))
+    const panel = await abrir(resultado([una(roto), una(ok('linea_oscura'), 'medio')]))
+    const [primera, segunda] = within(panel).getAllByTestId('clinico-una')
+    expect(primera).toHaveTextContent(mensajeMotivoClinico('clasificacion_fallida'))
+    expect(segunda).toHaveTextContent('Banda oscura longitudinal')
+  })
+
   it('todas modelo_no_entrenado: solo "aún no está disponible", sin lista por uña', async () => {
     const panel = await abrir(resultado([una(nc('modelo_no_entrenado')), una(nc('modelo_no_entrenado'), 'medio')]))
     expect(panel).toHaveTextContent('El reporte clínico aún no está disponible.')

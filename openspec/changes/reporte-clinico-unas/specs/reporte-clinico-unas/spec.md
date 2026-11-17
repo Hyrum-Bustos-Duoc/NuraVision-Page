@@ -9,15 +9,27 @@ señal para consultar a un profesional, no un diagnóstico.
 ## ADDED Requirements
 
 ### Requirement: Bloque clínico por uña
-Cada elemento de `unas[]` en la respuesta de `POST /vision/analizar` SHALL incluir un bloque `clinico` con el shape del contrato de `design.md`. Una combinación que viole las invariantes (por ejemplo `estado = "ok"` con `reporte = null`, o `no_concluyente` con `clase` distinta de `null`) MUST NOT poder construirse. La respuesta SHALL incluir siempre `aviso_clinico` y `modelo_clinico`. Los campos de forma existentes MUST NOT cambiar de nombre, tipo ni valor por este cambio.
+Cada elemento de `unas[]` en la respuesta de `POST /vision/analizar` SHALL incluir un bloque `clinico` con el shape del contrato de `design.md`. Una combinación que viole las invariantes (por ejemplo `estado = "ok"` con `reporte = null`, o `no_concluyente` con `clase` distinta de `null`) MUST NOT poder construirse. En particular, el esquema del servicio MUST rechazar un bloque `ok` cuyas `alternativas` no sean exactamente 2, o incluyan `sin_senales`, `otra` o la clase predicha: la exclusión no depende solo de la regla que elige las alternativas. La respuesta SHALL incluir siempre `aviso_clinico` y `modelo_clinico`. Los campos de forma existentes MUST NOT cambiar de nombre, tipo ni valor por este cambio.
 
 #### Scenario: Invariantes del bloque
 - **WHEN** se intenta construir un bloque clínico `ok` sin `reporte`, o `no_concluyente` con `confianza`
 - **THEN** la validación lo rechaza
 
+#### Scenario: El esquema rechaza alternativas prohibidas
+- **WHEN** se intenta construir directamente (sin pasar por la regla de abstención) un bloque `ok` de `linea_oscura` con alternativas `sin_senales` y `onicolisis`, o con `otra` y `onicolisis`, o con `linea_oscura` y `onicolisis`, o con una sola alternativa, o con tres
+- **THEN** la validación rechaza cada uno de esos bloques
+
 #### Scenario: Resultado concluyente
 - **WHEN** el clasificador devuelve una clase pública aceptada por las reglas de abstención
-- **THEN** el bloque trae `estado: "ok"`, `motivo: null`, `clase`, `confianza` redondeada a 3 decimales, exactamente 2 `alternativas` ordenadas de mayor a menor confianza (sin `otra` ni la clase predicha) y el `reporte` de esa clase
+- **THEN** el bloque trae `estado: "ok"`, `motivo: null`, `clase`, `confianza` redondeada a 3 decimales, exactamente 2 `alternativas` ordenadas de mayor a menor confianza (sin `otra`, sin `sin_senales` y sin la clase predicha) y el `reporte` de esa clase
+
+#### Scenario: Sin señales nunca es alternativa
+- **WHEN** con `umbral_no_concluyente` 0,70 el clasificador devuelve `linea_oscura` 0,80, `sin_senales` 0,12, `onicolisis` 0,03, `linea_mees` 0,02 y el resto por debajo
+- **THEN** el bloque es `ok` con `clase: "linea_oscura"` y `alternativas` es exactamente `onicolisis` y `linea_mees`, en ese orden; `sin_senales` no aparece en `alternativas`
+
+#### Scenario: Siempre dos alternativas
+- **WHEN** el bloque es `ok` con cualquier clase predicha, incluida `sin_senales`
+- **THEN** `alternativas` tiene exactamente 2 elementos, ninguno es `otra`, `sin_senales` ni la clase predicha
 
 #### Scenario: Sin uñas en la foto
 - **WHEN** la foto no tiene mano o no tiene uñas visibles (`estado: "no_concluyente"` del análisis)
@@ -28,7 +40,7 @@ Cada elemento de `unas[]` en la respuesta de `POST /vision/analizar` SHALL inclu
 - **THEN** cada uña trae su propio bloque y la respuesta no incluye ningún resultado clínico agregado por foto ni por mano
 
 ### Requirement: Degradación sin modelo clínico
-Sin un clasificador clínico utilizable (falta el archivo, está dañado, sus etiquetas no son exactamente los 9 ids de `design.md`, su `metadatos.tarea` no es `estado_clinico`, o falta o es inválido el archivo de textos), el servicio SHALL arrancar, `POST /vision/analizar` SHALL responder 200 con la forma intacta y cada uña con `clinico = {estado: "no_concluyente", motivo: "modelo_no_entrenado", clase: null, confianza: null, alternativas: [], reporte: null}`, y `modelo_clinico` SHALL ser `null`. Ningún caso clínico MUST producir un 5xx.
+Sin un clasificador clínico utilizable (falta el archivo, está dañado o es ilegible, incluido un `etiquetas.json` o `metadatos.json` con un anidamiento tan profundo que el lector de JSON agota la recursión, sus etiquetas no son exactamente los 9 ids de `design.md` o alguna no es texto, su `metadatos.tarea` no es `estado_clinico`, o falta o es inválido el archivo de textos), el servicio SHALL arrancar, `POST /vision/analizar` SHALL responder 200 con la forma intacta y cada uña con `clinico = {estado: "no_concluyente", motivo: "modelo_no_entrenado", clase: null, confianza: null, alternativas: [], reporte: null}`, y `modelo_clinico` SHALL ser `null`. Ningún caso clínico MUST producir un 5xx.
 
 #### Scenario: Sin modelo
 - **WHEN** se analiza una foto con una mano visible y no existe el modelo clínico
@@ -37,6 +49,14 @@ Sin un clasificador clínico utilizable (falta el archivo, está dañado, sus et
 #### Scenario: Modelo con etiquetas que no corresponden
 - **WHEN** el modelo instalado tiene en `etiquetas.json` las clases de `forma`
 - **THEN** no se carga, se registra el motivo en el log sin datos de imagen, `/salud` informa `clasificador_clinico_cargado: false` y las uñas salen con `modelo_no_entrenado`
+
+#### Scenario: Etiquetas que no son texto
+- **WHEN** el `etiquetas.json` instalado trae un valor que no es texto (por ejemplo `{"0": ["linea_beau"], "1": {"a": 1}, …}`)
+- **THEN** el servicio arranca, `/salud` responde `ok: true` con `clasificador_clinico_cargado: false`, el motivo queda en el log sin datos de imagen y `POST /vision/analizar` responde 200 con las uñas en `modelo_no_entrenado`
+
+#### Scenario: JSON del modelo anidado en exceso
+- **WHEN** el `etiquetas.json` o el `metadatos.json` instalado es un JSON válido anidado a una profundidad que agota la recursión del lector (por ejemplo 100 000 corchetes de apertura seguidos de sus cierres)
+- **THEN** el clasificador clínico no se carga, el servicio arranca, `/salud` informa `clasificador_clinico_cargado: false` y las uñas salen con `modelo_no_entrenado`
 
 #### Scenario: Falla al clasificar una uña
 - **WHEN** el clasificador lanza una excepción con la segunda de tres uñas
@@ -130,7 +150,14 @@ La pantalla de análisis SHALL mostrar el reporte clínico solo después de que 
 - **THEN** al expandir se ve solo «El reporte clínico aún no está disponible», sin lista por uña, y la sección de forma se ve igual que antes
 
 ### Requirement: Contenido del bloque expandido
-El bloque expandido SHALL mostrar el `aviso_clinico` recibido, un resumen y, en el mismo orden que las tarjetas de uñas, el resultado de cada uña identificada por dedo (y por mano si hay más de una). Una uña `ok` SHALL mostrar nombre, descripción, asociaciones y recomendación. Una uña `no_concluyente` SHALL mostrar un mensaje por motivo, sin clase ni alternativas. La UI MUST NOT mostrar porcentajes ni valores de confianza. Las alternativas, si se muestran, SHALL ser solo nombres, solo en resultados `ok` distintos de `sin_senales`.
+El bloque expandido SHALL mostrar el `aviso_clinico` recibido, un resumen y, en el mismo orden que las tarjetas de uñas, el resultado de cada uña identificada por dedo (y por mano si hay más de una). Si `aviso_clinico` falta, no es texto, está vacío o solo tiene espacios, SHALL mostrarse el aviso por defecto del frontend. Una uña `ok` SHALL mostrar nombre, descripción, asociaciones y recomendación. Una uña `no_concluyente` SHALL mostrar un mensaje por motivo, sin clase ni alternativas. La UI MUST NOT mostrar porcentajes ni valores de confianza. Las alternativas, si se muestran, SHALL ser solo nombres, solo en resultados `ok` distintos de `sin_senales`, y MUST NOT incluir «Sin señales reconocidas» ni ningún otro nombre de `sin_senales`.
+
+Un bloque `ok` que no tenga la forma completa SHALL tratarse entero como `no_concluyente` con `motivo: "clasificacion_fallida"`. Forma completa significa, a la vez:
+- `clase` es texto;
+- `reporte` es un objeto con `nombre`, `descripcion` y `recomendacion` de texto no vacío (un texto de solo espacios cuenta como vacío) y `asociaciones` es una lista cuyos elementos son todos texto no vacío (la lista puede estar vacía);
+- `alternativas` es una lista y cada elemento es un objeto con `clase` de texto, `nombre` de texto no vacío y `confianza` numérica, y ninguna `clase` es `sin_senales`, `otra` ni la clase predicha.
+
+Una alternativa inválida descarta el `ok` entero: MUST NOT filtrarse la alternativa y mostrarse el resto. El frontend MUST NOT exigir que haya exactamente 2 alternativas ni que `clase` sea uno de los 8 ids públicos: un `ok` de forma completa con 0 alternativas o con una clase desconocida se muestra con los textos que trae. Esas dos invariantes las garantiza el servicio (requisito «Bloque clínico por uña»), y la UI no depende de ellas para pintar.
 
 #### Scenario: Resumen de una mano
 - **WHEN** hay 5 uñas: 1 `linea_beau`, 2 `sin_senales` y 2 `confianza_baja`
@@ -147,3 +174,38 @@ El bloque expandido SHALL mostrar el `aviso_clinico` recibido, un resumen y, en 
 #### Scenario: Motivo desconocido
 - **WHEN** una uña trae un `motivo` que el frontend no conoce
 - **THEN** se muestra el mensaje genérico de no concluyente y la pantalla no falla
+
+#### Scenario: Resultado ok incompleto
+- **WHEN** una uña trae `clinico` con `estado: "ok"` y `reporte` ausente o `null`, o `clase` que no es texto, o `alternativas` que no es una lista (respuesta que viola el contrato)
+- **THEN** al expandir, esa uña muestra el mensaje de `clasificacion_fallida`, sin nombre de clase, descripción ni alternativas; el resumen la cuenta como no concluyente; las demás uñas se muestran normalmente y la pantalla no falla
+
+#### Scenario: Reporte con textos rotos
+- **WHEN** una uña `ok` trae un `reporte` con `nombre: ""`, o `descripcion: "   "`, o `recomendacion` numérica, o `asociaciones` que no es lista, o `asociaciones: ["x", ""]`, o `asociaciones: ["x", {"a": 1}]`, y otra uña de la misma foto trae un `ok` de forma completa
+- **THEN** al expandir, la primera muestra el mensaje de `clasificacion_fallida` y la segunda su nombre y recomendación; ninguna parte de la página muestra «[object Object]», «undefined» ni queda en blanco
+
+#### Scenario: Alternativa con forma rota
+- **WHEN** una uña `ok` trae una alternativa con `clase` numérica, o con `nombre` vacío, o con `nombre` que es un objeto, o con `confianza` de texto (`"0.2"`)
+- **THEN** la uña muestra el mensaje de `clasificacion_fallida`, sin el nombre de su clase ni la línea de alternativas
+
+#### Scenario: Alternativa prohibida descarta el resultado entero
+- **WHEN** una uña `ok` de `linea_oscura` trae alternativas `onicolisis` y `sin_senales`, o `onicolisis` y `otra`, o `onicolisis` y `linea_oscura`
+- **THEN** la uña muestra el mensaje de `clasificacion_fallida`; no aparecen ni «Banda oscura longitudinal» (o el `reporte.nombre` recibido), ni el nombre de `onicolisis`, ni el de `sin_senales`
+
+#### Scenario: Número de alternativas y clase desconocida no se validan en la UI
+- **WHEN** una uña trae un `ok` de forma completa con `alternativas: []`, y otra trae un `ok` de forma completa con `clase: "melanoma"`
+- **THEN** la primera muestra su nombre y recomendación sin la línea «Otras señales parecidas», la segunda muestra los textos de su `reporte`, y la pantalla no falla
+
+#### Scenario: Aviso clínico vacío
+- **WHEN** la respuesta trae `aviso_clinico` igual a `""`, a `"   "`, a `null` o a un número
+- **THEN** al expandir, el primer elemento del bloque es el aviso por defecto del frontend («Señal orientativa para consultar con un profesional de la salud…»)
+
+### Requirement: Textos de la pantalla de análisis
+Los textos fijos de la pantalla de análisis MUST NOT presentar un «estado» de las uñas como parte del resultado, porque la respuesta no trae ninguno (la tarea `estado` estética no tiene modelo). El texto que presenta el análisis antes de subir la foto SHALL decir que el reporte clínico reconoce solo algunas señales, que no es un diagnóstico médico y que no descarta nada.
+
+#### Scenario: Sin estado estético en la pantalla
+- **WHEN** se recorre la pantalla de análisis antes de subir la foto y después de recibir un resultado con uñas
+- **THEN** ningún texto contiene «el estado de tus uñas» ni «La forma, el estado»
+
+#### Scenario: El reporte no descarta
+- **WHEN** se muestra la pantalla de análisis antes de subir la foto
+- **THEN** el texto contiene «reconoce solo algunas señales» y «descarta nada»

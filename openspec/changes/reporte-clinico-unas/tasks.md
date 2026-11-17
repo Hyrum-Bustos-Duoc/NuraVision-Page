@@ -62,9 +62,23 @@ listas las secciones 2 a 5.
   entorno al que accedan clientas.
   Depende de: U.5, U.6, U.7, U.8.
 
+- [ ] U.10 **(usuario)** Decidir Q6 de `design.md` (abierta el 2026-11-12):
+  si la guarda de entrenamiento rechaza los nombres de clase no ASCII para
+  cerrar el hueco de los homoglifos, o se acepta como deuda conocida.
+  Criterio: la decisión queda escrita con fecha en Q6. Si es «a», se abre una
+  tarea de nv-vision con su escenario.
+  No bloquea nada de lo entregado.
+
+- [ ] U.11 **(usuario)** Decidir Q7 de `design.md` (abierta el 2026-11-12):
+  si una salida del modelo con probabilidades negativas en clases no elegidas
+  pasa a `clasificacion_fallida` o sigue dando `ok` sin aviso como hoy.
+  Criterio: la decisión queda escrita con fecha en Q7. Si es «a», se abre una
+  tarea de nv-vision con su escenario.
+  No bloquea nada de lo entregado.
+
 ## 1. Contrato
 
-- [ ] 1.1 **(nv-contracts)** Revisar el contrato de `design.md` contra
+- [x] 1.1 **(nv-contracts)** Revisar el contrato de `design.md` contra
   `services/api/app/vision/esquemas.py` y
   `frontend/src/modules/analisis/domain/analisis.types.ts`: nullability,
   enums, invariantes de `Clinico` y compatibilidad con respuestas sin
@@ -76,7 +90,7 @@ listas las secciones 2 a 5.
 
 ## 2. Entrenamiento y datos (`services/vision`)
 
-- [ ] 2.1 **(nv-vision)** Guarda clínica por tarea, tarea `estado_clinico` en
+- [x] 2.1 **(nv-vision)** Guarda clínica por tarea, tarea `estado_clinico` en
   `config.toml` (9 ids, `revision_profesional` con las 7 clases de señal) y
   lado mínimo por tarea según Q2.
   Requisitos: «Guarda clínica por tarea» y «Lado mínimo por tarea».
@@ -84,13 +98,13 @@ listas las secciones 2 a 5.
   siguen pasando. Solo cambia el que cuenta las tareas por defecto.
   Depende de: 1.1.
 
-- [ ] 2.2 **(nv-vision)** Partición por series en `dividir` y `verificar`.
+- [x] 2.2 **(nv-vision)** Partición por series en `dividir` y `verificar`.
   `comparar` reproduce la misma partición, y el cuaderno de Colab permite
   elegir `estado_clinico` y pide el archivo de series.
   Requisito: «Partición por series».
   Depende de: 2.1.
 
-- [ ] 2.3 **(nv-vision)** Métricas con abstención, calibración de
+- [x] 2.3 **(nv-vision)** Métricas con abstención, calibración de
   `umbral_sin_senales`, exportación de `tarea` y `umbral_sin_senales`, y
   veredicto M1–M4 en `comparativa.md`.
   Requisito: «Métricas con abstención y umbral de sin señales».
@@ -98,18 +112,18 @@ listas las secciones 2 a 5.
   aquí que en 3.2.
   Depende de: 2.2.
 
-- [ ] 2.4 **(nv-vision)** `pending_decision` (Q3). Informe de casi-duplicados
+- [x] 2.4 **(nv-vision)** `pending_decision` (Q3). Informe de casi-duplicados
   candidatos.
   Requisito: «Informe de casi-duplicados candidatos».
   Depende de: 2.1.
 
-- [ ] 2.5 **(nv-vision)** Arnés de fotos reales. Usa el análisis del servicio
+- [x] 2.5 **(nv-vision)** Arnés de fotos reales. Usa el análisis del servicio
   tal cual, sin copiarlo, y no incluye ninguna foto en los tests: estos usan
   imágenes sintéticas.
   Requisito: «Arnés de fotos reales».
   Depende de: 3.2.
 
-- [ ] 2.6 **(nv-vision)** Verificar en su página de origen los datasets
+- [x] 2.6 **(nv-vision)** Verificar en su página de origen los datasets
   candidatos (`nail-disease-multilabel`, `nail-diseases-2`,
   `NailDiseaseClf` y los que aparezcan) y registrarlos en el índice de
   `datasets/`. Si una página no responde, la tarea pasa a U.1 para que la
@@ -117,7 +131,7 @@ listas las secciones 2 a 5.
   Requisito: «Registro de datasets candidatos».
   Depende de: nada.
 
-- [ ] 2.7 **(nv-vision)** Actualizar la documentación que hoy afirma lo
+- [x] 2.7 **(nv-vision)** Actualizar la documentación que hoy afirma lo
   contrario:
   - README de `services/vision` §5: la fila de clases clínicas pasa a
     reflejar la decisión del 2026-11-12, cuya razón técnica sigue en pie, y se
@@ -133,9 +147,23 @@ listas las secciones 2 a 5.
   matizarlo.
   Depende de: 2.3.
 
+- [x] 2.8 **(nv-vision)** Corrección tras la segunda pasada de QA
+  (2026-11-12): la guarda rechaza los nombres que **contienen** un nombre
+  clínico, tras la normalización de la decisión 2 de `design.md`, con palabra
+  entera para los nombres cortos o ambiguos y los equivalentes de las carpetas
+  de Kaggle y las raíces `onych`/`oniquia`.
+  Requisito: «Guarda clínica por tarea» (escenarios «Nombre compuesto que
+  contiene un id clínico», «Separadores y caracteres invisibles», «Variantes
+  de las carpetas de Kaggle y raíces clínicas» y «Palabras cortas dentro de
+  otra palabra»).
+  Evidencia: commit `25bd6c4`, con tests de la guarda que recorren además las
+  clases reales de `forma` y `estado`.
+  Fuera de esta tarea: el límite de los homoglifos (Q6, U.10).
+  Depende de: 2.1.
+
 ## 3. Inferencia (`services/api/app/vision`)
 
-- [ ] 3.1 **(nv-vision)** Spike para decidir el motor de ejecución (Q1).
+- [x] 3.1 **(nv-vision)** Spike para decidir el motor de ejecución (Q1).
   Exportar MobileNetV3Small y EfficientNetB0 con la cabeza aleatoria y semilla
   fija, por el mismo camino de exportación (no hace falta entrenar), y
   comparar con Keras sobre 20 entradas sintéticas. Si se recurre a una
@@ -146,7 +174,7 @@ listas las secciones 2 a 5.
   propone la dependencia.
   Depende de: nada.
 
-- [ ] 3.2 **(nv-vision)** Esquema según el contrato, carga y validación del
+- [x] 3.2 **(nv-vision)** Esquema según el contrato, carga y validación del
   modelo clínico y del archivo de textos, reglas de abstención, entrada
   idéntica a la del entrenamiento, borrador de los textos (estado
   `pendiente`) y logs sin datos clínicos. Los tests usan un clasificador falso,
@@ -154,11 +182,29 @@ listas las secciones 2 a 5.
   Requisitos: «Bloque clínico por uña», «Degradación sin modelo clínico»,
   «Reglas de abstención», «Textos clínicos editables» y «Privacidad del
   resultado clínico» (la parte del servicio).
+  Corrección tras QA (2026-11-12), ya implementada: las alternativas excluyen
+  también `sin_senales` (escenarios «Sin señales nunca es alternativa» y
+  «Siempre dos alternativas»), y un `etiquetas.json` con valores que no son
+  texto deja el modelo sin cargar en vez de tumbar el arranque (escenario
+  «Etiquetas que no son texto»).
   Depende de: 1.1, 3.1.
+
+- [x] 3.3 **(nv-vision)** Corrección tras la segunda pasada de QA
+  (2026-11-12): el esquema de `Clinico` rechaza `sin_senales` como
+  alternativa (además de `otra`, la predicha y un número distinto de 2), y la
+  carga del clasificador trata un JSON anidado en exceso como modelo
+  inutilizable en vez de tumbar el arranque.
+  Requisitos: escenarios «El esquema rechaza alternativas prohibidas» y «JSON
+  del modelo anidado en exceso».
+  Evidencia: commit `469a8d8`, con tests de entradas inválidas (etiquetas,
+  metadatos, textos y probabilidades límite) en el servicio.
+  Fuera de esta tarea: probabilidades negativas en clases no elegidas (Q7,
+  U.11).
+  Depende de: 3.2.
 
 ## 4. Servicio (`services/api/app`, fuera de `vision/`)
 
-- [ ] 4.1 **(nv-fastapi)** Cargar el clasificador clínico al arrancar, igual
+- [x] 4.1 **(nv-fastapi)** Cargar el clasificador clínico al arrancar, igual
   que el segmentador (opcional; su fallo no tumba el servicio), y añadir
   `clasificador_clinico_cargado` a `/salud`. Actualizar la sección de
   contrato del README del API.
@@ -168,14 +214,14 @@ listas las secciones 2 a 5.
 
 ## 5. Frontend
 
-- [ ] 5.1 **(nv-frontend)** Tipos del contrato en el dominio de `analisis`
+- [x] 5.1 **(nv-frontend)** Tipos del contrato en el dominio de `analisis`
   (unión discriminada de `design.md`) y una función pura que derive el
   resumen por mano y trate `clinico` ausente como no disponible, con tests
   Vitest.
   Requisito: «Contenido del bloque expandido» (resumen).
   Depende de: 1.1.
 
-- [ ] 5.2 **(nv-frontend)** Botón «Ver reporte clínico» y bloque expandible
+- [x] 5.2 **(nv-frontend)** Botón «Ver reporte clínico» y bloque expandible
   dentro del resultado, con el patrón accesible de `EditorCarrusel`, y tests de
   componente.
   Requisitos: «Reporte tras un botón», «Contenido del bloque expandido» y
@@ -184,15 +230,37 @@ listas las secciones 2 a 5.
   cambios.
   Depende de: 5.1.
 
-- [ ] 5.3 **(nv-frontend)** Ampliar los e2e de análisis (`frontend/e2e`) con
+- [x] 5.3 **(nv-frontend)** Ampliar los e2e de análisis (`frontend/e2e`) con
   respuestas simuladas: con resultado clínico, sin modelo y sin el campo
   `clinico`.
   Requisito: «Reporte tras un botón».
   Depende de: 5.2.
 
+- [x] 5.4 **(nv-frontend)** Corrección tras QA (2026-11-12): el punto único
+  que resuelve el bloque clínico de cada uña trata un `ok` incompleto (sin
+  `reporte`, sin `clase` de texto o sin lista de `alternativas`) como
+  `no_concluyente` con `clasificacion_fallida`, con test Vitest.
+  Requisito: escenario «Resultado ok incompleto».
+  Evidencia: commit `f1d83b2`. La segunda pasada de QA lo amplió en 5.5.
+  Depende de: 5.1.
+
+- [x] 5.5 **(nv-frontend)** Corrección tras la segunda pasada de QA
+  (2026-11-12): el punto único que resuelve el bloque clínico comprueba la
+  forma completa de un `ok` y descarta el `ok` entero si una alternativa está
+  rota o prohibida; el aviso vacío cae al aviso por defecto; los textos fijos
+  de la pantalla dejan de hablar de «el estado» y dicen que el reporte
+  reconoce solo algunas señales y no descarta nada.
+  Requisitos: escenarios «Reporte con textos rotos», «Alternativa con forma
+  rota», «Alternativa prohibida descarta el resultado entero», «Número de
+  alternativas y clase desconocida no se validan en la UI», «Aviso clínico
+  vacío» y el requisito «Textos de la pantalla de análisis».
+  Evidencia: commit `fdd070c`, con tests Vitest de dominio y de componente y
+  un e2e de un `ok` con reporte vacío que no deja la página en blanco.
+  Depende de: 5.4.
+
 ## 6. Verificación
 
-- [ ] 6.1 **(nv-qa)** Cubrir cada escenario de `specs/reporte-clinico-unas` y
+- [x] 6.1 **(nv-qa)** Cubrir cada escenario de `specs/reporte-clinico-unas` y
   `specs/entrenamiento-clinico`, con atención especial a:
   - un modelo instalado con etiquetas ajenas o dañado;
   - un clasificador que lanza una excepción en una sola uña;
@@ -206,9 +274,26 @@ listas las secciones 2 a 5.
   - una foto nueva con el bloque abierto;
   - la regresión de la forma con y sin segmentador;
   - la huella de la partición de `forma` sin series.
-  Depende de: 2.3, 2.5, 4.1, 5.3.
+  Estado (2026-11-12): **PASS en la tercera pasada**. La primera pasada
+  encontró tres huecos (alternativas con `sin_senales`, arranque con
+  `etiquetas.json` mal formado y `ok` sin `reporte`); la segunda, los
+  corregidos en 2.8, 3.3 y 5.5. La tercera comprobó F1–F6 ejecutando casos
+  (Vitest, Playwright, sondas Python y un fuzz de 51.784 vectores sobre
+  `decidir`) y no halló fallos graves. Hallazgos menores de esa pasada:
+  - corregidos el 2026-11-12: `key` duplicada con asociaciones repetidas en
+    `ReporteClinico`, `RecursionError` al leer un TOML de textos muy anidado y
+    un `.tflite` cuantizado (int8/uint8) que se cargaba como válido y fallaba
+    en cada uña;
+  - abiertos, sin bloquear: el backend acepta textos de solo espacios que el
+    frontend rechaza (`min_length=1` no recorta), y la guarda de
+    entrenamiento deja pasar plurales en español y sinónimos coloquiales de
+    los ids (`manchas_blancas`, `lineas_oscuras`, `linea_negra`). Ambos
+    dependen del contenido del TOML o de los nombres de carpeta, no de
+    entradas de la clienta. Q6 y Q7 siguen siendo decisiones del usuario
+    (U.10, U.11).
+  Depende de: 2.3, 2.5, 2.8, 3.3, 4.1, 5.3, 5.5.
 
-- [ ] 6.2 **(nv-contracts)** Verificar que el Pydantic y el TypeScript
+- [x] 6.2 **(nv-contracts)** Verificar que el Pydantic y el TypeScript
   implementados coinciden campo a campo (nombres, nullability, enums e
   invariantes) con el contrato de `design.md`.
   Criterio: un informe sin divergencias, o las divergencias devueltas a su

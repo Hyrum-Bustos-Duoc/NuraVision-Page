@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Clinico, ClaseClinica, MotivoClinico, UnaDetectada } from './analisis.types'
-import { CLINICO_NO_DISPONIBLE, clinicoDe, mensajeMotivoClinico, resumenClinico } from './clinico'
+import { AVISO_CLINICO_POR_DEFECTO, CLINICO_NO_DISPONIBLE, avisoClinicoDe, clinicoDe, mensajeMotivoClinico, resumenClinico } from './clinico'
 
 function una(mano: number, clinico?: Clinico): UnaDetectada {
   return {
@@ -44,6 +44,45 @@ describe('clinicoDe', () => {
   it('con `clinico` lo devuelve tal cual', () => {
     const c = ok('linea_beau')
     expect(clinicoDe(una(1, c))).toBe(c)
+  })
+
+  // Simulan un servicio roto que dice `ok` sin los campos que la UI lee.
+  it.each([
+    ['sin reporte', { reporte: null }],
+    ['sin clase', { clase: null }],
+    ['con alternativas que no son lista', { alternativas: null }],
+    ['con reporte sin asociaciones', { reporte: { nombre: 'n', descripcion: 'd', recomendacion: 'r' } }],
+    ['con descripcion vacia', { reporte: { nombre: 'n', descripcion: '', asociaciones: [], recomendacion: 'r' } }],
+    ['con una alternativa null', { alternativas: [null, { clase: 'linea_mees', nombre: 'x', confianza: 0.1 }] }],
+    ['con una alternativa sin_senales', { alternativas: [{ clase: 'sin_senales', nombre: 'x', confianza: 0.1 }] }],
+    ['con una alternativa otra', { alternativas: [{ clase: 'otra', nombre: 'x', confianza: 0.1 }] }],
+    ['con la clase predicha como alternativa', { alternativas: [{ clase: 'linea_beau', nombre: 'x', confianza: 0.1 }] }],
+  ])('un ok %s se trata como no concluyente por clasificacion_fallida', (_, rotura) => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), ...rotura }))
+    expect(clinicoDe(una(1, roto))).toMatchObject({
+      estado: 'no_concluyente',
+      motivo: 'clasificacion_fallida',
+      reporte: null,
+      alternativas: [],
+    })
+  })
+
+  it('un ok roto cuenta como no concluyente en el resumen', () => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), reporte: null }))
+    expect(resumenClinico([una(1, roto), una(1, ok('linea_oscura'))])).toEqual({
+      disponible: true,
+      manos: [{ mano: 1, total: 2, conSenal: 1, sinSenales: 0, noConcluyentes: 1 }],
+    })
+  })
+})
+
+describe('avisoClinicoDe', () => {
+  it('usa el aviso recibido si tiene texto', () => {
+    expect(avisoClinicoDe('Aviso del servicio')).toBe('Aviso del servicio')
+  })
+
+  it.each([undefined, null, '', '   ', 42])('con %j usa el aviso por defecto', (aviso) => {
+    expect(avisoClinicoDe(aviso)).toBe(AVISO_CLINICO_POR_DEFECTO)
   })
 })
 

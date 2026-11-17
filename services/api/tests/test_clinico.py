@@ -75,6 +75,8 @@ NC = {"estado": "no_concluyente", "motivo": "confianza_baja", "clase": None, "co
 def test_las_combinaciones_validas_se_construyen():
     Clinico(**OK)
     Clinico(**NC)
+    # sin_senales no puede ser alternativa, pero si la clase predicha.
+    Clinico(**{**OK, "clase": "sin_senales", "reporte": TEXTOS["sin_senales"].model_dump()})
 
 
 @pytest.mark.parametrize(
@@ -88,6 +90,10 @@ def test_las_combinaciones_validas_se_construyen():
         {**OK, "alternativas": [ALT[0], ALT[0]]},
         {**OK, "confianza": 1.2},
         {**OK, "clase": "otra"},
+        {**OK, "alternativas": [{**ALT[0], "clase": "sin_senales"}, ALT[1]]},
+        {**OK, "alternativas": [ALT[0], {**ALT[1], "clase": "sin_senales"}]},
+        {**OK, "alternativas": [ALT[0], {**ALT[1], "clase": "otra"}]},
+        {**OK, "alternativas": ALT + [{**ALT[1], "clase": "una_terry", "confianza": 0.01}]},
         {**NC, "confianza": 0.5},
         {**NC, "clase": "linea_beau"},
         {**NC, "alternativas": ALT},
@@ -97,6 +103,8 @@ def test_las_combinaciones_validas_se_construyen():
     ids=[
         "ok_sin_reporte", "ok_con_motivo", "ok_una_alternativa", "ok_alternativas_desordenadas",
         "ok_alternativa_repite_clase", "ok_alternativas_repetidas", "ok_confianza_fuera_de_rango", "ok_clase_otra",
+        "ok_alternativa_sin_senales_primera", "ok_alternativa_sin_senales_segunda", "ok_alternativa_otra",
+        "ok_tres_alternativas",
         "nc_con_confianza", "nc_con_clase", "nc_con_alternativas", "nc_con_reporte", "nc_sin_motivo",
     ],
 )
@@ -123,6 +131,14 @@ def test_alternativas_empatadas_salen_en_el_orden_de_las_etiquetas():
     assert [a.clase for a in c.alternativas] == ["linea_beau", "linea_oscura"]
 
 
+def test_sin_senales_nunca_se_ofrece_como_alternativa_de_una_senal():
+    # QA 2026-11-12: con linea_oscura al 0.80 y sin_senales segunda, la UI decia
+    # "podria ser: Sin senales reconocidas", lo contrario de la recomendacion.
+    c = clinico.clasificar(falso(probs("linea_oscura", 0.80, sin_senales=0.12, onicolisis=0.03, linea_mees=0.02)), RECORTE)
+    assert c.estado == "ok"
+    assert [a.clase for a in c.alternativas] == ["onicolisis", "linea_mees"]
+
+
 @pytest.mark.parametrize(
     "salida,umbral_nc,umbral_ss,motivo",
     [
@@ -139,6 +155,30 @@ def test_reglas_de_abstencion(salida, umbral_nc, umbral_ss, motivo):
     c = clinico.clasificar(falso(salida, umbral_nc, umbral_ss), RECORTE)
     assert c == clinico.no_concluyente(motivo)
     assert '"otra"' not in c.model_dump_json()
+
+
+# Tabla compartida con entrenamiento.metricas (services/vision/tests/test_metricas.py):
+# si las dos copias de las reglas divergen, una de las dos suites falla. Sin esto,
+# la tabla solo probaba la copia del entrenamiento y M1-M4 podian medir un sistema
+# distinto del que despliega el servicio.
+TABLA_ABSTENCION = json.loads(
+    (Path(__file__).resolve().parents[2] / "vision" / "tests" / "casos_abstencion.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize("caso", TABLA_ABSTENCION["casos"], ids=lambda c: c["caso"])
+def test_tabla_de_abstencion_compartida_con_el_entrenamiento(caso):
+    clasificador = ClasificadorClinico(
+        predecir=lambda _x: np.array(caso["probs"]),
+        etiquetas=tuple(TABLA_ABSTENCION["clases"]),
+        umbral_no_concluyente=caso["umbral_no_concluyente"],
+        umbral_sin_senales=caso["umbral_sin_senales"],
+        textos=TEXTOS,
+        modelo=Modelo(nombre="tabla", version="test"),
+    )
+    c = clinico.clasificar(clasificador, RECORTE)
+    assert c.motivo == caso["motivo"]
+    assert c.estado == ("ok" if caso["motivo"] is None else "no_concluyente")
 
 
 @pytest.mark.parametrize("clase,p", [("linea_oscura", 0.70), ("sin_senales", 0.90), ("sin_senales", 0.95)])

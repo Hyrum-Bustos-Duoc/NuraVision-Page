@@ -103,11 +103,20 @@ que una combinación inválida no se puede construir):
 
 | `estado` | `motivo` | `clase` | `confianza` | `alternativas` | `reporte` |
 |---|---|---|---|---|---|
-| `ok` | `null` | id público | 0..1 | **exactamente 2**, ordenadas de mayor a menor confianza, sin `otra` ni la clase predicha | texto de `clase` |
+| `ok` | `null` | id público | 0..1 | **exactamente 2**, ordenadas de mayor a menor confianza, sin `otra`, sin `sin_senales` y sin la clase predicha | texto de `clase` |
 | `no_concluyente` | uno de los 4 | `null` | `null` | `[]` | `null` |
 
 Cuando la respuesta es no concluyente no se muestra ninguna suposición. Si se
 expusieran la clase o las alternativas, la abstención dejaría de servir.
+
+El validador comprueba el número, el orden, que no se repitan ni la clase
+predicha ni entre sí, y que ninguna sea `sin_senales`; `otra` queda fuera por
+el tipo `ClaseClinica`. La exclusión de `sin_senales` la aplica además la regla
+que elige las alternativas (decisión 9). En la primera versión solo la aplicaba
+esa regla; desde la segunda pasada de QA (2026-11-12) también la exige el
+validador, para que el contrato no dependa de una función concreta. Con 9
+etiquetas, quitar `otra`, `sin_senales` y la predicha deja al menos 6
+candidatas, así que siempre hay 2.
 
 ### TypeScript (espejo)
 
@@ -149,6 +158,59 @@ export interface Modelo { nombre: string; version: string }
 - **Redondeo.** Quien produce el dato redondea a 3 decimales; ninguna capa lo
   valida.
 
+**Correcciones tras QA (2026-11-12).**
+
+- **`ok` incompleto.** Un bloque con `estado: "ok"` y `reporte` ausente o
+  `null`, `clase` que no es texto o `alternativas` que no es lista viola el
+  contrato, pero puede llegar por red (servicio con un bug o
+  de otra versión). `clinicoDe(una)` lo trata como `no_concluyente` con
+  `motivo: "clasificacion_fallida"`: la uña muestra el mensaje de ese motivo,
+  sin clase ni alternativas, cuenta como no concluyente en el resumen y la
+  pantalla no falla. Es el mismo punto único que ya resuelve el `clinico`
+  ausente; la UI sigue sin comprobaciones sueltas.
+- **Alternativas sin `sin_senales`.** Ver decisión 9.
+- **`etiquetas.json` con valores que no son texto.** Ver «Lo que el servicio
+  exige del modelo exportado».
+
+**Correcciones tras la segunda pasada de QA (2026-11-12).**
+
+- **`ok` incompleto, forma completa.** La primera corrección solo miraba que
+  `reporte` existiera, que `clase` fuera texto y que `alternativas` fuera una
+  lista. QA mostró que un `reporte` con `nombre: ""`, `asociaciones` que no
+  es lista o una alternativa con `nombre` objeto dejaba la página en blanco o
+  pintaba «[object Object]». Ahora `clinicoDe(una)` comprueba la forma
+  completa que la UI lee: `clase` texto; `reporte` con `nombre`, `descripcion`
+  y `recomendacion` de texto no vacío (solo espacios cuenta como vacío) y
+  `asociaciones` lista de textos no vacíos; cada alternativa con `clase` texto,
+  `nombre` texto no vacío y `confianza` numérica, y ninguna `sin_senales`,
+  `otra` ni la predicha. Si algo falla, el `ok` entero pasa a
+  `clasificacion_fallida`.
+- **Se descarta el `ok` entero, no se filtra la alternativa.** Una
+  alternativa que el servicio nunca envía (`sin_senales`, `otra`, la predicha)
+  indica un servicio roto o de otra versión. Mostrar el resto del bloque
+  supondría confiar en la recomendación que trae ese mismo servicio roto.
+- **El frontend no exige exactamente 2 alternativas ni una de las 8 clases
+  públicas** (decisión consciente). La UI no depende del número (pinta la
+  línea de alternativas si hay alguna) ni tiene un mapa propio de clases:
+  pinta los textos que llegan. Exigirlo convertiría una desviación inocua en
+  ocultar una recomendación que sí se puede leer, y obligaría a tocar el
+  frontend cada vez que se añada una clase. Esas invariantes las impone el
+  esquema del servicio.
+- **Aviso vacío.** `aviso_clinico` vacío, solo con espacios o que no es texto
+  se trata como ausente y se pinta el aviso por defecto. `??` no cubría el
+  texto vacío.
+- **Validador del servicio.** Rechaza `sin_senales` como alternativa (ver el
+  párrafo sobre el validador, más arriba).
+- **JSON del modelo anidado en exceso.** Un `etiquetas.json` o
+  `metadatos.json` con un anidamiento tan profundo que el lector de JSON agota
+  la recursión deja el modelo sin cargar, igual que un JSON ilegible, en vez de
+  tumbar el arranque.
+- **Probabilidades negativas en clases no elegidas: sin resolver.** Hoy una
+  salida del modelo con probabilidades negativas en clases que no son ni la
+  predicha ni las alternativas produce un `ok` sin ningún aviso. Un modelo
+  exportado sin softmax (valores > 1) sí cae en `clasificacion_fallida` porque
+  el contrato rechaza la confianza. Queda como pregunta abierta Q7.
+
 La unión discriminada reproduce las invariantes: el compilador impide leer
 `reporte` sin comprobar antes `estado === 'ok'`. El frontend **no** tiene un
 mapa propio de nombres de clase: los nombres llegan en `reporte.nombre` y
@@ -179,7 +241,10 @@ El servicio lee `etiquetas.json` y `metadatos.json` (formato actual) más dos
 campos nuevos, que escribe la tarea 2.3:
 
 - `metadatos.tarea == "estado_clinico"`, y las etiquetas deben ser exactamente
-  los 9 ids de la tabla.
+  los 9 ids de la tabla. Cada valor de `etiquetas.json` debe ser texto: una
+  lista, un objeto o un número en su lugar es un modelo inutilizable, no un
+  error de arranque (QA 2026-11-12: un valor no hashable lanzaba `TypeError`
+  al compararlo con la lista cerrada y tumbaba el servicio).
 - `metadatos.umbral_no_concluyente` (ya existe) y
   `metadatos.umbral_sin_senales` (nuevo). Cualquiera de los dos puede ser
   `null`.
@@ -227,6 +292,37 @@ y el servicio responde `modelo_no_entrenado`.
      la guarda no detecta `linea_beau`, `una_terry` ni `mancha_blanca` porque
      no contienen ningún término de la lista. Con este cambio quedan cubiertos.
    - Las fichas externas (`uso = "solo_particion"`) siguen igual.
+   - **Se rechaza el nombre que contiene un nombre clínico, no solo el que
+     coincide** (segunda pasada de QA, 2026-11-12). La primera versión
+     comparaba el nombre entero, y `posible_linea_beau`, `linea_oscura2` u
+     `otra_2` pasaban. Antes de comparar, el nombre se normaliza: minúsculas,
+     NFKD sin acentos, sin caracteres invisibles de formato (ancho cero,
+     marcas de dirección), «ı» sin punto como «i», y fuera todo lo que no sea
+     a-z o 0-9. Así `linea.oscura`, `Línea—Oscura` o un espacio de ancho cero
+     intercalado no cuelan un id.
+   - Los nombres clínicos son `TERMINOS_CLINICOS`, los 9 ids, las carpetas de
+     `Nail.zip` y de `archive (2).zip`, los sinónimos de `linea_oscura`
+     (`melanoniquia`, `melanonychia`) y las raíces `onych` y `oniquia`
+     (cubren `leukonychia`, `koilonychia`, `leuconiquia`…; ninguna palabra de
+     cuidado estético las contiene).
+   - **Palabra entera para los nombres cortos o ambiguos**: `otra`, `other`,
+     `normal`, `sana`, `sano`, `healthy`, `beau`, `terry`, `mees`, con plural
+     opcional en -s/-es y delimitados por cualquier carácter que no sea letra
+     (`Beau's lines`, `otra_2` y `otras` caen). El resto se busca como
+     subcadena. `otra`, `other`, `normal` y `sana` se rechazan a propósito: son
+     clases de `Nail.zip`, y `normal` o `sana` afirmarían que una uña está
+     sana.
+   - **Descartado: subcadena para todo.** `beau` está en `beauty`, `normal` en
+     `forma_normalizada` y `otra` en `nosotras`: la guarda rechazaría nombres
+     estéticos legítimos. Esos tres siguen aceptándose, y un test recorre las
+     clases reales de `forma` y `estado` para que un falso positivo no impida
+     entrenar.
+   - **Límite conocido, sin resolver:** las letras de otro alfabeto que se
+     parecen a las latinas (una «а» cirilica) no se normalizan a a-z y
+     desaparecen, así que pueden partir un id: `linea_oscura`,
+     `mancha_blanca` o `linea_beau` escritos con una «е» o una «а» cirílicas
+     pasan la guarda (comprobado el 2026-11-12). Ver Riesgos y la pregunta
+     abierta Q6.
 
 3. **Lado mínimo por tarea** (pendiente de Q2). Es una opción de
    configuración que sí tiene dos valores pedidos hoy: 224 para `forma` y
@@ -309,6 +405,20 @@ y el servicio responde `modelo_no_entrenado`.
      de `sin_senales`, como nombres sin número (pendiente de Q5).
    - En `sin_senales` no se muestran alternativas: se mostraría «podría ser
      una línea oscura» justo después de afirmar que no se ve nada.
+   - El reverso también vale: `sin_senales` **nunca** es alternativa de una
+     señal. Las alternativas excluyen `otra`, `sin_senales` y la clase
+     predicha, y siguen siendo siempre 2.
+
+   **Descartado (2026-11-12): dejar `sin_senales` como alternativa posible.**
+   La primera versión de esta decisión solo excluía `otra` y la predicha. QA
+   encontró que, con `linea_oscura` al 0,80 y `sin_senales` segunda, la UI
+   mostraba «Otras señales parecidas: Sin señales reconocidas y …» justo
+   debajo de una recomendación de evaluación dermatológica. Leído por una
+   clienta, eso dice «puede que no tengas nada» y debilita la única acción que
+   el reporte pide. Es el mismo error que esta decisión ya evitaba en el
+   sentido contrario. Se descartó también mostrar `sin_senales` solo cuando su
+   confianza supera cierto valor: agrega un número fijado a ojo (mismo motivo
+   que en la decisión 6) y no cambia la lectura de la frase.
 
 10. **Un solo botón para toda la sección**, no uno por uña.
     - La decisión 2 del dueño dice «un botón», y una mano con cinco botones
@@ -392,6 +502,14 @@ no para **demostrar** que uno es bueno.
   profesional») es coherente con ese límite, pero el agente puede negarse a
   redactar los textos. Si pasa, el dueño debe decidir si actualiza
   `.claude/agents/nv-vision.md`. No lo hace ningún agente.
+- **La guarda no detecta homoglifos de otro alfabeto** (deuda conocida,
+  2026-11-12). Un nombre de clase con una letra cirílica o griega parecida a
+  una latina dentro de un id clínico pasa la guarda de las tareas estéticas.
+  Hace falta escribirlo a propósito (no sale de copiar una carpeta de Kaggle),
+  y el `config.toml` pasa por revisión de código. Queda abierto en Q6.
+- **Una salida del modelo con probabilidades negativas** en clases no
+  elegidas produce hoy un `ok` sin aviso. Solo pasa con un modelo exportado
+  mal; queda abierto en Q7.
 - **`datasets/` y `datasets.zip` no están ignorados en git**
   (`preparacion-modelo.md` §9). Un `git add .` subiría fotos sin licencia.
   Es un riesgo previo que este cambio agrava, porque el equipo trabajará con
@@ -405,4 +523,6 @@ no para **demostrar** que uno es bueno.
 | Q2 | ¿Lado mínimo de `estado_clinico`? | a) 64 px por tarea (≈ 350 fotos; `linea_mees` 18) · b) 224 y ampliar en la normalización (inventa detalle; la resolución ya está correlacionada con la clase) · c) 96 px (`linea_mees` 10, `acropaquia` 11) | a | 2.1 (solo la opción por tarea), U.4 |
 | Q3 | ¿Se programan herramientas para la limpieza o solo se valida su resultado? | a) Partición por series + informe de casi-duplicados candidatos (dHash ≤ 4, solo como ayuda para revisar a mano) · b) Solo partición por series · c) Solo validar | a. La FICHA §4 ya mostró que el hash solo no sirve para agrupar, pero sí para encontrar candidatos entre 540 fotos | 2.4 |
 | Q4 | ¿Se aceptan los umbrales M1–M4 y H1–H3? | Los propuestos · otros | Los propuestos | U.9 |
-| Q5 | ¿Se muestran las alternativas en la UI? | a) Nombres sin número, solo en `ok` ≠ `sin_senales` · b) No mostrarlas y quitarlas del contrato | a. Las pidió el dueño, y el número es lo que confunde, no el nombre | Nada: 5.2 implementa a salvo que se indique otra cosa |
+| Q5 | ¿Se muestran las alternativas en la UI? | a) Nombres sin número, solo en `ok` ≠ `sin_senales`, y nunca `sin_senales` entre ellas (decisión 9, 2026-11-12) · b) No mostrarlas y quitarlas del contrato | a. Las pidió el dueño, y el número es lo que confunde, no el nombre | Nada: 5.2 implementa a salvo que se indique otra cosa |
+| Q6 | ¿La guarda rechaza los nombres de clase con caracteres no ASCII (tras quitar acentos), para cerrar el hueco de los homoglifos? (abierta el 2026-11-12, decide el usuario) | a) Sí: toda clase de una tarea estética debe quedar en ASCII tras quitar acentos · b) No: se acepta el límite como deuda conocida | a, si ninguna clase actual de `forma` ni `estado` lo incumple: es una regla más simple que una tabla de homoglifos y cierra el hueco entero | Nada de lo entregado; abriría una tarea nueva de nv-vision |
+| Q7 | ¿Qué hace el servicio si el modelo devuelve probabilidades negativas en clases que no son la predicha ni las alternativas? (abierta el 2026-11-12, decide el usuario) | a) `clasificacion_fallida` si alguna probabilidad de la salida está fuera de 0..1 · b) Dejarlo como hoy (`ok` sin aviso) | a: es el mismo criterio que ya rechaza un modelo sin softmax, y una salida así indica un modelo exportado mal | Nada de lo entregado; abriría una tarea nueva de nv-vision |

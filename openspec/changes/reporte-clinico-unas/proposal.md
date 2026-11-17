@@ -64,7 +64,8 @@ No se rediscuten aquí:
 - **Tarea de entrenamiento `estado_clinico`**, separada de `forma` y `estado`.
   Sus clases salen de una lista cerrada **en el código**, no en
   `config.toml`. `forma` y `estado` siguen sin poder tener ninguna clase
-  clínica.
+  clínica, ni un nombre que contenga una (`posible_linea_beau`,
+  `Beau's lines`, `leukonychia`).
 - **Partición por series**: las fotos que el equipo marque como la misma uña
   quedan siempre en la misma partición. Para `estado_clinico` es obligatoria.
 - **Métricas con abstención**: sensibilidad por clase después de la
@@ -77,7 +78,10 @@ No se rediscuten aquí:
   pendientes de revisión profesional. `/salud` informa si hay clasificador
   clínico cargado.
 - **UI**: un botón «Ver reporte clínico» expande un bloque con el aviso
-  clínico, un resumen y el resultado de cada uña.
+  clínico, un resumen y el resultado de cada uña. Un resultado que llega roto
+  por red se muestra como no concluyente sin tumbar la página. Los textos
+  fijos de la pantalla dejan de hablar de un «estado» de las uñas y dicen que
+  el reporte reconoce solo algunas señales y no descarta nada.
 - **Arnés de fotos reales**: mide detección, cobertura, falsas alarmas y
   latencia sobre las fotos de celular del usuario, sin escribir nada dentro del
   repositorio.
@@ -127,6 +131,24 @@ No se rediscuten aquí:
   como descarte. El texto recomienda evaluación dermatológica sin nombrar ni
   descartar causas. La profesional puede cambiarlo, pero cambiar este criterio
   exige cambiar el test que lo protege.
+- **Ofrecer `sin_senales` como alternativa de una señal** (descartado el
+  2026-11-12, tras QA). Debajo de «consulta con dermatología» se leía «puede
+  que no tengas nada». El motivo completo está en la decisión 9 de
+  `design.md`.
+- **Filtrar en la UI una alternativa inválida y mostrar el resto del
+  resultado** (descartado el 2026-11-12, segunda pasada de QA). Una
+  alternativa `sin_senales`, `otra` o igual a la predicha solo llega de un
+  servicio roto o de otra versión, y ese mismo servicio es el que trae la
+  recomendación. Se descarta el `ok` entero como `clasificacion_fallida`.
+- **Exigir en el frontend exactamente 2 alternativas y una de las 8 clases
+  públicas** (descartado el 2026-11-12). La UI no depende del número ni tiene
+  mapa de clases: pinta los textos que llegan. Exigirlo ocultaría
+  recomendaciones legibles y obligaría a tocar el frontend al añadir una
+  clase. Esas invariantes las impone el esquema del servicio.
+- **Guarda de entrenamiento por subcadena para todos los nombres**
+  (descartado el 2026-11-12). Rechazaría `beauty`, `forma_normalizada` o
+  `nosotras`. Los nombres cortos o ambiguos se buscan como palabra entera
+  (decisión 2 de `design.md`).
 - **Una guarda en el código que bloquee los textos sin revisión profesional.**
   No hay modelo ni despliegue público del servicio (CORS solo localhost), así
   que una guarda en el código no protegería a nadie hoy y sí impediría la

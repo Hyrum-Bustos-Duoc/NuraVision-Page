@@ -82,8 +82,11 @@ def decidir(probs: np.ndarray, c: ClasificadorClinico) -> Clinico:
         return no_concluyente("confianza_baja")
     # Ordenadas por la probabilidad bruta; sorted es estable, asi que un empate
     # se resuelve por el orden de etiquetas.json y el resultado es reproducible.
+    # Nunca se ofrece "sin_senales" como alternativa de una senal: sugeriria que
+    # la persona podria no tener nada y debilitaria la recomendacion (QA 2026-11-12).
+    excluidas = {OTRA, SIN_SENALES, clase}
     candidatas = sorted(
-        (j for j, e in enumerate(c.etiquetas) if e not in (OTRA, clase)), key=lambda j: -float(probs[j])
+        (j for j, e in enumerate(c.etiquetas) if e not in excluidas), key=lambda j: -float(probs[j])
     )[:N_ALTERNATIVAS]
     return Clinico(
         estado="ok",
@@ -122,7 +125,8 @@ def cargar_textos(ruta: Path) -> dict[str, ReporteClinico]:
     """Lee el archivo de textos y exige una entrada valida por cada id publico."""
     try:
         datos = tomllib.loads(ruta.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+    # RecursionError: un TOML muy anidado la lanza y tumbaria el arranque (QA 2026-11-12).
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, RecursionError) as exc:
         raise ClasificadorNoDisponible(f"{ruta}: no se pudo leer ({type(exc).__name__})") from exc
     if datos.get("estado_revision") not in ("pendiente", "revisado"):
         raise ClasificadorNoDisponible(f"{ruta}: estado_revision debe ser 'pendiente' o 'revisado'")
@@ -168,6 +172,10 @@ def _interprete(ruta: Path, n_clases: int) -> Callable[[np.ndarray], np.ndarray]
             f"{ruta}: entrada {tuple(ent['shape'])} y salida {tuple(sal['shape'])}; "
             f"se esperaba (1, {LADO}, {LADO}, 3) y (1, {n_clases})"
         )
+    # Un modelo cuantizado a mano (int8/uint8) carga bien y luego falla en cada una:
+    # el servicio entrega float32, asi que se rechaza ya al cargar (QA 2026-11-12).
+    if ent["dtype"] != np.float32 or sal["dtype"] != np.float32:
+        raise ClasificadorNoDisponible(f"{ruta}: el modelo debe tener entrada y salida float32")
     # Un interprete de LiteRT no admite llamadas concurrentes y FastAPI atiende en varios hilos.
     candado = threading.Lock()
 
@@ -189,7 +197,8 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
     try:
         etiquetas_json = json.loads((carpeta / "etiquetas.json").read_text(encoding="utf-8"))
         metadatos = json.loads((carpeta / "metadatos.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
+    # RecursionError: un JSON muy anidado la lanza en Python < 3.14 y tumbaria el arranque.
+    except (OSError, ValueError, RecursionError) as exc:
         raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json o metadatos.json ilegible ({type(exc).__name__})") from exc
     if not isinstance(metadatos, dict) or metadatos.get("tarea") != TAREA:
         raise ClasificadorNoDisponible(f"{carpeta}: metadatos.tarea no es '{TAREA}'")
@@ -198,6 +207,9 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
         etiquetas = tuple(etiquetas_json[str(i)] for i in range(len(etiquetas_json)))
     except (KeyError, TypeError) as exc:
         raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json no va de 0 a n-1") from exc
+    # Un valor que no es texto (lista, dict) no es hashable: set() lanzaria TypeError.
+    if not all(isinstance(e, str) for e in etiquetas):
+        raise ClasificadorNoDisponible(f"{carpeta}: etiquetas.json trae valores que no son texto")
     if len(etiquetas) != len(CLASES_MODELO) or set(etiquetas) != CLASES_MODELO:
         raise ClasificadorNoDisponible(f"{carpeta}: las etiquetas no son exactamente los 9 ids de estado_clinico")
     umbral_nc = _umbral(metadatos, "umbral_no_concluyente")

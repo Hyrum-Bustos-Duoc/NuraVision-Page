@@ -181,8 +181,10 @@ export default function AIAnalysis() {
           </div>
 
           <div className="mt-8 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-            Tu imagen es privada y solo tú puedes verla. NuraVision entrega una{' '}
-            <strong className="text-ink">orientación estética</strong>, no un diagnóstico médico.
+            Tu imagen es privada y solo tú puedes verla. La forma de tus uñas es una{' '}
+            <strong className="text-ink">orientación estética</strong>. El reporte clínico opcional
+            reconoce solo algunas señales: no es un diagnóstico médico ni descarta nada. Ante
+            cualquier duda sobre tus uñas, consulta con un profesional.
           </div>
 
           <Button className="mt-8" onClick={() => setStep('upload')}>
@@ -314,8 +316,8 @@ export default function AIAnalysis() {
               </div>
 
               <div className="mt-6 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-                Esta es una orientación estética basada en análisis visual, no un diagnóstico
-                médico.
+                La forma y los servicios sugeridos son una orientación estética. El reporte
+                clínico es una señal para consultar con un profesional, no un diagnóstico médico.
               </div>
             </div>
           </div>

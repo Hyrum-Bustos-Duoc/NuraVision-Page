@@ -79,7 +79,9 @@ test.describe('Analisis de unas', () => {
     await expect(page.getByRole('heading', { name: /Encontramos 2 uñas en 1 mano/ })).toBeVisible()
     await expect(page.getByAltText('Uña del dedo pulgar')).toBeVisible()
     await expect(page.getByAltText('Uña del dedo índice')).toBeVisible()
-    await expect(page.getByText(/no un diagnóstico médico/)).toBeVisible()
+    await expect(
+      page.getByText(/El reporte clínico es una señal para consultar con un profesional, no un diagnóstico médico/),
+    ).toBeVisible()
   })
 
   test('dice la forma predominante y la de cada una, marcando la poco fiable', async ({ page }) => {
