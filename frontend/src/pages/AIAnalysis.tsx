@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Upload } from 'lucide-react'
+import { AlertTriangle, Trash2, Upload } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { AppImage, Button, FilterPills, Kicker } from '@/shared/ui/ui'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -50,6 +50,8 @@ export default function AIAnalysis() {
   const [foto, setFoto] = useState<{ archivo: File; url: string } | null>(null)
   const [resultado, setResultado] = useState<ResultadoAnalisis | null>(null)
   const [errorAnalisis, setErrorAnalisis] = useState<string | null>(null)
+  const [arrastrando, setArrastrando] = useState(false)
+  const inputFoto = useRef<HTMLInputElement>(null)
   const peticion = useRef<AbortController | null>(null)
   const urlActual = useRef<string | null>(null)
 
@@ -73,6 +75,23 @@ export default function AIAnalysis() {
     if (urlActual.current) URL.revokeObjectURL(urlActual.current)
     urlActual.current = archivo ? URL.createObjectURL(archivo) : null
     setFoto(archivo && urlActual.current ? { archivo, url: urlActual.current } : null)
+  }
+
+  /** Quita la foto elegida (por error o para cambiarla); no se analiza ni se guarda nada. */
+  function quitarFoto() {
+    elegirFoto(undefined)
+    // Sin esto, volver a elegir el mismo archivo no dispara onChange.
+    if (inputFoto.current) inputFoto.current.value = ''
+  }
+
+  function soltarFoto(archivo: File | undefined) {
+    if (!archivo) return
+    if (!archivo.type.startsWith('image/')) {
+      elegirFoto(undefined)
+      setErrorAnalisis('Ese archivo no es una imagen. Suelta una foto en formato JPG o PNG.')
+      return
+    }
+    elegirFoto(archivo)
   }
 
   async function analizar() {
@@ -222,13 +241,28 @@ export default function AIAnalysis() {
             </div>
           )}
 
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line bg-paper px-6 py-16 text-center hover:border-olive-400">
+          <label
+            onDragOver={(e) => {
+              e.preventDefault()
+              setArrastrando(true)
+            }}
+            onDragLeave={() => setArrastrando(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setArrastrando(false)
+              soltarFoto(e.dataTransfer.files?.[0])
+            }}
+            className={`mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors hover:border-olive-400 ${
+              arrastrando ? 'border-olive-400 bg-olive-50/50' : 'border-line bg-paper'
+            }`}
+          >
             <Upload className="h-6 w-6 text-muted" />
             <span className="text-sm text-ink">
               {foto?.archivo.name ?? 'Arrastra tu foto aquí o haz clic para subirla'}
             </span>
             <span className="text-xs text-muted-light">JPG o PNG · máx. 10 MB</span>
             <input
+              ref={inputFoto}
               type="file"
               accept="image/*"
               className="hidden"
@@ -237,11 +271,21 @@ export default function AIAnalysis() {
           </label>
 
           {foto && (
-            <img
-              src={foto.url}
-              alt="Vista previa de tu fotografía"
-              className="mt-4 max-h-64 rounded-xl border border-line-soft"
-            />
+            <div className="mt-4 flex flex-wrap items-end gap-4">
+              <img
+                src={foto.url}
+                alt="Vista previa de tu fotografía"
+                className="max-h-64 rounded-xl border border-line-soft"
+              />
+              <button
+                type="button"
+                onClick={quitarFoto}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Quitar foto
+              </button>
+            </div>
           )}
 
           {analyzing && (
