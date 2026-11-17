@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Upload } from 'lucide-react'
+import { AlertTriangle, Trash2, Upload } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { AppImage, Button, FilterPills, Kicker } from '@/shared/ui/ui'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -11,6 +11,14 @@ import { useContenido } from '@/modules/contenido/ui/useContenido'
 import { ErrorAnalisis, type ResultadoAnalisis } from '@/modules/analisis/domain/analisis.types'
 import { analizarFoto, mensajeNoConcluyente } from '@/modules/analisis/infrastructure/analisis.api'
 import { ResultadoUnas } from '@/modules/analisis/ui/ResultadoUnas'
+
+const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp']
+const EXTENSION_FOTO = /\.(jpe?g|png|webp)$/i
+
+/** Lo mismo que acepta el servicio (JPEG, PNG, WebP). Sin `type` se mira la extensión. */
+function esFotoValida(a: File): boolean {
+  return a.type ? TIPOS_FOTO.includes(a.type) : EXTENSION_FOTO.test(a.name)
+}
 
 type Step = 'prepare' | 'upload' | 'result'
 type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
@@ -50,10 +58,24 @@ export default function AIAnalysis() {
   const [foto, setFoto] = useState<{ archivo: File; url: string } | null>(null)
   const [resultado, setResultado] = useState<ResultadoAnalisis | null>(null)
   const [errorAnalisis, setErrorAnalisis] = useState<string | null>(null)
+  const [arrastrando, setArrastrando] = useState(false)
+  const inputFoto = useRef<HTMLInputElement>(null)
   const peticion = useRef<AbortController | null>(null)
   const urlActual = useRef<string | null>(null)
 
   useScrollToTopOnChange(step)
+
+  // Una foto soltada fuera de la zona haría que el navegador la abra y se pierda la página.
+  useEffect(() => {
+    if (step !== 'upload') return
+    const frenar = (e: DragEvent) => e.preventDefault()
+    window.addEventListener('dragover', frenar)
+    window.addEventListener('drop', frenar)
+    return () => {
+      window.removeEventListener('dragover', frenar)
+      window.removeEventListener('drop', frenar)
+    }
+  }, [step])
 
   // La vista previa es una URL de objeto: se libera al cambiar de foto y al salir.
   useEffect(
@@ -73,6 +95,25 @@ export default function AIAnalysis() {
     if (urlActual.current) URL.revokeObjectURL(urlActual.current)
     urlActual.current = archivo ? URL.createObjectURL(archivo) : null
     setFoto(archivo && urlActual.current ? { archivo, url: urlActual.current } : null)
+  }
+
+  /** Quita la foto elegida (por error o para cambiarla); no se analiza ni se guarda nada. */
+  function quitarFoto() {
+    elegirFoto(undefined)
+    // Sin esto, volver a elegir el mismo archivo no dispara onChange.
+    if (inputFoto.current) inputFoto.current.value = ''
+  }
+
+  function soltarFoto(archivo: File | undefined) {
+    if (!archivo) return
+    // Venga del arrastre o del selector, el input no debe conservar un archivo que ya no es la foto elegida.
+    if (inputFoto.current) inputFoto.current.value = ''
+    if (!esFotoValida(archivo)) {
+      elegirFoto(undefined)
+      setErrorAnalisis('Ese archivo no es una foto válida. Usa una imagen JPG, PNG o WebP.')
+      return
+    }
+    elegirFoto(archivo)
   }
 
   async function analizar() {
@@ -222,26 +263,61 @@ export default function AIAnalysis() {
             </div>
           )}
 
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line bg-paper px-6 py-16 text-center hover:border-olive-400">
+          <label
+            onDragOver={(e) => {
+              e.preventDefault()
+              setArrastrando(true)
+            }}
+            onDragLeave={(e) => {
+              // Pasar a un hijo de la zona también dispara dragleave: no apagar el resaltado.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setArrastrando(false)
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              setArrastrando(false)
+              soltarFoto(e.dataTransfer.files?.[0])
+            }}
+            className={`mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors hover:border-olive-400 ${
+              arrastrando ? 'border-olive-400 bg-olive-50/50' : 'border-line bg-paper'
+            }`}
+          >
             <Upload className="h-6 w-6 text-muted" />
             <span className="text-sm text-ink">
               {foto?.archivo.name ?? 'Arrastra tu foto aquí o haz clic para subirla'}
             </span>
-            <span className="text-xs text-muted-light">JPG o PNG · máx. 10 MB</span>
+            <span className="text-xs text-muted-light">JPG, PNG o WebP · máx. 10 MB</span>
             <input
+              ref={inputFoto}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={(e) => elegirFoto(e.target.files?.[0])}
+              onChange={(e) => {
+                const archivo = e.target.files?.[0]
+                if (!archivo) return elegirFoto(undefined)
+                // El selector muestra "Todos los archivos": se valida igual que al soltar,
+                // pero sin vaciar el input (el archivo elegido sigue siendo el actual).
+                if (esFotoValida(archivo)) elegirFoto(archivo)
+                else soltarFoto(archivo)
+              }}
             />
           </label>
 
           {foto && (
-            <img
-              src={foto.url}
-              alt="Vista previa de tu fotografía"
-              className="mt-4 max-h-64 rounded-xl border border-line-soft"
-            />
+            <div className="mt-4 flex flex-wrap items-end gap-4">
+              <img
+                src={foto.url}
+                alt="Vista previa de tu fotografía"
+                className="max-h-64 rounded-xl border border-line-soft"
+              />
+              <button
+                type="button"
+                onClick={quitarFoto}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Quitar foto
+              </button>
+            </div>
           )}
 
           {analyzing && (
