@@ -643,6 +643,47 @@ def test_un_texto_en_blanco_en_el_toml_impide_cargar(tmp_path, campo):
         clinico.cargar_textos(ruta)
 
 
+# Todo lo que " x ".trim() quita en JS (enumerado con node sobre U+0000-U+10FFFF).
+ESPACIOS_DE_JS_TRIM = [
+    "\t", "\n", "\v", "\f", "\r", " ", "\xa0", "\u1680", *map(chr, range(0x2000, 0x200B)),
+    "\u2028", "\u2029", "\u202f", "\u205f", "\u3000", "\ufeff",
+]
+
+
+@pytest.mark.parametrize("espacio", ESPACIOS_DE_JS_TRIM, ids=lambda c: f"U+{ord(c):04X}")
+def test_un_texto_que_js_trim_deja_vacio_no_se_construye(espacio):
+    with pytest.raises(ValidationError):
+        AlternativaClinica(clase="onicolisis", nombre=espacio * 2, confianza=0.1)
+    assert AlternativaClinica(clase="onicolisis", nombre=f"{espacio}x{espacio}", confianza=0.1).nombre == "x"
+
+
+@pytest.mark.parametrize("caracter", ["\u200b", "\u180e", "\u0085", "\x1c"], ids=lambda c: f"U+{ord(c):04X}")
+def test_lo_que_js_trim_no_quita_tampoco_se_quita_aqui(caracter):
+    # Mismo criterio que esTexto del front: si alli no es vacio, aqui tampoco.
+    assert AlternativaClinica(clase="onicolisis", nombre=caracter, confianza=0.1).nombre == caracter
+
+
+def _toml_con_nombre_de_linea_beau(tmp_path, valor):
+    texto = RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8")
+    inicio = texto.index("[clases.linea_beau]")
+    linea = next(l for l in texto[inicio:].splitlines() if l.startswith("nombre = "))
+    ruta = tmp_path / "textos.toml"
+    ruta.write_text(texto[:inicio] + texto[inicio:].replace(linea, f'nombre = "{valor}"', 1), encoding="utf-8")
+    return ruta
+
+
+def test_un_nombre_solo_bom_en_el_toml_impide_cargar(tmp_path):
+    # Python str.strip() no quita el BOM; JS trim() si, y el front lo veia vacio.
+    ruta = _toml_con_nombre_de_linea_beau(tmp_path, "\\uFEFF")
+    with pytest.raises(clinico.ClasificadorNoDisponible, match="texto de linea_beau invalido"):
+        clinico.cargar_textos(ruta)
+
+
+def test_un_nombre_con_bom_alrededor_carga_sin_bom(tmp_path):
+    ruta = _toml_con_nombre_de_linea_beau(tmp_path, "\\uFEFF Surco transversal\\uFEFF")
+    assert clinico.cargar_textos(ruta)["linea_beau"].nombre == "Surco transversal"
+
+
 def test_los_textos_reales_ya_venian_sin_espacios_sobrantes():
     # strip_whitespace no debe cambiar lo que se muestra con el archivo versionado.
     import tomllib

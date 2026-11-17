@@ -6,7 +6,7 @@ Si cambia un campo aqui, hay que cambiarlo alla.
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, model_validator
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 AVISO = "Observacion estetica orientativa. No es un diagnostico medico."
 # Texto exacto de design.md (reporte-clinico-unas). Lleva tildes porque se
@@ -42,10 +42,31 @@ MotivoClinico = Literal[
 ]
 
 
+# Lo que String.prototype.trim() quita (ECMA-262, WhiteSpace + LineTerminator):
+# tab, VT, FF, espacio, NBSP, BOM, los Zs y LF, CR, U+2028, U+2029. Ni str.strip()
+# ni strip_whitespace de Pydantic coinciden: ninguno quita el BOM, y los dos quitan
+# U+0085 (str.strip() tambien U+001C-U+001F). Se usa este
+# conjunto para que servicio y front (esTexto en domain/clinico.ts) rechacen lo
+# mismo. U+200B (ZWSP) y U+180E no estan en ninguno de los dos: no son espacio.
+ESPACIOS_JS = (
+    "\t\v\f \xa0\ufeff"
+    "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u202f\u205f\u3000"
+    "\n\r\u2028\u2029"
+)
+
+
+def _recortar_como_js(v: str) -> str:
+    v = v.strip(ESPACIOS_JS)
+    if not v:
+        raise ValueError("texto vacio tras quitar espacios")
+    return v
+
+
 # Texto que se muestra: sin espacios sobrantes y no vacio. Un textos_clinicos.toml
 # con nombre = "   " o asociaciones = [""] debe fallar al cargar, no salir como
 # un hueco en pantalla; el front trata esos textos como contrato roto (QA 2026-11-17).
-Texto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+Texto = Annotated[str, AfterValidator(_recortar_como_js)]
 
 
 class ReporteClinico(BaseModel):
