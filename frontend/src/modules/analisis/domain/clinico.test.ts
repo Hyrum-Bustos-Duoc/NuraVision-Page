@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AlternativaClinica, Clinico, ClaseClinica, MotivoClinico, UnaDetectada } from './analisis.types'
 import { AVISO_CLINICO_POR_DEFECTO, CLINICO_NO_DISPONIBLE, avisoClinicoDe, clinicoDe, mensajeMotivoClinico, resumenClinico } from './clinico'
 
-function una(mano: number | null, clinico?: Clinico): UnaDetectada {
+function una(mano: number | null, clinico: Clinico): UnaDetectada {
   return {
     dedo: mano === null ? null : 'indice',
     mano,
@@ -14,8 +14,16 @@ function una(mano: number | null, clinico?: Clinico): UnaDetectada {
     forma_fiable: false,
     contorno: [],
     calidad: { brillo: 128, lado_origen: 400 },
-    ...(clinico ? { clinico } : {}),
+    clinico,
   }
+}
+
+/**
+ * Una sin `clinico`, fuera de contrato: es como llega por red desde los datos de
+ * ejemplo de e2e. JSON.stringify descarta el undefined, igual que una respuesta sin el campo.
+ */
+function unaSinClinico(): UnaDetectada {
+  return JSON.parse(JSON.stringify({ ...una(1, ok('linea_beau')), clinico: undefined }))
 }
 
 function ok(clase: ClaseClinica): Extract<Clinico, { estado: 'ok' }> {
@@ -36,6 +44,8 @@ function nc(motivo: MotivoClinico): Clinico {
   return { estado: 'no_concluyente', motivo, clase: null, confianza: null, alternativas: [], reporte: null }
 }
 
+const ALT_OK = { clase: 'mancha_blanca', nombre: 'Mancha blanca', confianza: 0.02 }
+
 const REPORTE_GENERICO = { nombre: 'Señal sin identificar', descripcion: 'd', asociaciones: [], recomendacion: 'r' }
 
 function inespecifica(): Clinico {
@@ -43,8 +53,8 @@ function inespecifica(): Clinico {
 }
 
 describe('clinicoDe', () => {
-  it('sin `clinico` (servicio anterior) devuelve no concluyente por modelo_no_entrenado', () => {
-    expect(clinicoDe(una(1))).toBe(CLINICO_NO_DISPONIBLE)
+  it('sin `clinico` (fuera de contrato) devuelve no concluyente por modelo_no_entrenado', () => {
+    expect(clinicoDe(unaSinClinico())).toBe(CLINICO_NO_DISPONIBLE)
     expect(CLINICO_NO_DISPONIBLE).toMatchObject({ estado: 'no_concluyente', motivo: 'modelo_no_entrenado' })
   })
 
@@ -61,9 +71,24 @@ describe('clinicoDe', () => {
     ['con reporte sin asociaciones', { reporte: { nombre: 'n', descripcion: 'd', recomendacion: 'r' } }],
     ['con descripcion vacia', { reporte: { nombre: 'n', descripcion: '', asociaciones: [], recomendacion: 'r' } }],
     ['con una alternativa null', { alternativas: [null, { clase: 'linea_mees', nombre: 'x', confianza: 0.1 }] }],
-    ['con una alternativa sin_senales', { alternativas: [{ clase: 'sin_senales', nombre: 'x', confianza: 0.1 }] }],
-    ['con una alternativa otra', { alternativas: [{ clase: 'otra', nombre: 'x', confianza: 0.1 }] }],
-    ['con la clase predicha como alternativa', { alternativas: [{ clase: 'linea_beau', nombre: 'x', confianza: 0.1 }] }],
+    // De dos en dos para que falle por la clase y no por la cantidad.
+    ['con una alternativa sin_senales', { alternativas: [{ clase: 'sin_senales', nombre: 'x', confianza: 0.1 }, ALT_OK] }],
+    ['con una alternativa otra', { alternativas: [{ clase: 'otra', nombre: 'x', confianza: 0.1 }, ALT_OK] }],
+    ['con una alternativa de clase desconocida', { alternativas: [{ clase: 'linea_nueva', nombre: 'x', confianza: 0.1 }, ALT_OK] }],
+    ['con la clase predicha como alternativa', { alternativas: [{ clase: 'linea_beau', nombre: 'x', confianza: 0.1 }, ALT_OK] }],
+    ['con motivo', { motivo: 'confianza_baja' }],
+    ['con clase otra', { clase: 'otra' }],
+    ['con clase desconocida', { clase: 'linea_nueva' }],
+    ['con confianza null', { confianza: null }],
+    ['con confianza de texto', { confianza: '0.9' }],
+    ['con confianza mayor que 1', { confianza: 1.2 }],
+    ['con confianza negativa', { confianza: -0.1 }],
+    ['con una sola alternativa', { alternativas: [ALT_OK] }],
+    ['sin alternativas', { alternativas: [] }],
+    ['con tres alternativas', { alternativas: [{ clase: 'una_terry', nombre: 'x', confianza: 0.06 }, { clase: 'onicolisis', nombre: 'x', confianza: 0.05 }, ALT_OK] }],
+    ['con alternativas repetidas', { alternativas: [ALT_OK, ALT_OK] }],
+    ['con alternativas de menor a mayor confianza', { alternativas: [ALT_OK, { clase: 'onicolisis', nombre: 'x', confianza: 0.05 }] }],
+    ['con una alternativa de confianza mayor que 1', { alternativas: [{ clase: 'onicolisis', nombre: 'x', confianza: 1.5 }, ALT_OK] }],
   ])('un ok %s se trata como no concluyente por clasificacion_fallida', (_, rotura) => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), ...rotura }))
     expect(clinicoDe(una(1, roto))).toMatchObject({
@@ -83,6 +108,18 @@ describe('clinicoDe', () => {
       expect(c.estado === 'no_concluyente' && mensajeMotivoClinico(c.motivo)).toBe(mensajeMotivoClinico('x'))
     },
   )
+
+  it('acepta los extremos del contrato: confianzas 0 y 1 y alternativas empatadas', () => {
+    const c: Clinico = {
+      ...ok('linea_beau'),
+      confianza: 1,
+      alternativas: [
+        { clase: 'onicolisis', nombre: 'Onicólisis', confianza: 0 },
+        { clase: 'mancha_blanca', nombre: 'Mancha blanca', confianza: 0 },
+      ],
+    }
+    expect(clinicoDe(una(1, c))).toBe(c)
+  })
 
   it('quita linea_mees y acropaquia de las alternativas sin tocar el resto ni el original', () => {
     const c = ok('linea_beau')
@@ -110,6 +147,11 @@ describe('clinicoDe', () => {
     ['sin reporte', { reporte: null }],
     ['con asociaciones (delatarian la señal)', { reporte: { ...REPORTE_GENERICO, asociaciones: ['Psoriasis'] } }],
     ['con nombre vacio', { reporte: { ...REPORTE_GENERICO, nombre: ' ' } }],
+    ['sin p_alguna_senal', { p_alguna_senal: undefined }],
+    ['con p_alguna_senal null', { p_alguna_senal: null }],
+    ['con p_alguna_senal de texto', { p_alguna_senal: '0.7' }],
+    ['con p_alguna_senal mayor que 1', { p_alguna_senal: 1.01 }],
+    ['con p_alguna_senal negativa', { p_alguna_senal: -0.2 }],
   ])('senal_inespecifica %s cae a clasificacion_fallida', (_, rotura) => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...inespecifica(), ...rotura }))
     expect(clinicoDe(una(1, roto))).toMatchObject({ estado: 'no_concluyente', motivo: 'clasificacion_fallida', reporte: null })
@@ -218,8 +260,8 @@ describe('resumenClinico', () => {
     })
   })
 
-  it('sin `clinico` en ninguna una (servicio anterior): no disponible', () => {
-    expect(resumenClinico([una(1), una(1)])).toEqual({ disponible: false })
+  it('sin `clinico` en ninguna una (fuera de contrato): no disponible', () => {
+    expect(resumenClinico([unaSinClinico(), unaSinClinico()])).toEqual({ disponible: false })
   })
 
   it('sin uñas: no disponible', () => {

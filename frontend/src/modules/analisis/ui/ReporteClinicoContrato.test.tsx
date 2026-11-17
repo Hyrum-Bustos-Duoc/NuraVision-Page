@@ -59,6 +59,7 @@ function resultado(unas: UnaDetectada[], aviso_clinico = 'Señal orientativa. No
   return {
     estado: 'ok',
     motivo: null,
+    modo: 'mano_completa',
     manos: 1,
     unas,
     forma_predominante: null,

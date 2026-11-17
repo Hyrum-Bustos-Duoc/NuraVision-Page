@@ -48,10 +48,11 @@ export interface UnaDetectada {
    */
   calidad: CalidadUna
   /**
-   * Opcional solo para tolerar un servicio anterior al reporte clinico, que no lo
-   * envia. No se lee directo: se pasa por clinicoDe(), que resuelve la ausencia.
+   * Siempre presente: sin clasificador clinico es no_concluyente/modelo_no_entrenado.
+   * No se lee directo: el JSON llega sin validar y se pasa por clinicoDe(), que
+   * comprueba la forma y resuelve un bloque roto o ausente.
    */
-  clinico?: Clinico
+  clinico: Clinico
 }
 
 /**
@@ -123,6 +124,8 @@ export type Clinico =
        */
       alternativas: AlternativaClinica[]
       reporte: ReporteClinico
+      /** El servicio lo envia como null fuera de senal_inespecifica. */
+      p_alguna_senal?: null
     }
   | {
       estado: 'no_concluyente'
@@ -135,6 +138,7 @@ export type Clinico =
       confianza: null
       alternativas: []
       reporte: null
+      p_alguna_senal?: null
     }
   | {
       /**
@@ -163,11 +167,8 @@ export type MotivoNoConcluyente = 'sin_mano' | 'imagen_pequena' | 'unas_no_visib
 export interface ResultadoAnalisis {
   estado: 'ok' | 'no_concluyente'
   motivo: MotivoNoConcluyente | null
-  /**
-   * null en no_concluyente. Opcional solo para tolerar un servicio anterior al modo
-   * primer_plano, que no lo envia; su ausencia equivale a mano_completa.
-   */
-  modo?: Modo | null
+  /** null en no_concluyente. */
+  modo: Modo | null
   /** 0 en primer_plano. */
   manos: number
   unas: UnaDetectada[]
@@ -175,10 +176,10 @@ export interface ResultadoAnalisis {
   forma_predominante: Forma | null
   aviso: string
   modelo: Modelo
-  /** Opcional por la misma razon que UnaDetectada.clinico: servicio anterior. */
-  aviso_clinico?: string
+  /** No se lee directo: avisoClinicoDe() pone el aviso por defecto si llega vacio. */
+  aviso_clinico: string
   /** null cuando el servicio no tiene clasificador clinico cargado. */
-  modelo_clinico?: Modelo | null
+  modelo_clinico: Modelo | null
 }
 
 /** Codigos de error del API, mas los que se originan en el navegador. */

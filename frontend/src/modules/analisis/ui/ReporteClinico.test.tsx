@@ -43,7 +43,7 @@ function nc(motivo: MotivoClinico): Clinico {
   return { estado: 'no_concluyente', motivo, clase: null, confianza: null, alternativas: [], reporte: null }
 }
 
-function una(clinico: Clinico | undefined, dedo: Dedo | null = 'indice', mano: number | null = 1): UnaDetectada {
+function una(clinico: Clinico, dedo: Dedo | null = 'indice', mano: number | null = 1): UnaDetectada {
   return {
     dedo,
     mano,
@@ -55,7 +55,7 @@ function una(clinico: Clinico | undefined, dedo: Dedo | null = 'indice', mano: n
     forma_fiable: false,
     contorno: [],
     calidad: { brillo: 128, lado_origen: 400 },
-    ...(clinico ? { clinico } : {}),
+    clinico,
   }
 }
 
@@ -63,6 +63,7 @@ function resultado(unas: UnaDetectada[], extra: Partial<ResultadoAnalisis> = {})
   return {
     estado: 'ok',
     motivo: null,
+    modo: 'mano_completa',
     manos: 1,
     unas,
     forma_predominante: null,
@@ -243,10 +244,14 @@ describe('ReporteClinico: contenido', () => {
     expect(within(panel).queryByTestId('resumen-clinico')).not.toBeInTheDocument()
   })
 
-  it('servicio anterior sin `clinico` ni aviso_clinico: no revienta y dice que no está disponible', async () => {
-    const r = resultado([una(undefined), una(undefined, 'medio')])
-    delete r.aviso_clinico
-    delete r.modelo_clinico
+  it('sin `clinico` ni aviso_clinico (fuera de contrato): no revienta y dice que no está disponible', async () => {
+    // El replacer quita los campos al serializar: llega como una respuesta que no los trae.
+    const quitar = ['clinico', 'aviso_clinico', 'modelo_clinico']
+    const r: ResultadoAnalisis = JSON.parse(
+      JSON.stringify(resultado([una(nc('confianza_baja')), una(nc('confianza_baja'), 'medio')]), (k, v) =>
+        quitar.includes(k) ? undefined : v,
+      ),
+    )
     const panel = await abrir(r)
     expect(panel).toHaveTextContent('El reporte clínico aún no está disponible.')
     expect(within(panel).queryAllByTestId('clinico-una')).toHaveLength(0)

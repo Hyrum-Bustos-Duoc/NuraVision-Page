@@ -1,8 +1,10 @@
-import type { Clinico, UnaDetectada } from './analisis.types'
+import type { AlternativaClinica, ClaseClinica, Clinico, UnaDetectada } from './analisis.types'
 
 /**
- * Lo que vale `clinico` cuando el servicio no lo envia (version anterior al reporte
- * clinico). Equivale a un servicio sin clasificador cargado.
+ * Lo que envia el servicio sin clasificador cargado. clinicoDe lo devuelve tambien
+ * para una una sin `clinico`: el contrato lo hace obligatorio y un servicio anterior
+ * ya lo rechaza analisis.api.ts por no traer `calidad`, pero el JSON no se valida
+ * entero y los datos de ejemplo de e2e (analisis-unas, reporte-clinico) lo omiten.
  */
 export const CLINICO_NO_DISPONIBLE: Clinico = {
   estado: 'no_concluyente',
@@ -14,10 +16,10 @@ export const CLINICO_NO_DISPONIBLE: Clinico = {
 }
 
 /**
- * Respaldo del aviso si llega un bloque clinico sin `aviso_clinico`. El servicio
- * siempre lo envia junto con `clinico`, pero el tipo lo declara opcional y un
- * resultado clinico no debe pintarse nunca sin su aviso. Mismo texto que
- * AVISO_CLINICO en services/api/app/vision.
+ * Respaldo del aviso si `aviso_clinico` llega ausente, vacio o sin ser texto. El
+ * contrato lo hace obligatorio, pero el JSON llega sin validar y un resultado clinico
+ * no debe pintarse nunca sin su aviso. Mismo texto que AVISO_CLINICO en
+ * services/api/app/vision.
  */
 export const AVISO_CLINICO_POR_DEFECTO =
   'Señal orientativa para consultar con un profesional de la salud. ' +
@@ -39,11 +41,20 @@ export function avisoClinicoDe(aviso: unknown): string {
 const CLINICO_FALLIDO: Clinico = { ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' }
 
 /**
- * Clases que el servicio nunca envia como alternativa (ademas de la predicha). La spec
- * prohibe mostrarlas, y si llegan el bloque entero es sospechoso: no se filtran, se
- * descarta el ok.
+ * Un Record y no una lista: si ClaseClinica gana una clase, el compilador obliga a
+ * anadirla aqui; con una lista, un ok valido de la clase nueva caeria en silencio a
+ * clasificacion_fallida. `otra` no esta: nunca sale del servicio.
  */
-const NUNCA_ALTERNATIVA: readonly string[] = ['sin_senales', 'otra']
+const CLASES_CLINICAS: Record<ClaseClinica, true> = {
+  linea_beau: true,
+  linea_oscura: true,
+  acropaquia: true,
+  linea_mees: true,
+  onicolisis: true,
+  una_terry: true,
+  mancha_blanca: true,
+  sin_senales: true,
+}
 
 /**
  * Clases que el servicio puede enviar pero que nunca se muestran al usuario (decision
@@ -74,53 +85,88 @@ function reporteValido(r: unknown): boolean {
   )
 }
 
-/** No exige exactamente 2: la UI no depende del numero, solo de que cada una se pueda pintar. */
-function alternativasValidas(alternativas: unknown, clase: string): boolean {
+/** hasOwn y no `in`: `in` acepta 'toString' y el resto de Object.prototype. */
+function esClaseClinica(v: unknown): v is ClaseClinica {
+  return typeof v === 'string' && Object.hasOwn(CLASES_CLINICAS, v)
+}
+
+/** Field(ge=0, le=1) de Pydantic. El rango ya excluye NaN e Infinity. */
+function esProbabilidad(v: unknown): v is number {
+  return typeof v === 'number' && v >= 0 && v <= 1
+}
+
+/**
+ * El nombre se exige no vacio aunque Pydantic no lo haga: la UI lo pinta. sin_senales
+ * como alternativa de una senal sugeriria que podria no haber nada (QA 2026-11-12).
+ */
+function alternativaValida(a: unknown, clase: ClaseClinica): a is AlternativaClinica {
   return (
-    Array.isArray(alternativas) &&
-    alternativas.every(
-      (a) =>
-        esObjeto(a) &&
-        typeof a.clase === 'string' &&
-        a.clase !== clase &&
-        !NUNCA_ALTERNATIVA.includes(a.clase) &&
-        esTexto(a.nombre) &&
-        typeof a.confianza === 'number',
-    )
+    esObjeto(a) &&
+    esClaseClinica(a.clase) &&
+    a.clase !== clase &&
+    a.clase !== 'sin_senales' &&
+    esTexto(a.nombre) &&
+    esProbabilidad(a.confianza)
+  )
+}
+
+/**
+ * Mismas invariantes que Clinico._invariantes en esquemas.py: exactamente 2, distintas
+ * entre si y de la predicha, de mayor a menor confianza. La UI no depende del numero
+ * ni del orden, pero un ok que los incumple viene de un servicio roto y no se pinta.
+ */
+function alternativasValidas(alternativas: unknown, clase: ClaseClinica): boolean {
+  if (!Array.isArray(alternativas) || alternativas.length !== 2) return false
+  const [a, b] = alternativas
+  return (
+    alternativaValida(a, clase) &&
+    alternativaValida(b, clase) &&
+    a.clase !== b.clase &&
+    a.confianza >= b.confianza
   )
 }
 
 /**
  * Unico punto que resuelve la ausencia o rotura de `clinico`. La UI no usa `?.` sobre
  * el y ramifica solo por estado ('ok' y 'senal_inespecifica' pintan reporte), asi que
- * aqui se comprueba la forma completa de un `ok`: clase de texto, reporte con nombre, descripcion y recomendacion de texto
- * no vacio y asociaciones como lista de textos, y alternativas como lista de objetos
- * con clase, nombre de texto y confianza numerica, sin sin_senales, otra ni la clase
- * predicha. Cualquier fallo da CLINICO_FALLIDO. Las comprobaciones parecen redundantes
- * para TS, pero el JSON llega por red (analisis.api.ts solo lo castea) y la union no
- * lo valida; un dato roto que llegue a la UI tumba la pagina entera.
+ * aqui se comprueba un `ok` con las mismas invariantes que Pydantic: motivo null,
+ * clase de ClaseClinica, confianza 0..1, reporte con nombre, descripcion y
+ * recomendacion de texto no vacio y asociaciones como lista de textos, y alternativas
+ * segun alternativasValidas. Cualquier fallo da CLINICO_FALLIDO. Las comprobaciones
+ * parecen redundantes para TS, pero el JSON llega por red (analisis.api.ts solo lo
+ * castea) y la union no lo valida; un dato roto que llegue a la UI tumba la pagina
+ * entera.
  *
  * Despues de validar aplica CLASES_OCULTAS: una clase oculta da CLINICO_OCULTO y una
  * alternativa oculta se quita.
  *
  * Una `senal_inespecifica` se reconstruye con solo su reporte y p_alguna_senal: si el
  * servicio colara una clase o alternativas, no llegan a la UI. Un reporte roto o con
- * asociaciones (delatarian la senal) da CLINICO_FALLIDO.
+ * asociaciones (delatarian la senal), o un p_alguna_senal fuera de 0..1, da
+ * CLINICO_FALLIDO.
  *
  * Un `no_concluyente` se devuelve tal cual: la UI solo lee su motivo, y un motivo
  * desconocido ya tiene mensaje generico.
  */
 export function clinicoDe(una: UnaDetectada): Clinico {
   const c = una.clinico
+  // El tipo dice que siempre llega; el JSON sin validar no lo garantiza (ver
+  // CLINICO_NO_DISPONIBLE). Sin esta guarda, `c.estado` sobre undefined tumba la pagina.
   if (!c) return CLINICO_NO_DISPONIBLE
   if (c.estado === 'senal_inespecifica') {
-    if (!reporteValido(c.reporte) || c.reporte.asociaciones.length > 0) return CLINICO_FALLIDO
+    const valido =
+      reporteValido(c.reporte) && c.reporte.asociaciones.length === 0 && esProbabilidad(c.p_alguna_senal)
+    if (!valido) return CLINICO_FALLIDO
     const { reporte, p_alguna_senal } = c
     return { estado: 'senal_inespecifica', motivo: null, clase: null, confianza: null, alternativas: [], reporte, p_alguna_senal }
   }
   if (c.estado !== 'ok') return c
   const valido =
-    typeof c.clase === 'string' && reporteValido(c.reporte) && alternativasValidas(c.alternativas, c.clase)
+    c.motivo === null &&
+    esClaseClinica(c.clase) &&
+    esProbabilidad(c.confianza) &&
+    reporteValido(c.reporte) &&
+    alternativasValidas(c.alternativas, c.clase)
   if (!valido) return CLINICO_FALLIDO
   if (CLASES_OCULTAS.includes(c.clase)) return CLINICO_OCULTO
   const alternativas = c.alternativas.filter((a) => !CLASES_OCULTAS.includes(a.clase))

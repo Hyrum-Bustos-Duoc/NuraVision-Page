@@ -22,6 +22,7 @@ function una(forma: Forma | null, fiable = forma !== null): UnaDetectada {
     punta: forma ? 0.5 : null,
     forma_fiable: forma ? fiable : false,
     calidad: { brillo: 128, lado_origen: 400 },
+    clinico: { estado: 'no_concluyente', motivo: 'modelo_no_entrenado', clase: null, confianza: null, alternativas: [], reporte: null },
     contorno: forma
       ? [
           [0.3, 0.3],
@@ -36,11 +37,14 @@ function resultado(unas: UnaDetectada[], forma_predominante: Forma | null): Resu
   return {
     estado: 'ok',
     motivo: null,
+    modo: 'mano_completa',
     manos: 1,
     unas,
     forma_predominante,
     aviso: 'x',
     modelo: { nombre: 'm', version: '1' },
+    aviso_clinico: 'x',
+    modelo_clinico: null,
   }
 }
 
@@ -107,8 +111,8 @@ describe('ResultadoUnas: primer_plano', () => {
     expect(screen.getByText(/una sola uña vista de cerca/)).toBeInTheDocument()
   })
 
-  it('mano_completa (o un servicio sin modo) sigue dibujando recuadros y el rótulo del dedo', () => {
-    render(<ResultadoUnas resultado={{ ...resultado([una(null)], null), modo: 'mano_completa' }} fotoUrl="blob:x" />)
+  it('mano_completa sigue dibujando recuadros y el rótulo del dedo', () => {
+    render(<ResultadoUnas resultado={resultado([una(null)], null)} fotoUrl="blob:x" />)
     expect(screen.getByAltText('Tu fotografía con las uñas marcadas')).toBeInTheDocument()
     expect(screen.getByAltText('Uña del dedo índice')).toBeInTheDocument()
     expect(screen.getByRole('listitem')).toHaveTextContent('Índice')
