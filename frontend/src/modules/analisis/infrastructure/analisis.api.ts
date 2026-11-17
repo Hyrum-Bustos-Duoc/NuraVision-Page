@@ -34,6 +34,11 @@ const CODIGOS_DEL_API: readonly string[] = [
   'modelo_no_disponible',
 ]
 
+// Literal de ResultadoAnalisis.estado y Modo en esquemas.py. senal_inespecifica es un
+// estado del bloque clinico de cada una, no del resultado.
+const ESTADOS: readonly unknown[] = ['ok', 'no_concluyente']
+const MODOS: readonly unknown[] = ['mano_completa', 'primer_plano']
+
 function errorDe(codigo: CodigoErrorAnalisis): ErrorAnalisis {
   return new ErrorAnalisis(codigo, MENSAJES[codigo])
 }
@@ -94,7 +99,10 @@ export async function analizarFoto(foto: File, senal?: AbortSignal): Promise<Res
  * servicio que no habla este contrato. El bloque clinico no se valida aqui: lo valida
  * clinicoDe, una por una, sin tumbar el resto del resultado.
  *
+ * - Los Literal de `estado` y `modo`, y `manos` entero >= 0 (Field(ge=0)).
  * - `calidad` en cada una (esquemas.py, CalidadUna): el servicio la mide siempre.
+ * - `esquinas` en cada una: ResultadoUnas las recorre sin defenderse y una ausente
+ *   tumbaba la pantalla. Tambien en primer_plano, donde no se pintan: Pydantic las exige.
  * - ResultadoAnalisis._invariantes: ok si y solo si hay modo y al menos una una;
  *   primer_plano con 0 manos y exactamente 1 una sin dedo, mano ni forma (el
  *   clasificador ve la foto entera y no separa varias); mano_completa con dedo y mano
@@ -105,8 +113,11 @@ export async function analizarFoto(foto: File, senal?: AbortSignal): Promise<Res
  */
 function resultadoValido(datos: unknown): boolean {
   if (!esObjeto(datos) || !Array.isArray(datos.unas)) return false
+  if (!ESTADOS.includes(datos.estado) || (datos.modo != null && !MODOS.includes(datos.modo))) return false
+  if (typeof datos.manos !== 'number' || !Number.isInteger(datos.manos) || datos.manos < 0) return false
   const unas = datos.unas.filter(esObjeto)
-  if (unas.length !== datos.unas.length || !unas.every((u) => calidadValida(u.calidad))) return false
+  if (unas.length !== datos.unas.length) return false
+  if (!unas.every((u) => calidadValida(u.calidad) && esquinasValidas(u.esquinas))) return false
 
   const ok = datos.estado === 'ok'
   if (ok !== (datos.modo != null) || ok !== (unas.length > 0)) return false
@@ -114,6 +125,15 @@ function resultadoValido(datos: unknown): boolean {
     return datos.manos === 0 && unas.length === 1 && unas[0].dedo === null && unas[0].mano === null && unas[0].forma == null
   }
   return unas.every((u) => u.dedo != null && u.mano != null)
+}
+
+/** Una.esquinas: exactamente 4 pares (x, y) de float; Pydantic no acota el rango. */
+function esquinasValidas(e: unknown): boolean {
+  return (
+    Array.isArray(e) &&
+    e.length === 4 &&
+    e.every((p) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n)))
+  )
 }
 
 function calidadValida(c: unknown): boolean {

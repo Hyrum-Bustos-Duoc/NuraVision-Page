@@ -20,6 +20,14 @@ async function codigoDelError(promesa: Promise<unknown>): Promise<string> {
 
 afterEach(() => vi.unstubAllGlobals())
 
+// Una.esquinas en esquemas.py: exactamente 4 pares (x, y).
+const ESQUINAS = [
+  [0.1, 0.1],
+  [0.2, 0.1],
+  [0.2, 0.2],
+  [0.1, 0.2],
+]
+
 describe('analizarFoto', () => {
   it('envia la foto en el campo "foto" y devuelve el resultado', async () => {
     const resultado = {
@@ -27,7 +35,7 @@ describe('analizarFoto', () => {
       motivo: null,
       modo: 'mano_completa',
       manos: 1,
-      unas: [{ dedo: 'indice', mano: 1, calidad: { brillo: 120, lado_origen: 300 } }],
+      unas: [{ dedo: 'indice', mano: 1, esquinas: ESQUINAS, calidad: { brillo: 120, lado_origen: 300 } }],
       forma_predominante: null,
       aviso: 'x',
       modelo: { nombre: 'm', version: '1' },
@@ -50,7 +58,7 @@ describe('analizarFoto', () => {
     const unaCon = (calidad?: unknown) => ({
       dedo: 'indice',
       mano: 1,
-      esquinas: [],
+      esquinas: ESQUINAS,
       recorte: '',
       forma: null,
       aspecto: null,
@@ -95,15 +103,15 @@ describe('analizarFoto', () => {
   // si llegan, el servicio no habla este contrato.
   describe('invariantes del resultado', () => {
     const CALIDAD = { brillo: 120, lado_origen: 300 }
-    const deMano = (dedo: string, mano = 1) => ({ dedo, mano, forma: 'ovalada', calidad: CALIDAD })
-    const deCerca = { dedo: null, mano: null, forma: null, calidad: CALIDAD }
+    const deMano = (dedo: string, mano = 1) => ({ dedo, mano, forma: 'ovalada', esquinas: ESQUINAS, calidad: CALIDAD })
+    const deCerca = { dedo: null, mano: null, forma: null, esquinas: ESQUINAS, calidad: CALIDAD }
     const base = { motivo: null, forma_predominante: null, aviso: 'x', modelo: { nombre: 'm', version: '1' } }
     const primerPlano = { ...base, estado: 'ok', modo: 'primer_plano', manos: 0, unas: [deCerca] }
     const manoCompleta = { ...base, estado: 'ok', modo: 'mano_completa', manos: 2, unas: [deMano('indice'), deMano('pulgar', 2)] }
 
     it.each([
       ['primer_plano con 0 manos y 1 uña sin dedo, mano ni forma', primerPlano],
-      ['primer_plano con la uña sin el campo forma (default None)', { ...primerPlano, unas: [{ dedo: null, mano: null, calidad: CALIDAD }] }],
+      ['primer_plano con la uña sin el campo forma (default None)', { ...primerPlano, unas: [{ dedo: null, mano: null, esquinas: ESQUINAS, calidad: CALIDAD }] }],
       ['mano_completa con dedo y mano en cada uña', manoCompleta],
       ['no_concluyente con modo null y sin uñas', { ...base, estado: 'no_concluyente', motivo: 'sin_mano', modo: null, manos: 0, unas: [] }],
     ])('acepta %s', async (_, cuerpo) => {
@@ -125,6 +133,33 @@ describe('analizarFoto', () => {
       ['mano_completa con una uña sin dedo', { ...manoCompleta, unas: [deMano('indice'), { ...deMano('pulgar'), dedo: null }] }],
       ['mano_completa con una uña sin mano', { ...manoCompleta, unas: [{ ...deMano('indice'), mano: null }] }],
       ['una uña que no es objeto', { ...manoCompleta, unas: [deMano('indice'), null] }],
+      // QA 2026-11-17: dedo y mano son obligatorios en Pydantic (sin default); ausentes no son null.
+      ['primer_plano con la uña sin el campo dedo', { ...primerPlano, unas: [{ mano: null, forma: null, esquinas: ESQUINAS, calidad: CALIDAD }] }],
+      ['primer_plano con la uña sin el campo mano', { ...primerPlano, unas: [{ dedo: null, forma: null, esquinas: ESQUINAS, calidad: CALIDAD }] }],
+      ['primer_plano sin el campo manos', { ...primerPlano, manos: undefined }],
+      ['unas que no es lista', { ...manoCompleta, unas: { 0: deMano('indice') } }],
+      // ResultadoUnas recorre u.esquinas sin defenderse: una ausente tumbaba la pantalla.
+      ['mano_completa con una uña sin esquinas', { ...manoCompleta, unas: [deMano('indice'), { ...deMano('pulgar', 2), esquinas: undefined }] }],
+      ['primer_plano con la uña sin esquinas', { ...primerPlano, unas: [{ ...deCerca, esquinas: undefined }] }],
+      ['una uña con 3 esquinas', { ...manoCompleta, unas: [{ ...deMano('indice'), esquinas: ESQUINAS.slice(0, 3) }] }],
+      ['una esquina que no es un par', { ...manoCompleta, unas: [{ ...deMano('indice'), esquinas: [...ESQUINAS.slice(0, 3), [0.1]] }] }],
+      ['una esquina con coordenada de texto', { ...manoCompleta, unas: [{ ...deMano('indice'), esquinas: [...ESQUINAS.slice(0, 3), [0.1, '0.2']] }] }],
+      // Literal de modo y estado, y manos Field(ge=0) entero.
+      ['mano_completa sin el campo manos', { ...manoCompleta, manos: undefined }],
+      ['manos decimal', { ...manoCompleta, manos: 1.5 }],
+      ['manos de texto', { ...manoCompleta, manos: '2' }],
+      ['el estado senal_inespecifica (es del bloque clinico, no del resultado)', { ...base, estado: 'senal_inespecifica', modo: null, manos: 0, unas: [] }],
+    ])('%s se trata como servicio caido', async (_, cuerpo) => {
+      responder(200, cuerpo)
+      expect(await codigoDelError(analizarFoto(FOTO))).toBe('servicio_no_disponible')
+    })
+
+    // QA 2026-11-17: divergencias con Pydantic (Literal de modo y estado, manos ge=0),
+    // cerradas en resultadoValido.
+    it.each([
+      ['ok con un modo que el contrato no conoce', { ...manoCompleta, modo: 'zoom' }],
+      ['un estado que el contrato no conoce', { ...base, estado: 'error', modo: null, manos: 0, unas: [] }],
+      ['mano_completa con manos negativo', { ...manoCompleta, manos: -1 }],
     ])('%s se trata como servicio caido', async (_, cuerpo) => {
       responder(200, cuerpo)
       expect(await codigoDelError(analizarFoto(FOTO))).toBe('servicio_no_disponible')

@@ -171,6 +171,10 @@ describe('clinicoDe', () => {
     ['con reporte', { reporte: REPORTE_GENERICO }],
     ['sin reporte', { reporte: undefined }],
     ['con p_alguna_senal', { p_alguna_senal: 0.71 }],
+    // QA 2026-11-17: casos que el `== null` / `=== null` deben separar.
+    ['con p_alguna_senal 0', { p_alguna_senal: 0 }],
+    ['con motivo que no es texto', { motivo: 5 }],
+    ['sin el campo clase', { clase: undefined }],
   ])('no_concluyente %s cae a clasificacion_fallida sin nada en memoria', (_, rotura) => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...nc('confianza_baja'), ...rotura }))
     expect(clinicoDe(una(1, roto))).toEqual({ ...CLINICO_NO_DISPONIBLE, motivo: 'clasificacion_fallida' })
@@ -200,6 +204,13 @@ describe('clinicoDe', () => {
     ['con p_alguna_senal de texto', { p_alguna_senal: '0.7' }],
     ['con p_alguna_senal mayor que 1', { p_alguna_senal: 1.01 }],
     ['con p_alguna_senal negativa', { p_alguna_senal: -0.2 }],
+    // QA 2026-11-17: en Pydantic motivo, clase y confianza son obligatorios aunque
+    // valgan None. Ausentes (no null) tampoco cumplen el contrato.
+    ['sin el campo motivo', { motivo: undefined }],
+    ['sin el campo clase', { clase: undefined }],
+    ['sin el campo confianza', { confianza: undefined }],
+    ['con clase sin_senales', { clase: 'sin_senales' }],
+    ['con confianza 0', { confianza: 0 }],
   ])('senal_inespecifica %s cae a clasificacion_fallida', (_, rotura) => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...inespecifica(), ...rotura }))
     expect(clinicoDe(una(1, roto))).toMatchObject({ estado: 'no_concluyente', motivo: 'clasificacion_fallida', reporte: null })
