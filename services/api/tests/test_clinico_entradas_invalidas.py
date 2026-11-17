@@ -125,11 +125,14 @@ class _InterpreteFalso:
     def __init__(self, dtype_entrada, dtype_salida):
         self._d = (dtype_entrada, dtype_salida)
 
-    def __call__(self, model_path):
+    def __call__(self, model_path, **_opciones):
         return self
 
     def allocate_tensors(self):
         pass
+
+    def get_tensor_details(self):
+        return []  # sin tensor de embedding: el clasificador carga igual, sin primer plano
 
     def get_input_details(self):
         return [{"shape": np.array([1, clinico.LADO, clinico.LADO, 3]), "dtype": self._d[0], "index": 0}]

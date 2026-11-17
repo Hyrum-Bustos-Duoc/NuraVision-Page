@@ -7,6 +7,14 @@ centrada ahi, rotada para que el dedo apunte hacia arriba. Es suficiente para
 mostrarla y para alimentar un clasificador despues, pero no es una segmentacion
 precisa (para eso esta el dataset NailSegmentationDatasetV2, ver
 services/vision/docs/preparacion-modelo.md).
+
+Si MediaPipe no encuentra ninguna mano (lo normal en un primer plano de una una
+o de la punta de un dedo), la foto entera se trata como un recorte de una sola
+una, que es justo lo que vio el clasificador clinico al entrenar (Nail.zip). Solo
+se acepta si clinico.parece_una() la reconoce; si no, sale sin_mano. En ese modo
+no se mide la forma: medido el 2026-11-17 sobre 44 primeros planos simulados con
+mascara real, el segmentador sin el recorte alineado al dedo dio IoU mediana
+0,32 y trazo "una" en 144 de 158 recortes de piel sin ninguna.
 """
 
 import base64
@@ -21,7 +29,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from mediapipe.tasks import python as mpp
-from PIL import Image
+from PIL import Image, ImageOps
 from mediapipe.tasks.python import vision
 
 from . import clinico
@@ -33,7 +41,7 @@ from .segmentador import Segmentador
 log = logging.getLogger(__name__)
 
 NOMBRE_MODELO = "mediapipe-hand-landmarker"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 # (articulacion distal, punta) de cada dedo, segun la numeracion de MediaPipe.
 DEDOS = {
@@ -75,6 +83,8 @@ FRACCION_MINIMA_DENTRO = 0.8
 # Mas permisivo que el valor por defecto (0.5), medido en
 # services/vision/preparacion/probar_mediapipe.py. Si se sube, detecta menos.
 CONFIANZA_DETECCION = 0.3
+# Esquinas de la foto entera, en el mismo orden que esquinas_region con el dedo hacia arriba.
+ESQUINAS_FOTO = [(0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)]
 
 
 class ModeloNoDisponible(RuntimeError):
@@ -229,6 +239,17 @@ def _a_bgr8(imagen: np.ndarray) -> np.ndarray:
     return imagen
 
 
+def recorte_primer_plano(imagen: np.ndarray) -> np.ndarray:
+    """Foto BGR entera -> cuadrado BGR de LADO_RECORTE con bandas negras, sin girar.
+
+    Es la normalizacion de entrenamiento.datos.cargar_imagen (ImageOps.pad): ni
+    estirar ni recortar, para que el clasificador vea lo mismo que al entrenar.
+    """
+    rgb = Image.fromarray(cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB))
+    cuadrado = np.asarray(ImageOps.pad(rgb, (LADO_RECORTE, LADO_RECORTE)))
+    return cv2.cvtColor(cuadrado, cv2.COLOR_RGB2BGR)
+
+
 def _como_data_url(imagen: np.ndarray) -> str:
     ok, buf = cv2.imencode(".jpg", imagen, [cv2.IMWRITE_JPEG_QUALITY, 88])
     if not ok:
@@ -288,6 +309,7 @@ class AnalizadorUnas:
             return ResultadoAnalisis(
                 estado="no_concluyente",
                 motivo="imagen_pequena",
+                modo=None,
                 manos=0,
                 unas=[],
                 modelo=modelo,
@@ -345,12 +367,32 @@ class AnalizadorUnas:
                 )
 
         manos = len(resultado.hand_landmarks)
+        if manos == 0:
+            # Solo sin mano: con mano a la vista, la foto entera no es una sola una.
+            recorte = recorte_primer_plano(imagen)
+            if clinico.parece_una(self._clasificador, recorte):
+                una = Una(
+                    dedo=None,
+                    mano=None,
+                    esquinas=ESQUINAS_FOTO,
+                    recorte=_como_data_url(recorte),
+                    clinico=clinico.clasificar(self._clasificador, recorte),
+                )
+                return ResultadoAnalisis(
+                    estado="ok",
+                    modo="primer_plano",
+                    manos=0,
+                    unas=[una],
+                    modelo=modelo,
+                    modelo_clinico=modelo_clinico,
+                )
         if not unas:
             # Con mano detectada pero sin una usable, decir "no hay mano" seria falso.
             motivo = "unas_no_visibles" if manos else "sin_mano"
             return ResultadoAnalisis(
                 estado="no_concluyente",
                 motivo=motivo,
+                modo=None,
                 manos=manos,
                 unas=[],
                 modelo=modelo,
@@ -359,6 +401,7 @@ class AnalizadorUnas:
         # Sin resultado clinico agregado por foto ni por mano: cada una lleva el suyo.
         return ResultadoAnalisis(
             estado="ok",
+            modo="mano_completa",
             manos=manos,
             unas=unas,
             forma_predominante=_forma_predominante(unas),

@@ -17,8 +17,13 @@ AVISO_CLINICO = (
 )
 
 Dedo = Literal["pulgar", "indice", "medio", "anular", "menique"]
+# sin_mano: no hay mano y la foto tampoco parece un primer plano de una una.
 # unas_no_visibles: hay mano, pero ninguna una se ve (dedos doblados o cortados por el borde).
 Motivo = Literal["sin_mano", "imagen_pequena", "unas_no_visibles"]
+# mano_completa: MediaPipe encontro la mano y cada una sale de sus puntos.
+# primer_plano: no hubo mano, pero la foto entera se parece a las fotos de una sola
+# una con que se entreno el clasificador clinico (ver unas.py). Se desconoce el dedo.
+Modo = Literal["mano_completa", "primer_plano"]
 Forma = Literal["almendra", "cuadrada", "ovalada", "redonda", "stiletto"]
 # Ids publicos del clasificador clinico. "otra" existe en el modelo pero nunca
 # sale del servicio. "sin_senales" (y no "normal" ni "sana"): el sistema puede
@@ -94,17 +99,22 @@ class Clinico(BaseModel):
 
 
 class Una(BaseModel):
-    dedo: Dedo
+    # None en primer_plano: sin la mano no se sabe de que dedo es.
+    dedo: Dedo | None
     # Numero de mano dentro de la foto, desde 1. No se dice izquierda o derecha:
     # MediaPipe asume imagen espejada y en una foto normal da la etiqueta al reves.
-    mano: int = Field(ge=1)
+    # None en primer_plano.
+    mano: int | None = Field(ge=1)
     # Cuatro esquinas del recorte sobre la foto original, en coordenadas
-    # normalizadas 0..1 (x, y). Sirven para dibujar el recuadro encima.
+    # normalizadas 0..1 (x, y). Sirven para dibujar el recuadro encima. En
+    # primer_plano son las de la foto entera.
     esquinas: list[tuple[float, float]] = Field(min_length=4, max_length=4)
-    # JPEG de 224x224 como data URL, con el dedo apuntando hacia arriba.
+    # JPEG de 224x224 como data URL. En mano_completa, con el dedo apuntando hacia
+    # arriba; en primer_plano, la foto entera con bandas negras y sin girar.
     recorte: str
     # Forma segun una regla geometrica sobre el contorno de la una (no el juicio de
-    # una profesional). None si no se pudo trazar un contorno creible.
+    # una profesional). None si no se pudo trazar un contorno creible, y siempre en
+    # primer_plano (el segmentador necesita el recorte alineado con el dedo).
     forma: Forma | None = None
     # largo / ancho de la una y ancho de su extremo / ancho maximo. None si forma es None.
     aspecto: float | None = None
@@ -126,6 +136,9 @@ class ResultadoAnalisis(BaseModel):
     # "ok": se detecto al menos una una. "no_concluyente": no se pudo, ver motivo.
     estado: Literal["ok", "no_concluyente"]
     motivo: Motivo | None = None
+    # Como se obtuvieron las unas. None solo en no_concluyente. Obligatorio (sin
+    # default) para que ningun camino de analizar() se olvide de decirlo.
+    modo: Modo | None
     manos: int = Field(ge=0)
     unas: list[Una]
     # Forma mas frecuente entre las unas con forma fiable. None si no hay una forma
@@ -137,6 +150,21 @@ class ResultadoAnalisis(BaseModel):
     # None si no hay clasificador clinico cargado. Obligatorio (sin default) para
     # que ningun camino de analizar() se olvide de decirlo.
     modelo_clinico: Modelo | None
+
+    @model_validator(mode="after")
+    def _invariantes(self) -> "ResultadoAnalisis":
+        if (self.estado == "ok") != (self.modo is not None) or (self.estado == "ok") != bool(self.unas):
+            raise ValueError("ok exige modo y unas; no_concluyente no lleva ninguno")
+        if self.modo == "primer_plano":
+            # Una sola: el clasificador ve la foto entera, no sabe separar varias unas.
+            if self.manos != 0 or len(self.unas) != 1:
+                raise ValueError("primer_plano lleva 0 manos y exactamente 1 una")
+            u = self.unas[0]
+            if u.dedo is not None or u.mano is not None or u.forma is not None:
+                raise ValueError("primer_plano no lleva dedo, mano ni forma")
+        elif any(u.dedo is None or u.mano is None for u in self.unas):
+            raise ValueError("mano_completa exige dedo y mano en cada una")
+        return self
 
 
 class ErrorApi(BaseModel):

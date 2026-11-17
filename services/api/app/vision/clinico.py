@@ -10,10 +10,13 @@ clase, la confianza ni los textos. Solo rutas de archivos del servidor y tipos
 de excepcion.
 """
 
+import hashlib
 import json
 import logging
+import re
 import threading
 import tomllib
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +41,11 @@ CLASES_MODELO = frozenset((*CLASES_PUBLICAS, OTRA))
 # lado de services/vision/config.toml. Se comprueba contra el .tflite al cargar.
 LADO = 224
 N_ALTERNATIVAS = 2
+# Media de los embeddings de las fotos de ajuste y umbral de coseno para el camino
+# primer_plano. Lo escribe scripts/referencia_primer_plano.py junto al modelo.
+ARCHIVO_REFERENCIA = "referencia_primer_plano.json"
+# Salida del pooling global de MobileNetV3, la entrada de la capa densa final.
+TENSOR_EMBEDDING = re.compile(r"/avg_pool(_\d+)?/Mean$")
 
 
 def no_concluyente(motivo: MotivoClinico) -> Clinico:
@@ -52,6 +60,12 @@ class ClasificadorNoDisponible(RuntimeError):
 
 
 @dataclass(frozen=True)
+class ReferenciaUna:
+    media: np.ndarray  # vector unitario
+    umbral: float  # coseno minimo con la media para aceptar la foto como una
+
+
+@dataclass(frozen=True)
 class ClasificadorClinico:
     # Tensor (LADO, LADO, 3) float32 -> probabilidades (n_etiquetas,). Se inyecta
     # para poder probar la abstencion con un clasificador falso.
@@ -61,6 +75,10 @@ class ClasificadorClinico:
     umbral_sin_senales: float | None
     textos: dict[str, ReporteClinico]
     modelo: Modelo
+    # Mismo tensor de entrada -> embedding (D,). None si el modelo no lo expone.
+    embeber: Callable[[np.ndarray], np.ndarray] | None = None
+    # None si no hay referencia valida para este modelo: sin ella no hay primer_plano.
+    referencia: ReferenciaUna | None = None
 
 
 def entrada(recorte_bgr: np.ndarray) -> np.ndarray:
@@ -118,6 +136,29 @@ def clasificar(clasificador: ClasificadorClinico | None, recorte_bgr: np.ndarray
         return no_concluyente("clasificacion_fallida")
 
 
+def parece_una(clasificador: ClasificadorClinico | None, recorte_bgr: np.ndarray) -> bool:
+    """True si el recorte se parece a las fotos de una sola una con que se entreno el modelo.
+
+    Es la puerta del camino primer_plano. decidir() no basta: medido el
+    2026-11-17, el modelo da una clase confiada a 19 de 44 fotos que no son unas
+    (paisajes, objetos) y a 48 de 158 recortes de piel sin una. Esta puerta
+    compara el embedding del recorte con la media de los de entrenamiento.
+    Nunca lanza: ante un fallo responde False, y la foto sale sin_mano.
+    """
+    if clasificador is None or clasificador.embeber is None or clasificador.referencia is None:
+        return False
+    ref = clasificador.referencia
+    try:
+        e = np.asarray(clasificador.embeber(entrada(recorte_bgr)), dtype=np.float64).reshape(-1)
+        if e.shape != ref.media.shape or not np.all(np.isfinite(e)):
+            raise ValueError("embedding con forma o valores invalidos")
+        norma = float(np.linalg.norm(e))
+        return norma > 0 and float(e @ ref.media) / norma >= ref.umbral
+    except Exception as exc:  # como clasificar(): solo el tipo, nunca valores
+        log.warning("Comparacion de primer plano fallida (%s)", type(exc).__name__)
+        return False
+
+
 # --- carga -------------------------------------------------------------------
 
 
@@ -160,9 +201,18 @@ def _umbral(metadatos: dict, clave: str) -> float | None:
     return float(valor)
 
 
-def _interprete(ruta: Path, n_clases: int) -> Callable[[np.ndarray], np.ndarray]:
+def _interprete(
+    ruta: Path, n_clases: int
+) -> tuple[Callable[[np.ndarray], np.ndarray], Callable[[np.ndarray], np.ndarray] | None]:
+    """(predecir, embeber). embeber es None si no se encuentra el tensor del embedding."""
     try:
-        it = Interpreter(model_path=str(ruta))
+        # preserve_all_tensors deja leer el embedding despues de invoke(); sin el,
+        # su memoria la reutilizan las capas siguientes. Cuesta ~23 MB y ningun
+        # milisegundo (medido el 2026-11-17). Su aviso de "solo para depurar" se
+        # silencia para no ensuciar el log en cada arranque.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            it = Interpreter(model_path=str(ruta), experimental_preserve_all_tensors=True)
         it.allocate_tensors()
     except (ValueError, RuntimeError) as exc:
         raise ClasificadorNoDisponible(f"{ruta}: no es un modelo TFLite valido ({type(exc).__name__})") from exc
@@ -185,7 +235,52 @@ def _interprete(ruta: Path, n_clases: int) -> Callable[[np.ndarray], np.ndarray]
             it.invoke()
             return it.get_tensor(sal["index"])[0].copy()
 
-    return predecir
+    candidatos = [
+        d["index"]
+        for d in it.get_tensor_details()
+        if TENSOR_EMBEDDING.search(d["name"]) and len(d["shape"]) == 2 and d["shape"][0] == 1
+    ]
+    if len(candidatos) != 1:
+        log.info("%s: sin tensor de embedding reconocible, no habra primer plano", ruta)
+        return predecir, None
+    i_emb = candidatos[0]
+
+    def embeber(x: np.ndarray) -> np.ndarray:
+        with candado:
+            it.set_tensor(ent["index"], x[None])
+            it.invoke()
+            return it.get_tensor(i_emb)[0].copy()
+
+    return predecir, embeber
+
+
+def _referencia(carpeta: Path, embeber: Callable[[np.ndarray], np.ndarray] | None) -> ReferenciaUna | None:
+    """Lee ARCHIVO_REFERENCIA. Cualquier problema la deja en None (sin primer_plano) y no
+    impide cargar el clasificador: el camino de mano completa no la necesita."""
+    ruta = carpeta / ARCHIVO_REFERENCIA
+    if embeber is None:
+        return None
+    if not ruta.is_file():
+        log.info("Sin %s: no habra analisis de primer plano", ruta)
+        return None
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+        sha = hashlib.sha256((carpeta / "modelo.tflite").read_bytes()).hexdigest()
+        # El embedding cambia con cualquier reentrenamiento: una referencia de otro
+        # modelo aceptaria o rechazaria fotos al azar sin que nada falle.
+        if datos.get("modelo_sha256") != sha:
+            raise ValueError("es de otro modelo.tflite")
+        media = np.asarray(datos["media"], dtype=np.float64)
+        umbral = datos["umbral_coseno"]
+        dimension = embeber(np.zeros((LADO, LADO, 3), np.float32)).shape
+        if media.shape != dimension or not np.all(np.isfinite(media)) or not np.linalg.norm(media) > 0:
+            raise ValueError(f"media debe tener forma {dimension}, valores finitos y norma no nula")
+        if isinstance(umbral, bool) or not isinstance(umbral, int | float) or not 0 < umbral <= 1:
+            raise ValueError("umbral_coseno debe estar en (0, 1]")
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError) as exc:
+        log.warning("Referencia de primer plano ignorada (%s): %s", ruta, exc)
+        return None
+    return ReferenciaUna(media=media / np.linalg.norm(media), umbral=float(umbral))
 
 
 def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
@@ -219,13 +314,16 @@ def cargar(carpeta: Path, ruta_textos: Path) -> ClasificadorClinico:
     except (KeyError, TypeError) as exc:
         raise ClasificadorNoDisponible(f"{carpeta}: metadatos.json sin model.name / model.version") from exc
     textos = cargar_textos(ruta_textos)
+    predecir, embeber = _interprete(carpeta / "modelo.tflite", len(etiquetas))
     return ClasificadorClinico(
-        predecir=_interprete(carpeta / "modelo.tflite", len(etiquetas)),
+        predecir=predecir,
         etiquetas=etiquetas,
         umbral_no_concluyente=umbral_nc,
         umbral_sin_senales=umbral_ss,
         textos=textos,
         modelo=modelo,
+        embeber=embeber,
+        referencia=_referencia(carpeta, embeber),
     )
 
 
