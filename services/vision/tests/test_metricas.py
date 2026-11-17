@@ -205,3 +205,31 @@ def test_comparativa_markdown_con_veredicto_m1():
     assert "| acropaquia | 1 | 0 | 0 | 0 | 1 | 0.0% |" in md
     assert "Umbral sin_senales (calibrado en val): 0.700" in md
     assert "Senal orientativa para consultar con un profesional" in md
+
+
+# --- calibracion -----------------------------------------------------------------
+
+def test_temperatura_no_cambia_el_argmax_y_se_deshace():
+    p = np.array([[0.7, 0.2, 0.1], [0.1, 0.3, 0.6]])
+    t = metricas.con_temperatura(p, 2.5)
+    assert (t.argmax(1) == p.argmax(1)).all() and np.allclose(t.sum(1), 1)
+    assert t.max() < p.max()  # t > 1 baja la confianza
+    assert np.allclose(metricas.con_temperatura(t, 1 / 2.5), p)
+
+
+def test_ajustar_temperatura_recupera_la_de_un_modelo_sobreconfiado():
+    # Probabilidades reales = softmax(z); el "modelo" informa softmax(3z).
+    rng = np.random.default_rng(0)
+    z = rng.normal(0, 1.5, (4000, 4))
+    reales = metricas.con_temperatura(np.exp(z) / np.exp(z).sum(1, keepdims=True), 1.0)
+    y = np.array([rng.choice(4, p=p) for p in reales])
+    informadas = metricas.con_temperatura(reales, 1 / 3)
+    assert metricas.ajustar_temperatura(informadas, y) == pytest.approx(3, rel=0.15)
+
+
+def test_ece_cero_si_la_confianza_coincide_con_el_acierto_y_alto_si_no():
+    # 4 fotos con confianza 0.75 y 3 aciertos: calibrado perfecto.
+    p = np.array([[0.75, 0.25]] * 4)
+    assert metricas.ece(p, [0, 0, 0, 1])["ece"] == pytest.approx(0)
+    malo = metricas.ece(np.array([[0.99, 0.01]] * 2), [1, 1])
+    assert malo["ece"] == pytest.approx(0.99) and malo["fiabilidad"][0]["n"] == 2

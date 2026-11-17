@@ -75,6 +75,43 @@ def evaluar_umbral(probs: np.ndarray, y_true, umbral: float | None) -> dict:
     }
 
 
+def con_temperatura(probs: np.ndarray, t: float) -> np.ndarray:
+    """softmax(log p / t). Equivale a dividir los logits por t: el argmax no
+    cambia, solo cuanto se confia en el."""
+    z = np.log(np.clip(probs, 1e-12, 1.0)) / t
+    z -= z.max(axis=1, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def ajustar_temperatura(probs: np.ndarray, y_true) -> float:
+    """Temperature scaling (Guo et al., 2017): la t que minimiza la log loss en
+    las predicciones de validacion. Rejilla logaritmica de 0.25 a 8: fuera de
+    ese rango la red estaria tan mal calibrada que el problema seria otro."""
+    y = np.asarray(y_true)
+
+    def nll(t: float) -> float:
+        return float(-np.log(np.clip(con_temperatura(probs, t)[np.arange(len(y)), y], 1e-12, None)).mean())
+
+    return float(min(np.geomspace(0.25, 8, 401), key=nll))
+
+
+def ece(probs: np.ndarray, y_true, bins: int = 10) -> dict:
+    """Expected Calibration Error con bins de igual ancho sobre la confianza
+    maxima, y la tabla de fiabilidad (confianza media vs. acierto por bin)."""
+    confianza = probs.max(axis=1)
+    acierto = probs.argmax(axis=1) == np.asarray(y_true)
+    bordes = np.linspace(0, 1, bins + 1)
+    tabla, total = [], 0.0
+    for lo, hi in zip(bordes[:-1], bordes[1:]):
+        m = (confianza > lo) & (confianza <= hi)
+        if m.any():
+            total += m.mean() * abs(confianza[m].mean() - acierto[m].mean())
+            tabla.append({"bin": [float(lo), float(hi)], "n": int(m.sum()),
+                          "confianza": float(confianza[m].mean()), "acierto": float(acierto[m].mean())})
+    return {"ece": float(total), "fiabilidad": tabla}
+
+
 def por_subgrupo(archivos: list[str], y_true, y_pred, subgrupos: dict[str, dict[str, str]]) -> dict:
     """Accuracy por cada valor de cada dimension anotada (tono_piel, luz...).
 
