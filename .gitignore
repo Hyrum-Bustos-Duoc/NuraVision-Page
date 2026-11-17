@@ -26,3 +26,10 @@ pnpm-debug.log*
 # Vercel: .vercel/ guarda el projectId y el orgId de cada maquina al enlazar
 # el repo con el proyecto; no es configuracion compartida.
 .vercel
+
+# Datasets de la clienta (Instagram, fotos de manos): datos de terceros, no se
+# versionan. Solo las etiquetas viven en services/vision/datasets/. Anclado con
+# "/" para no ignorar esa carpeta.
+/datasets/
+*.zip
+*.xlsx
