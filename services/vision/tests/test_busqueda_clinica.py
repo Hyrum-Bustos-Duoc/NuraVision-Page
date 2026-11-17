@@ -3,7 +3,7 @@
 import pytest
 
 pytest.importorskip("tensorflow")
-from entrenamiento.busqueda_clinica import _elegir_variante, ganadora  # noqa: E402
+from entrenamiento.busqueda_clinica import _elegir_variante, elegir_aumento, ganadora  # noqa: E402
 
 
 def corrida(etapa, f1, ll=1.0):
@@ -41,3 +41,31 @@ def test_cuantizada_que_conserva_el_argmax_pero_deforma_la_probabilidad_se_recha
          "float16": {"delta_f1": 0.0, "coincidencia_argmax": 1.0, "max_abs_dif": 0.012},
          "float32": {"delta_f1": 0.0, "coincidencia_argmax": 1.0, "max_abs_dif": 0.0}}
     assert _elegir_variante(f, 0.01, 0.05) == "float16"
+
+
+def _rob(aumento, f1, cobertura, peor=0.9):
+    return {"aumento": aumento, "limpia": {"f1_macro": f1}, "mezcla": {"cobertura_mezcla": cobertura},
+            "peor_precision": peor}
+
+
+def test_aumento_elegido_por_cobertura_en_fotos_degradadas_dentro_del_margen():
+    r = [_rob("ninguno", 0.665, 0.14), _rob("geometrico", 0.645, 0.30), _rob("degradacion", 0.660, 0.24)]
+    # geometrico cubre mas pero pierde 0,02 de F1 limpia: fuera del margen.
+    assert elegir_aumento(r, 0.01, 0.85) == "degradacion"
+
+
+def test_aumento_empatado_en_cobertura_gana_el_mas_simple():
+    r = [_rob("ninguno", 0.66, 0.2), _rob("degradacion", 0.665, 0.2)]
+    assert elegir_aumento(r, 0.01, 0.85) == "ninguno"
+
+
+def test_aumento_que_inventa_en_alguna_degradacion_no_se_elige():
+    # Caso de la CV del 2026-11-17 (medias de 3 sorteos).
+    r = [_rob("ninguno", 0.665, 0.150, 0.750), _rob("geometrico", 0.657, 0.213, 0.785),
+         _rob("degradacion", 0.643, 0.218, 0.865)]
+    assert elegir_aumento(r, 0.01, 0.85) == "degradacion"
+
+
+def test_si_ninguno_es_seguro_gana_el_menos_inseguro():
+    r = [_rob("ninguno", 0.665, 0.150, 0.70), _rob("geometrico", 0.657, 0.213, 0.80)]
+    assert elegir_aumento(r, 0.01, 0.85) == "geometrico"

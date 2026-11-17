@@ -187,6 +187,102 @@ def calibrar_umbral_sin_senales(probs: np.ndarray, y_true, clases: list[str], um
     return max(float(por_encima.min()), umbral)
 
 
+def _apta(brillo: dict[str, np.ndarray], nombres: list[str], brillo_minimo: float) -> np.ndarray:
+    return np.concatenate([np.asarray(brillo[k]) >= brillo_minimo for k in nombres])
+
+
+def mezcla_apta(probs: dict[str, np.ndarray], brillo: dict[str, np.ndarray], y_true,
+                brillo_minimo: float) -> tuple[np.ndarray, np.ndarray]:
+    """(probabilidades, etiquetas) de la mezcla que calibra, en el orden de calibrar_mezcla."""
+    nombres = list(probs)
+    apta = _apta(brillo, nombres, brillo_minimo)
+    return np.concatenate([probs[k] for k in nombres])[apta], np.tile(np.asarray(y_true), len(nombres))[apta]
+
+
+def calibrar_mezcla(probs: dict[str, np.ndarray], brillo: dict[str, np.ndarray], y_true, clases: list[str],
+                    precision_objetivo: float, brillo_minimo: float) -> dict:
+    """Temperatura y umbrales sobre la mezcla de la vista limpia y sus copias
+    degradadas (todas OOF, mismas fotos). Calibrar solo con la limpia promete
+    la precision objetivo y la incumple en fotos oscuras o borrosas: el
+    2026-11-17 la precision de las aceptadas (0,90 en la limpia) bajaba en 9
+    de 11 degradaciones, hasta 0,56 con la foto muy oscura.
+
+    Las copias con brillo < brillo_minimo no cuentan: el servicio las rechaza
+    antes del modelo (foto_insuficiente). Las copias de una misma foto no son
+    independientes; la mezcla sirve para calibrar, no como intervalo de confianza.
+    """
+    nombres = list(probs)
+    y = np.asarray(y_true)
+    yy = np.tile(y, len(nombres))
+    raw = np.concatenate([probs[k] for k in nombres])
+    apta = _apta(brillo, nombres, brillo_minimo)
+    t = ajustar_temperatura(raw[apta], yy[apta])
+    p = con_temperatura(raw, t)
+    umbral = calibrar_umbral(p[apta], yy[apta], precision_objetivo)
+    umbral_ss = calibrar_umbral_sin_senales(p[apta], yy[apta], clases, umbral)
+    acepta = apta & np.array([motivo_abstencion(f, clases, umbral, umbral_ss) is None for f in p])
+    pred = p.argmax(axis=1)
+    por_conjunto = {}
+    for j, k in enumerate(nombres):
+        sl = slice(j * len(y), (j + 1) * len(y))
+        a = acepta[sl]
+        por_conjunto[k] = {
+            "apta": float(apta[sl].mean()),
+            "cobertura": float(a.mean()),
+            "precision_aceptadas": float((pred[sl][a] == y[a]).mean()) if a.any() else None,
+            "f1_macro": metricas(y, pred[sl], clases)["f1_macro"],
+        }
+    return {"temperatura": t, "umbral": umbral, "umbral_sin_senales": umbral_ss,
+            "cobertura_mezcla": float(acepta.mean()),
+            "precision_mezcla": float((pred[acepta] == yy[acepta]).mean()) if acepta.any() else None,
+            "por_conjunto": por_conjunto}
+
+
+def calibrar_umbral_senal(probs: np.ndarray, y_true, clases: list[str], precision_objetivo: float) -> float | None:
+    """Menor umbral sobre p(alguna senal) = suma de las 7 senales tal que, entre
+    las fotos que lo superan, al menos precision_objetivo tiene una senal real.
+    `otra` cuenta como negativa (mezcla esmalte con patologias: el lado seguro).
+
+    Solo umbrales >= 0.5: las senales juntas tienen que ser mayoria. None = no
+    se afirma nunca. No nombra cual senal.
+    """
+    senales = [i for i, c in enumerate(clases) if c not in (SIN_SENALES, OTRA)]
+    p = probs[:, senales].sum(axis=1)
+    es_senal = np.isin(np.asarray(y_true), senales)
+    for umbral in np.unique(p[p >= 0.5]):
+        if es_senal[p >= umbral].mean() >= precision_objetivo:
+            return float(umbral)
+    return None
+
+
+def clases_no_fiables(probs: np.ndarray, y_true, clases: list[str], umbral: float | None,
+                      umbral_sin_senales: float | None, minimo_fotos: int, precision_objetivo: float) -> dict[str, str]:
+    """Clase -> motivo, para las que el modelo no deberia nombrar aunque supere el umbral.
+
+    - pocas_fotos: menos de `minimo_fotos` en train+val; no hay con que validarla.
+    - sin_aceptadas: ninguna prediccion aceptada en OOF; su precision es desconocida.
+    - precision_baja: el limite superior de Wilson (95 %) de la precision de sus
+      aceptadas esta por debajo del objetivo, es decir, los datos muestran que
+      falla mas de lo prometido, no solo que hay pocos.
+    `probs` son OOF de fotos independientes (la vista limpia), no la mezcla.
+    """
+    y = np.asarray(y_true)
+    pred = probs.argmax(axis=1)
+    aceptada = np.array([motivo_abstencion(f, clases, umbral, umbral_sin_senales) is None for f in probs], dtype=bool)
+    salida = {}
+    for i, c in enumerate(clases):
+        if c == OTRA:  # nunca se nombra
+            continue
+        k = aceptada & (pred == i)
+        if (y == i).sum() < minimo_fotos:
+            salida[c] = "pocas_fotos"
+        elif not k.any():
+            salida[c] = "sin_aceptadas"
+        elif wilson(int((k & (y == i)).sum()), int(k.sum()))[1] < precision_objetivo:
+            salida[c] = "precision_baja"
+    return salida
+
+
 def wilson(aciertos: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
     """Intervalo de confianza del 95 % de Wilson para una proporcion. Con pocas
     fotos (o con 0 o n aciertos) el intervalo normal se sale de [0, 1]."""
