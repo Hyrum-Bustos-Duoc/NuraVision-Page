@@ -56,6 +56,9 @@ def test_inferencia_devuelve_9_probabilidades_que_suman_1(clinico, clasificador,
 
 
 def test_clasificar_nunca_lanza_y_respeta_el_contrato(clinico, clasificador):
-    resultado = clinico.clasificar(clasificador, np.zeros((clinico.LADO, clinico.LADO, 3), np.uint8))
-    assert resultado.estado in ("ok", "no_concluyente")
+    # Ruido de brillo medio: un recorte negro no pasaria la compuerta de calidad
+    # de un modelo con calidad_minima, y el modelo no llegaria a ejecutarse.
+    recorte = np.random.default_rng(0).integers(0, 256, (clinico.LADO, clinico.LADO, 3), dtype=np.uint8)
+    resultado = clinico.clasificar(clasificador, recorte, clinico.medir_calidad(recorte, clinico.LADO))
+    assert resultado.estado in ("ok", "no_concluyente", "senal_inespecifica")
     assert resultado.motivo != "clasificacion_fallida"

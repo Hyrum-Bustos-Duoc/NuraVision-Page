@@ -119,10 +119,12 @@ def _fila(clase: int, p: float) -> list[float]:
 @pytest.mark.parametrize("caso", CASOS["casos"], ids=lambda c: c["caso"])
 def test_tabla_de_abstencion_compartida_con_el_servicio(caso):
     assert CASOS["clases"] == C9
-    motivo = metricas.motivo_abstencion(
-        np.array(caso["probs"]), C9, caso["umbral_no_concluyente"], caso["umbral_sin_senales"]
+    decision = metricas.motivo_abstencion(
+        np.array(caso["probs"]), C9, caso["umbral_no_concluyente"], caso["umbral_sin_senales"],
+        clases_no_fiables=frozenset(caso.get("clases_no_fiables", [])),
+        umbral_alguna_senal=caso.get("umbral_alguna_senal"),
     )
-    assert motivo == caso["motivo"]
+    assert decision == caso["decision"]
 
 
 def test_umbral_sin_senales_igual_al_general_sin_falsos():

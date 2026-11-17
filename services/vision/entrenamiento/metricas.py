@@ -143,25 +143,37 @@ def elegir_ganador(resultados: list[dict]) -> dict:
 # --- estado_clinico: abstencion ----------------------------------------------
 
 def motivo_abstencion(probs: np.ndarray, clases: list[str], umbral: float | None,
-                      umbral_sin_senales: float | None) -> str | None:
-    """Motivo de no_concluyente de UNA prediccion, o None si se acepta.
+                      umbral_sin_senales: float | None, *, clases_no_fiables=frozenset(),
+                      umbral_alguna_senal: float | None = None) -> str | None:
+    """Motivo de no_concluyente de UNA prediccion, "senal_inespecifica", o None si se acepta.
 
-    Reglas 3 a 6 de la decision 5 de design.md, en ese orden. Las reglas 1
-    (sin modelo) y 2 (excepcion) solo existen en el servicio. El servicio
-    (services/api/app/vision) no puede importar este modulo (no tiene
-    scikit-learn), asi que duplica estas reglas y las dos copias se prueban
-    con la misma tabla: tests/casos_abstencion.json. Confianza = probabilidad
-    bruta del softmax sobre las 9 clases, sin redondear.
+    Reglas 3 a 6 de la decision 5 de design.md, despues clases_no_fiables y por
+    ultimo senal_inespecifica, en ese orden. Las reglas 1 (sin modelo), 2
+    (excepcion) y foto_insuficiente (antes del modelo) solo existen en el
+    servicio. El servicio (services/api/app/vision) no puede importar este
+    modulo (no tiene scikit-learn), asi que duplica estas reglas y las dos
+    copias se prueban con la misma tabla: tests/casos_abstencion.json.
+    Confianza = probabilidad bruta del softmax sobre las 9 clases, sin redondear.
+
+    Sin los dos argumentos de palabra clave son solo las reglas 3 a 6: asi las
+    usan la calibracion y clases_no_fiables, que no pueden depender de si mismas.
     """
     i = int(np.argmax(probs))
     confianza = float(probs[i])
     if clases[i] == OTRA:
-        return "clase_otra"
-    if umbral is None or confianza < umbral:
-        return "confianza_baja"
-    if clases[i] == SIN_SENALES and (umbral_sin_senales is None or confianza < umbral_sin_senales):
-        return "confianza_baja"
-    return None
+        motivo = "clase_otra"
+    elif umbral is None or confianza < umbral:
+        motivo = "confianza_baja"
+    elif clases[i] == SIN_SENALES and (umbral_sin_senales is None or confianza < umbral_sin_senales):
+        motivo = "confianza_baja"
+    elif clases[i] in clases_no_fiables:
+        motivo = "clase_no_fiable"
+    else:
+        return None
+    p_senal = sum(float(p) for c, p in zip(clases, probs) if c not in (SIN_SENALES, OTRA))
+    if umbral_alguna_senal is not None and p_senal >= umbral_alguna_senal:
+        return "senal_inespecifica"
+    return motivo
 
 
 def calibrar_umbral_sin_senales(probs: np.ndarray, y_true, clases: list[str], umbral: float | None) -> float | None:

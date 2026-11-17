@@ -157,9 +157,9 @@ arnes contra el servicio real. Este ultimo corre con el venv del API:
 `../api/.venv/bin/python -m pytest -q tests/test_arnes.py`.
 
 `tests/casos_abstencion.json` es la tabla de casos de las reglas de abstencion
-de `estado_clinico`. Las reglas viven dos veces (aqui y en
-`services/api/app/vision/clinico.py`, que no tiene scikit-learn) y la tabla
-debe dar el mismo motivo en las dos.
+de `estado_clinico` (incluidas `clase_no_fiable` y `senal_inespecifica`). Las
+reglas viven dos veces (aqui y en `services/api/app/vision/clinico.py`, que no
+tiene scikit-learn) y la tabla debe dar la misma decision en las dos.
 
 ## 4. Que se mide
 

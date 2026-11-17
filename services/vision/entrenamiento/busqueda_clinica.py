@@ -601,7 +601,7 @@ def final(cfg: dict, manifiesto: dict, motivos: dict, raiz: Path, salida: Path) 
             "calibracion_umbrales": ("predicciones OOF de CV 5 pliegues por serie sobre train+val: vista limpia y "
                                      f"{len(dg.NIVELES)} copias degradadas (degradaciones.NIVELES), sin las de brillo "
                                      f"< {b['brillo_minimo']}"),
-            # Propuestas para el servicio: hoy clinico.py no las lee (ver FICHA, seccion 12).
+            # Las lee clinico.cargar del servicio; sin ellas, el servicio no aplica esas reglas.
             "calidad_minima": {"brillo": b["brillo_minimo"], "lado_origen": lado_minimo(cfg, TAREA_CLINICA)},
             "umbral_alguna_senal": r["umbral_alguna_senal"],
             "clases_no_fiables": r["clases_no_fiables"],

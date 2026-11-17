@@ -518,8 +518,11 @@ del float16 instalado, pendientes desde la seccion 11, son las de esta tabla.
 
 `linea_mees` (`pocas_fotos`: 15 en train+val) y `acropaquia`
 (`precision_baja`: el Wilson superior de la precision de sus aceptadas en OOF
-queda bajo 0,90). Van en `metadatos.clases_no_fiables`; el servicio todavia no
-las lee.
+queda bajo 0,90). Van en `metadatos.clases_no_fiables`. El servicio las lee
+desde 2026-11-17, junto con `calidad_minima` y `umbral_alguna_senal`: no las
+nombra nunca (ni como alternativa) y responde `clase_no_fiable` o
+`senal_inespecifica`. Un `metadatos.json` sin esas claves (el modelo 0.1.0
+instalado) conserva las reglas anteriores.
 
 ### Protocolo
 
