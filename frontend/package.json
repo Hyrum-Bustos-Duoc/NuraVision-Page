@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "carrusel:subir": "node --env-file=.env.local scripts/subir-carrusel.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",

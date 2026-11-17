@@ -86,25 +86,101 @@ def _deduplicar(candidatas: list[dict]) -> tuple[list[dict], list[dict]]:
     return sorted(validas, key=lambda i: i["archivo"]), rechazadas
 
 
+def cargar_series(ruta: Path) -> list[dict]:
+    """Filas de un CSV `archivo,serie`. Una serie agrupa fotos de la misma una
+    (recortes, encuadres o copias de una misma imagen). Se valida contra el
+    dataset en asignar_series."""
+    with open(ruta, newline="", encoding="utf-8") as f:
+        lector = csv.DictReader(f)
+        if not {"archivo", "serie"} <= set(lector.fieldnames or ()):
+            raise ValueError("archivo de series: faltan las columnas archivo,serie")
+        return list(lector)
+
+
+def asignar_series(validas: list[dict], rechazadas: list[dict], filas: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Anade `serie` a cada valida (None si la foto no figura: es una serie por
+    si sola) y rechaza entera, como etiqueta_conflictiva, la serie que mezcla
+    clases: la misma una no puede ser dos cosas.
+
+    Una fila que nombra una foto que no esta en el dataset, sin serie o que pone
+    la misma foto en dos series hace fallar todo: el error solo da el numero de
+    filas, porque un nombre de archivo puede identificar a una persona.
+    """
+    conocidos = {i["archivo"] for i in validas} | {r["archivo"] for r in rechazadas}
+    serie_de: dict[str, str] = {}
+    invalidas = 0
+    for fila in filas:
+        archivo, serie = (fila["archivo"] or "").strip(), (fila["serie"] or "").strip()
+        if archivo not in conocidos or not serie or serie_de.setdefault(archivo, serie) != serie:
+            invalidas += 1
+    if invalidas:
+        raise ValueError(
+            f"archivo de series: {invalidas} filas invalidas (foto que no esta en el dataset, "
+            "serie vacia o foto en dos series)"
+        )
+
+    clases_de: dict[str, set[str]] = {}
+    for item in validas:
+        if item["archivo"] in serie_de:
+            clases_de.setdefault(serie_de[item["archivo"]], set()).add(item["clase"])
+    conflictivas = {s for s, c in clases_de.items() if len(c) > 1}
+
+    con_serie, extra = [], []
+    for item in validas:
+        serie = serie_de.get(item["archivo"])
+        if serie in conflictivas:
+            extra.append({"archivo": item["archivo"], "motivo": "etiqueta_conflictiva"})
+        else:
+            con_serie.append({**item, "serie": serie})
+    return con_serie, rechazadas + extra
+
+
+def _unidades(items: list[dict]) -> list[list[dict]]:
+    """Grupos que no se separan: cada serie, y cada foto sin serie por su cuenta.
+
+    Ordenados por el menor sha256 de cada grupo. Sin series, cada grupo es una
+    foto y el orden es el mismo que antes de existir las series: la particion
+    (y su huella) de forma y estado no cambia.
+    """
+    grupos: dict[tuple, list[dict]] = {}
+    for item in sorted(items, key=lambda i: i["sha256"]):
+        clave = ("serie", item["serie"]) if item.get("serie") else ("foto", item["archivo"])
+        grupos.setdefault(clave, []).append(item)
+    return list(grupos.values())
+
+
 def dividir(validas: list[dict], clases: list[str], val: float, test: float, semilla: int) -> dict:
     """Particion estratificada train/val/test, reproducible.
 
     Cada clase se baraja con su propio generador (semilla + clase), sobre la
     lista ordenada por sha256: el resultado no depende del orden del sistema de
-    archivos ni de que se anadan o quiten otras clases.
+    archivos ni de que se anadan o quiten otras clases. Si las fotos traen
+    `serie` (asignar_series), cada serie cae entera en una sola particion.
     """
     archivos = []
     for clase in clases:
-        items = sorted((i for i in validas if i["clase"] == clase), key=lambda i: i["sha256"])
-        # 3 es el minimo fisico (una foto por particion), no una recomendacion.
-        if len(items) < 3:
-            raise ValueError(f"clase {clase}: {len(items)} fotos validas, minimo 3")
-        random.Random(f"{semilla}-{clase}").shuffle(items)
+        items = [i for i in validas if i["clase"] == clase]
+        unidades = _unidades(items)
+        # 3 es el minimo fisico (una serie por particion), no una recomendacion.
+        if len(unidades) < 3:
+            raise ValueError(f"clase {clase}: {len(items)} fotos validas en {len(unidades)} series, minimo 3 series")
+        random.Random(f"{semilla}-{clase}").shuffle(unidades)
         n_test = max(1, round(len(items) * test))
         n_val = max(1, round(len(items) * val))
-        for i, item in enumerate(items):
-            particion = "test" if i < n_test else "val" if i < n_test + n_val else "train"
-            archivos.append({**item, "particion": particion})
+        cuenta = {"test": 0, "val": 0, "train": 0}
+        for k, unidad in enumerate(unidades):
+            # Una serie grande puede pasarse del objetivo: se llena test, luego
+            # val, y siempre se reserva al menos una serie para cada particion
+            # siguiente. Con una foto por serie da lo mismo que cortar la lista.
+            quedan = len(unidades) - k
+            if cuenta["test"] < n_test and quedan >= 3:
+                particion = "test"
+            elif cuenta["val"] < n_val and quedan >= 2:
+                particion = "val"
+            else:
+                particion = "train"
+            cuenta[particion] += len(unidad)
+            archivos += [{**item, "particion": particion} for item in unidad]
 
     archivos.sort(key=lambda i: i["archivo"])
     conteos = {p: {c: 0 for c in clases} for p in PARTICIONES}
@@ -120,13 +196,26 @@ def dividir(validas: list[dict], clases: list[str], val: float, test: float, sem
     }
 
 
+def pliegues(items: list[dict], clases: list[str], n: int, semilla: int) -> list[tuple[np.ndarray, np.ndarray]]:
+    """K pliegues (indices train, indices evaluados) estratificados por clase y
+    agrupados por serie: una serie nunca queda a ambos lados. Una foto sin
+    serie es su propio grupo. Para la validacion cruzada de busqueda_clinica."""
+    # Import local: services/api/tests importa este modulo con un sklearn
+    # simulado que solo trae class_weight (el API no instala scikit-learn).
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    y = [clases.index(i["clase"]) for i in items]
+    g = [i.get("serie") or f"foto:{i['archivo']}" for i in items]
+    return list(StratifiedGroupKFold(n, shuffle=True, random_state=semilla).split(np.zeros(len(y)), y, g))
+
+
 def _huella(archivos: list[dict]) -> str:
     return hashlib.sha256(json.dumps(archivos, sort_keys=True).encode()).hexdigest()
 
 
 def verificar(manifiesto: dict) -> None:
-    """Falla si una foto (por ruta o por contenido) esta en dos particiones o
-    si el manifiesto fue alterado despues de generarse."""
+    """Falla si una foto (por ruta o por contenido) o una serie esta en dos
+    particiones, o si el manifiesto fue alterado despues de generarse."""
     archivos = manifiesto["archivos"]
     if _huella(archivos) != manifiesto["huella"]:
         raise ValueError("la huella no coincide: el manifiesto fue modificado")
@@ -137,6 +226,10 @@ def verificar(manifiesto: dict) -> None:
                 raise ValueError(f"{a['archivo']} aparece en dos particiones")
     if len({a["archivo"] for a in archivos}) != len(archivos):
         raise ValueError("ruta repetida en el manifiesto")
+    particion_de_serie: dict[str, str] = {}
+    for a in archivos:
+        if a.get("serie") and particion_de_serie.setdefault(a["serie"], a["particion"]) != a["particion"]:
+            raise ValueError(f"la serie {a['serie']} aparece en dos particiones")
 
 
 def de_particion(manifiesto: dict, particion: str) -> tuple[list[str], list[int]]:

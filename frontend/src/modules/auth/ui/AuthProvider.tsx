@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { cerrarSesion, iniciarSesion, registrar } from '../application'
+import {
+  cambiarPassword as cambiarPasswordUseCase,
+  cerrarSesion,
+  iniciarSesion,
+  registrar,
+  solicitarRecuperacion as solicitarRecuperacionUseCase,
+} from '../application'
 import type { Credenciales, DatosRegistro, UsuarioAuth } from '../domain/auth.types'
 import { authRepository } from '../infrastructure/supabase-auth.repository'
 import { AuthContext, type AuthValue } from './auth.context'
@@ -63,6 +69,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refrescarSesion = useCallback(() => authRepository.refrescarSesion(), [])
 
+  /**
+   * El destino del enlace se arma AQUI, con el origen real del navegador.
+   *
+   * Ni el caso de uso ni el repositorio saben en que host corre la aplicacion, y
+   * escribir una URL fija fue exactamente lo que hizo que los correos de
+   * confirmacion llevaran a localhost. Derivandolo, el mismo build sirve en el
+   * dominio, en las vistas previas de Vercel y en desarrollo local.
+   */
+  const solicitarRecuperacion = useCallback(
+    (email: string) =>
+      solicitarRecuperacionUseCase(
+        authRepository,
+        email,
+        `${window.location.origin}/restablecer-contrasena`,
+      ),
+    [],
+  )
+
+  const cambiarPasswordFn = useCallback(
+    (nueva: string, confirmacion: string) =>
+      cambiarPasswordUseCase(authRepository, nueva, confirmacion),
+    [],
+  )
+
+  const alRecuperarPassword = useCallback(
+    (escucha: () => void) => authRepository.alRecuperarPassword(escucha),
+    [],
+  )
+
   const value = useMemo<AuthValue>(
     () => ({
       usuario: sesion.fase === 'listo' ? sesion.usuario : null,
@@ -71,8 +106,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signOut,
       refrescarSesion,
+      solicitarRecuperacion,
+      cambiarPassword: cambiarPasswordFn,
+      alRecuperarPassword,
     }),
-    [sesion, signUp, signInWithPassword, signOut, refrescarSesion],
+    [
+      sesion,
+      signUp,
+      signInWithPassword,
+      signOut,
+      refrescarSesion,
+      solicitarRecuperacion,
+      cambiarPasswordFn,
+      alRecuperarPassword,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

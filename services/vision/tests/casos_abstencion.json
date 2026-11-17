@@ -1,0 +1,175 @@
+{
+ "_nota": "Tabla unica de las reglas de abstencion: 3 a 6 de la decision 5 de openspec/changes/reporte-clinico-unas/design.md, despues clases_no_fiables y por ultimo senal_inespecifica. La prueban entrenamiento.metricas (tests/test_metricas.py) y la copia del servicio en services/api/app/vision: las dos deben dar la misma decision. decision null = ok; 'senal_inespecifica' = estado senal_inespecifica (sin motivo); cualquier otro valor = no_concluyente con ese motivo. clases_no_fiables y umbral_alguna_senal son opcionales: si faltan, como en un metadatos.json anterior, esas reglas no se aplican. La confianza es la probabilidad bruta, sin redondear; la clase es la de mayor probabilidad.",
+ "clases": ["linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis", "una_terry", "mancha_blanca", "sin_senales", "otra"],
+ "casos": [
+  {
+   "caso": "otra con 0,99 se abstiene aunque supere todo umbral",
+   "probs": [0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.99],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": "clase_otra"
+  },
+  {
+   "caso": "otra se comprueba antes que la confianza",
+   "probs": [0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.075, 0.4],
+   "umbral_no_concluyente": null,
+   "umbral_sin_senales": null,
+   "decision": "clase_otra"
+  },
+  {
+   "caso": "bajo el umbral general",
+   "probs": [0.69, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875, 0.03875],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "justo en el umbral general se acepta",
+   "probs": [0.7, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375, 0.0375],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": null
+  },
+  {
+   "caso": "modelo sin umbral general",
+   "probs": [0.99, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125],
+   "umbral_no_concluyente": null,
+   "umbral_sin_senales": null,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales bajo su umbral propio",
+   "probs": [0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.85, 0.01875],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales justo en su umbral propio se acepta",
+   "probs": [0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.9, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": null
+  },
+  {
+   "caso": "sin_senales nunca afirmable",
+   "probs": [0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.00125, 0.99, 0.00125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": null,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "el umbral de sin_senales no afecta a otras clases",
+   "probs": [0.025, 0.8, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025, 0.025],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": null,
+   "decision": null
+  },
+  {
+   "caso": "senal sobre el umbral",
+   "probs": [0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.95, 0.00625, 0.00625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "decision": null
+  },
+  {
+   "caso": "clase no fiable sobre el umbral se abstiene sin nombrarla",
+   "probs": [0.0125, 0.0125, 0.9, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": ["acropaquia", "linea_mees"],
+   "umbral_alguna_senal": null,
+   "decision": "clase_no_fiable"
+  },
+  {
+   "caso": "clase no fiable con alguna senal clara es senal_inespecifica",
+   "probs": [0.0125, 0.0125, 0.9, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": ["acropaquia", "linea_mees"],
+   "umbral_alguna_senal": 0.855,
+   "decision": "senal_inespecifica"
+  },
+  {
+   "caso": "clase no fiable bajo el umbral sigue siendo confianza_baja",
+   "probs": [0.05, 0.05, 0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": ["acropaquia", "linea_mees"],
+   "umbral_alguna_senal": null,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales tambien puede ser no fiable",
+   "probs": [0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.95, 0.00625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": ["sin_senales"],
+   "umbral_alguna_senal": null,
+   "decision": "clase_no_fiable"
+  },
+  {
+   "caso": "senales repartidas bajo el umbral, juntas sobre umbral_alguna_senal",
+   "probs": [0.45, 0.45, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": 0.855,
+   "decision": "senal_inespecifica"
+  },
+  {
+   "caso": "justo en umbral_alguna_senal es senal_inespecifica",
+   "probs": [0.5, 0.25, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0625, 0.0625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": 0.875,
+   "decision": "senal_inespecifica"
+  },
+  {
+   "caso": "bajo umbral_alguna_senal se abstiene con el motivo original",
+   "probs": [0.5, 0.25, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0625, 0.0625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": 0.9,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "modelo sin umbral_alguna_senal nunca da senal_inespecifica",
+   "probs": [0.45, 0.45, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125, 0.0125],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": null,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "sin_senales bajo su umbral no suma como senal",
+   "probs": [0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.01875, 0.85, 0.01875],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": 0.855,
+   "decision": "confianza_baja"
+  },
+  {
+   "caso": "otra con las senales juntas sobre el umbral es senal_inespecifica",
+   "probs": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.02, 0.14],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": [],
+   "umbral_alguna_senal": 0.8,
+   "decision": "senal_inespecifica"
+  },
+  {
+   "caso": "una senal aceptada no se degrada a senal_inespecifica",
+   "probs": [0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.00625, 0.95, 0.00625, 0.00625],
+   "umbral_no_concluyente": 0.7,
+   "umbral_sin_senales": 0.9,
+   "clases_no_fiables": ["acropaquia", "linea_mees"],
+   "umbral_alguna_senal": 0.5,
+   "decision": null
+  }
+ ]
+}

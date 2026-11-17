@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Upload } from 'lucide-react'
+import { AlertTriangle, Trash2, Upload } from 'lucide-react'
 import { useAppState } from '@/shared/state/AppState'
 import { AppImage, Button, FilterPills, Kicker } from '@/shared/ui/ui'
 import { useScrollToTopOnChange } from '@/shared/components/ScrollToTop'
@@ -8,6 +8,17 @@ import { formatPrice } from '@/shared/lib/format'
 import { useCatalogo } from '@/modules/tienda/ui/useCatalogo'
 import { ProductGrid } from '@/modules/tienda/ui/ProductGrid'
 import { useContenido } from '@/modules/contenido/ui/useContenido'
+import { ErrorAnalisis, type ResultadoAnalisis } from '@/modules/analisis/domain/analisis.types'
+import { analizarFoto, mensajeNoConcluyente } from '@/modules/analisis/infrastructure/analisis.api'
+import { ResultadoUnas } from '@/modules/analisis/ui/ResultadoUnas'
+
+const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp']
+const EXTENSION_FOTO = /\.(jpe?g|png|webp)$/i
+
+/** Lo mismo que acepta el servicio (JPEG, PNG, WebP). Sin `type` se mira la extensión. */
+function esFotoValida(a: File): boolean {
+  return a.type ? TIPOS_FOTO.includes(a.type) : EXTENSION_FOTO.test(a.name)
+}
 
 type Step = 'prepare' | 'upload' | 'result'
 type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
@@ -44,9 +55,95 @@ export default function AIAnalysis() {
   const [step, setStep] = useState<Step>('prepare')
   const [simulatedError, setSimulatedError] = useState<SimulatedError>(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [fileName, setFileName] = useState<string | null>(null)
+  const [foto, setFoto] = useState<{ archivo: File; url: string } | null>(null)
+  const [resultado, setResultado] = useState<ResultadoAnalisis | null>(null)
+  const [errorAnalisis, setErrorAnalisis] = useState<string | null>(null)
+  const [arrastrando, setArrastrando] = useState(false)
+  const inputFoto = useRef<HTMLInputElement>(null)
+  const peticion = useRef<AbortController | null>(null)
+  const urlActual = useRef<string | null>(null)
 
   useScrollToTopOnChange(step)
+
+  // Una foto soltada fuera de la zona haría que el navegador la abra y se pierda la página.
+  useEffect(() => {
+    if (step !== 'upload') return
+    const frenar = (e: DragEvent) => e.preventDefault()
+    window.addEventListener('dragover', frenar)
+    window.addEventListener('drop', frenar)
+    return () => {
+      window.removeEventListener('dragover', frenar)
+      window.removeEventListener('drop', frenar)
+    }
+  }, [step])
+
+  // La vista previa es una URL de objeto: se libera al cambiar de foto y al salir.
+  useEffect(
+    () => () => {
+      peticion.current?.abort()
+      if (urlActual.current) URL.revokeObjectURL(urlActual.current)
+    },
+    [],
+  )
+
+  function elegirFoto(archivo: File | undefined) {
+    peticion.current?.abort()
+    setAnalyzing(false)
+    setSimulatedError(null)
+    setErrorAnalisis(null)
+    setResultado(null)
+    if (urlActual.current) URL.revokeObjectURL(urlActual.current)
+    urlActual.current = archivo ? URL.createObjectURL(archivo) : null
+    setFoto(archivo && urlActual.current ? { archivo, url: urlActual.current } : null)
+  }
+
+  /** Quita la foto elegida (por error o para cambiarla); no se analiza ni se guarda nada. */
+  function quitarFoto() {
+    elegirFoto(undefined)
+    // Sin esto, volver a elegir el mismo archivo no dispara onChange.
+    if (inputFoto.current) inputFoto.current.value = ''
+  }
+
+  function soltarFoto(archivo: File | undefined) {
+    if (!archivo) return
+    // Venga del arrastre o del selector, el input no debe conservar un archivo que ya no es la foto elegida.
+    if (inputFoto.current) inputFoto.current.value = ''
+    if (!esFotoValida(archivo)) {
+      elegirFoto(undefined)
+      setErrorAnalisis('Ese archivo no es una foto válida. Usa una imagen JPG, PNG o WebP.')
+      return
+    }
+    elegirFoto(archivo)
+  }
+
+  async function analizar() {
+    if (!foto) return
+    peticion.current?.abort()
+    const control = new AbortController()
+    peticion.current = control
+    setAnalyzing(true)
+    setErrorAnalisis(null)
+    try {
+      const r = await analizarFoto(foto.archivo, control.signal)
+      if (control.signal.aborted) return
+      if (r.estado === 'ok') {
+        setResultado(r)
+        setStep('result')
+      } else {
+        // Sin mano ni una de cerca, o foto muy pequena: no es un fallo, se le dice que hacer.
+        setErrorAnalisis(mensajeNoConcluyente(r.motivo))
+      }
+    } catch (error) {
+      if (error instanceof ErrorAnalisis && error.codigo === 'cancelado') return
+      setErrorAnalisis(
+        error instanceof ErrorAnalisis
+          ? error.message
+          : 'No pudimos analizar la foto. Intenta nuevamente.',
+      )
+    } finally {
+      if (peticion.current === control) setAnalyzing(false)
+    }
+  }
 
   // Se resuelve en el render: si el administrador elimina la opción elegida,
   // se cae de vuelta a la primera sin necesidad de sincronizar el estado.
@@ -125,8 +222,10 @@ export default function AIAnalysis() {
           </div>
 
           <div className="mt-8 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-            Tu imagen es privada y solo tú puedes verla. NuraVision entrega una{' '}
-            <strong className="text-ink">orientación estética</strong>, no un diagnóstico médico.
+            Tu imagen es privada y solo tú puedes verla. La forma de tus uñas es una{' '}
+            <strong className="text-ink">orientación estética</strong>. El reporte clínico opcional
+            reconoce solo algunas señales: no es un diagnóstico médico ni descarta nada. Ante
+            cualquier duda sobre tus uñas, consulta con un profesional.
           </div>
 
           <Button className="mt-8" onClick={() => setStep('upload')}>
@@ -138,7 +237,12 @@ export default function AIAnalysis() {
       {step === 'upload' && (
         <>
           <button
-            onClick={() => setStep('prepare')}
+            onClick={() => {
+              // Si hay un analisis en curso, su respuesta ya no le interesa a la clienta.
+              peticion.current?.abort()
+              setAnalyzing(false)
+              setStep('prepare')
+            }}
             className="mt-6 text-sm text-muted hover:text-ink"
           >
             ← Cambiar enfoque
@@ -146,37 +250,81 @@ export default function AIAnalysis() {
           <h1 className="mt-2 font-serif-display text-4xl text-ink">Sube tu fotografía</h1>
           <p className="mt-3 text-sm text-muted">Analizaremos {focus.analysisLabel}.</p>
 
-          {simulatedError && (
-            <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#e6c9c0] bg-danger-soft px-5 py-4 text-sm text-danger">
+          {(simulatedError || errorAnalisis) && (
+            <div
+              role="alert"
+              className="mt-6 flex items-start gap-3 rounded-xl border border-[#e6c9c0] bg-danger-soft px-5 py-4 text-sm text-danger"
+            >
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              {simulatedError === 'imagen_invalida'
-                ? 'No pudimos leer esta imagen. Intenta con una foto en formato JPG o PNG, con buena luz.'
-                : 'El servicio de análisis no está disponible en este momento. Intenta nuevamente en unos minutos.'}
+              {errorAnalisis ??
+                (simulatedError === 'imagen_invalida'
+                  ? 'No pudimos leer esta imagen. Intenta con una foto en formato JPG o PNG, con buena luz.'
+                  : 'El servicio de análisis no está disponible en este momento. Intenta nuevamente en unos minutos.')}
             </div>
           )}
 
-          <label className="mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line bg-paper px-6 py-16 text-center hover:border-olive-400">
+          <label
+            onDragOver={(e) => {
+              e.preventDefault()
+              setArrastrando(true)
+            }}
+            onDragLeave={(e) => {
+              // Pasar a un hijo de la zona también dispara dragleave: no apagar el resaltado.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setArrastrando(false)
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              setArrastrando(false)
+              soltarFoto(e.dataTransfer.files?.[0])
+            }}
+            className={`mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors hover:border-olive-400 ${
+              arrastrando ? 'border-olive-400 bg-olive-50/50' : 'border-line bg-paper'
+            }`}
+          >
             <Upload className="h-6 w-6 text-muted" />
             <span className="text-sm text-ink">
-              {fileName ?? 'Arrastra tu foto aquí o haz clic para subirla'}
+              {foto?.archivo.name ?? 'Arrastra tu foto aquí o haz clic para subirla'}
             </span>
-            <span className="text-xs text-muted-light">JPG o PNG · máx. 10 MB</span>
+            <span className="text-xs text-muted-light">JPG, PNG o WebP · máx. 10 MB</span>
             <input
+              ref={inputFoto}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={(e) => {
-                setSimulatedError(null)
-                setFileName(e.target.files?.[0]?.name ?? null)
+                const archivo = e.target.files?.[0]
+                if (!archivo) return elegirFoto(undefined)
+                // El selector muestra "Todos los archivos": se valida igual que al soltar,
+                // pero sin vaciar el input (el archivo elegido sigue siendo el actual).
+                if (esFotoValida(archivo)) elegirFoto(archivo)
+                else soltarFoto(archivo)
               }}
             />
           </label>
+
+          {foto && (
+            <div className="mt-4 flex flex-wrap items-end gap-4">
+              <img
+                src={foto.url}
+                alt="Vista previa de tu fotografía"
+                className="max-h-64 rounded-xl border border-line-soft"
+              />
+              <button
+                type="button"
+                onClick={quitarFoto}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-xs font-medium text-danger transition-colors hover:bg-danger-soft"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Quitar foto
+              </button>
+            </div>
+          )}
 
           {analyzing && (
             <div className="mt-8 rounded-2xl border border-line-soft bg-paper p-6">
               <p className="text-sm font-medium text-ink">Analizando tu fotografía…</p>
               <p className="mt-1 text-xs text-muted">
-                Estamos identificando características visuales.
+                Estamos buscando tus manos y uñas en la foto.
               </p>
               <div className="mt-4 space-y-2">
                 <div className="animate-shimmer h-3 w-3/4 rounded-full" />
@@ -188,14 +336,8 @@ export default function AIAnalysis() {
 
           <Button
             className="mt-8"
-            disabled={!fileName || !!simulatedError || analyzing}
-            onClick={() => {
-              setAnalyzing(true)
-              setTimeout(() => {
-                setAnalyzing(false)
-                setStep('result')
-              }, 1400)
-            }}
+            disabled={!foto || !!simulatedError || analyzing}
+            onClick={analizar}
           >
             {analyzing ? 'Analizando…' : 'Analizar fotografía'}
           </Button>
@@ -206,9 +348,11 @@ export default function AIAnalysis() {
         <>
           <h1 className="mt-6 font-serif-display text-4xl text-ink">Tu orientación está lista</h1>
           <p className="mt-3 max-w-xl text-sm text-muted">
-            A partir de tu fotografía, esto es lo que NuraVision observó y los servicios del
-            catálogo que podrían acompañarte.
+            Localizamos las uñas de tu fotografía. Los servicios sugeridos corresponden al enfoque
+            que elegiste.
           </p>
+
+          {resultado && foto && <ResultadoUnas resultado={resultado} fotoUrl={foto.url} />}
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1.2fr]">
             <AppImage
@@ -248,8 +392,8 @@ export default function AIAnalysis() {
               </div>
 
               <div className="mt-6 rounded-xl bg-line-soft/60 px-5 py-4 text-sm text-muted">
-                Esta es una orientación estética basada en análisis visual, no un diagnóstico
-                médico.
+                La forma y los servicios sugeridos son una orientación estética. El reporte
+                clínico es una señal para consultar con un profesional, no un diagnóstico médico.
               </div>
             </div>
           </div>
@@ -281,7 +425,7 @@ export default function AIAnalysis() {
             <button
               onClick={() => {
                 setStep('prepare')
-                setFileName(null)
+                elegirFoto(undefined)
               }}
               className="rounded-full border border-line px-6 py-3 text-sm font-medium text-ink hover:bg-ivory"
             >

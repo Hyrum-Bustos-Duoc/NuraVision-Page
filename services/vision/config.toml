@@ -18,7 +18,7 @@ test = 0.15
 # EfficientNetB0: otro tamano funciona pero desalinea los pesos preentrenados.
 lado = 224
 # Fotos con el lado menor por debajo de esto se rechazan: ampliarlas inventa
-# detalle que el modelo aprenderia como senal.
+# detalle que el modelo aprenderia como senal. Una tarea puede declarar el suyo.
 lado_minimo = 224
 
 [entrenamiento]
@@ -70,3 +70,100 @@ clases = ["cuidada", "cuticula_descuidada", "quebradiza_o_descamada", "esmalte_d
 # Una una quebradiza o descamada puede tener causas medicas: el resultado se
 # acompana de la recomendacion de consultar a un profesional, sin nombrar causa.
 revision_profesional = ["quebradiza_o_descamada"]
+
+# Senal orientativa para consultar a un profesional, no diagnostico. Decision
+# del dueno del 2026-11-12 (openspec/changes/reporte-clinico-unas). config.py
+# exige que las clases sean exactamente su lista cerrada (CLASES_CLINICAS) y el
+# CLI, que la particion use un archivo de series (--series).
+[tareas.estado_clinico]
+feature = "estado_clinico"
+clases = [
+    "linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis",
+    "una_terry", "mancha_blanca", "sin_senales", "otra",
+]
+# Todas las senales llevan la recomendacion de consultar; sin_senales y otra no.
+revision_profesional = [
+    "linea_beau", "linea_oscura", "acropaquia", "linea_mees", "onicolisis",
+    "una_terry", "mancha_blanca",
+]
+# Q2, opcion a (recomendada, pendiente de confirmar): con 224, linea_mees se
+# queda en 0 fotos y black line en 2 (FICHA de kaggle_nail, seccion 3). Con 64
+# quedan unas 350 fotos, linea_mees con 18. cargar_imagen las lleva igual a
+# 224: este minimo solo acota cuanto se amplia (hasta 3,5x). El resto de tareas
+# usa [imagen].lado_minimo.
+lado_minimo = 64
+
+# Busqueda de hiperparametros de estado_clinico (entrenamiento/busqueda_clinica.py).
+# Con ~300 fotos en train+val, la val fija (~55 fotos) no sirve para elegir:
+# se usa CV agrupada por serie y las predicciones OOF. Rejilla por etapas
+# (no producto completo) para que quepa en CPU: ver busqueda.md de cada corrida.
+[busqueda_clinica]
+# 5 pliegues: ~60 fotos evaluadas por pliegue y 80 % para entrenar. Con 10 la
+# clase linea_mees (15 fotos en train+val) quedaria con 1-2 por pliegue.
+pliegues = 5
+# Etapa 1: todas las arquitecturas admitidas por config.ARQUITECTURAS.
+arquitecturas = ["MobileNetV3Small", "MobileNetV3Large", "EfficientNetB0", "EfficientNetB1", "EfficientNetB2"]
+# 0 = solo la vista limpia; 8 = ocho vistas con el aumento de [aumento]
+# precalculadas (con la base congelada, el aumento en linea seria 9x mas lento).
+vistas = [0, 8]
+# Etapa 2. El primer valor de cada lista es el de la etapa 1.
+# LR de Adam para la cabeza: 1e-3 es el valor por defecto; 3e-4, mas lento y estable.
+lr = [1e-3, 3e-4]
+# 0.2 es el de la cabeza original de ambas familias; 0.5 regulariza mas con pocas fotos.
+dropout = [0.2, 0.5]
+# 0.1 es el valor de Szegedy et al. (Inception v3); 0 = sin suavizado.
+suavizado = [0.0, 0.1]
+# Pesos "balanced" (datos.pesos_de_clase) frente a sin pesos: linea_mees tiene
+# 15 fotos en train+val y onicolisis 42.
+pesos_clase = [true, false]
+# La epoca se elige con la curva media de log loss OOF (early stopping a nivel
+# de CV); 60 cubre de sobra la meseta observada con LR 3e-4.
+epocas_max_cabeza = 60
+lote = 64
+# Etapa 3: fine-tuning de la ganadora. 20 = valor de [entrenamiento]; 40 duplica.
+# LR 1e-5 es la de [entrenamiento]; 1e-4 el extremo superior de su rango.
+ft_capas = [20, 40]
+ft_lr = [1e-5, 1e-4]
+ft_epocas_max = 15
+# Caida maxima de F1 macro (sobre train+val, contra Keras) para aceptar una
+# variante cuantizada del .tflite. 0.01 = el "~1 punto" pedido.
+tolerancia_cuantizacion = 0.01
+# El fine-tuning solo reemplaza a la cabeza sobre base congelada si la supera
+# en F1 macro OOF por mas de esto. El error estandar del F1 macro con ~280
+# fotos OOF es de ~0.03; 0.01 ya es generoso con el fine-tuning. En la corrida
+# del 2026-11-17 el mejor fine-tuning gano por 0.0002 (1 epoca a LR 1e-5).
+margen_fine_tuning = 0.01
+# Diferencia maxima de cualquier probabilidad (contra Keras, sobre train+val)
+# para aceptar una variante cuantizada. decidir() compara la confianza con
+# umbrales del orden de 0.7: 0.05 solo cambia la decision de fotos que ya
+# estaban a menos de 0.05 del umbral. float16 dio 0.012; int8 dinamica, 0.685.
+max_dif_probabilidad = 0.05
+# --- robustez (subcomando robustez, 2026-11-17). Las degradaciones y sus niveles
+# viven en entrenamiento/degradaciones.py (NIVELES, RANGOS).
+# Margen de F1 macro OOF limpia dentro del cual se elige el aumento por
+# cobertura en fotos degradadas. Mismo criterio de ruido que margen_fine_tuning.
+margen_aumento = 0.01
+# Sorteos de vistas por aumento; se elige por la media. Dos sorteos de las mismas
+# 8 vistas de degradacion dieron F1 OOF limpia 0,680 y 0,635 (2026-11-17).
+repeticiones_aumento = 3
+# Precision minima de las aceptadas en CADA degradacion (media de los sorteos)
+# para que un aumento cuente como seguro: el objetivo 0,90 menos 0,05 de
+# holgura, porque cada conjunto tiene solo 30-80 aceptadas. Fijado el
+# 2026-11-17 despues de ver la CV (sin test): cualquier valor entre 0,79 y
+# 0,86 elegia lo mismo.
+precision_minima_por_conjunto = 0.85
+# Brillo medio del gris (0-255) por debajo del cual la foto es insuficiente y
+# no llega al modelo. Probado 0, 40, 50 y 60 sobre la mezcla OOF (exploracion
+# del 2026-11-17, aumento de degradacion, un sorteo): 40 sube la precision de
+# las aceptadas del peor conjunto (muy_oscura, mediana de brillo 31) de 0,82 a
+# 0,87 sin rechazar ninguna foto limpia (la mas oscura de train+val
+# tiene 50; el 1 % mas oscuro, 70) y deja pasar el 92 % de "oscura" (x0,45).
+# 50 y 60 no mejoraron mas. Medido sobre el recorte con el pad negro de
+# cargar_imagen: en el servicio (sin pad) el mismo recorte mide algo mas.
+brillo_minimo = 40
+# Precision exigida para decir "se ve alguna senal" sin nombrar cual. Mas
+# alta que precision_objetivo: es la unica salida que se da sin clase.
+precision_alguna_senal = 0.95
+# Una clase con menos fotos que esto en train+val queda como no fiable: con 5
+# pliegues son menos de 4 por pliegue. linea_mees tiene 15; acropaquia, 25.
+minimo_fotos_clase = 20

@@ -92,9 +92,14 @@ export default function Login() {
               />
               Recordarme
             </label>
-            <button type="button" className="text-muted underline decoration-line underline-offset-4">
+            {/* Era un `button` sin `onClick`: se veia pulsable y no hacia
+                nada. Ahora lleva a la pantalla que pide el correo. */}
+            <Link
+              to="/olvide-contrasena"
+              className="text-muted underline decoration-line underline-offset-4 hover:text-ink"
+            >
               ¿Olvidaste tu contraseña?
-            </button>
+            </Link>
           </div>
           <Button type="submit" full disabled={entrando}>
             {entrando ? 'Entrando…' : 'Iniciar sesión'}

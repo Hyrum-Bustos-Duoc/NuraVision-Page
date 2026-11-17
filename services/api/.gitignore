@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+# El modelo de MediaPipe (7,8 MB) se descarga con scripts/descargar_modelo.sh
+models/*.task
+models/*.xml
+# Clasificador clinico (carpeta exportado/ del entrenamiento): pesos, no van al repo.
+models/estado_clinico/

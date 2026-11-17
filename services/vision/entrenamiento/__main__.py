@@ -2,9 +2,11 @@
 
   python -m entrenamiento dividir  --tarea forma --dataset DIR --salida DIR
   python -m entrenamiento comparar --tarea forma --dataset DIR --salida DIR
+  python -m entrenamiento dividir  --tarea estado_clinico --dataset DIR --salida DIR --series CSV
 
 `dividir` no necesita TensorFlow: sirve para revisar conteos y rechazos antes
-de gastar GPU. `comparar` vuelve a dividir (es determinista) y entrena.
+de gastar GPU. `comparar` vuelve a dividir (es determinista) y entrena: con los
+mismos argumentos, incluido `--series`, sale la misma particion.
 """
 
 import argparse
@@ -13,12 +15,18 @@ from collections import Counter
 from pathlib import Path
 
 from . import datos
-from .config import RUTA_POR_DEFECTO, cargar_config, tarea
+from .config import RUTA_POR_DEFECTO, TAREA_CLINICA, cargar_config, lado_minimo, tarea
 
 
-def _particionar(cfg: dict, nombre: str, raiz: Path, salida: Path) -> tuple[dict, dict]:
+def _particionar(cfg: dict, nombre: str, raiz: Path, salida: Path, ruta_series: Path | None) -> tuple[dict, dict]:
+    if nombre == TAREA_CLINICA and ruta_series is None:
+        # El dataset clinico tiene la misma una recortada varias veces (FICHA de
+        # kaggle_nail, seccion 4): sin series, train y test comparten unas.
+        raise ValueError(f"la tarea {nombre} exige --series (CSV archivo,serie)")
     t = tarea(cfg, nombre)
-    validas, rechazadas = datos.inventariar(raiz, t["clases"], cfg["imagen"]["lado_minimo"])
+    validas, rechazadas = datos.inventariar(raiz, t["clases"], lado_minimo(cfg, nombre))
+    if ruta_series is not None:
+        validas, rechazadas = datos.asignar_series(validas, rechazadas, datos.cargar_series(ruta_series))
     p = cfg["particion"]
     manifiesto = datos.dividir(validas, t["clases"], p["val"], p["test"], cfg["semilla"])
     datos.verificar(manifiesto)
@@ -42,11 +50,12 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, required=True, help="carpeta que contiene <tarea>/<clase>/")
     parser.add_argument("--salida", type=Path, required=True, help="se escribe en <salida>/<tarea>/")
     parser.add_argument("--config", type=Path, default=RUTA_POR_DEFECTO)
+    parser.add_argument("--series", type=Path, help="CSV archivo,serie; obligatorio en estado_clinico")
     args = parser.parse_args()
 
     cfg = cargar_config(args.config)
     raiz, salida = args.dataset / args.tarea, args.salida / args.tarea
-    manifiesto, motivos = _particionar(cfg, args.tarea, raiz, salida)
+    manifiesto, motivos = _particionar(cfg, args.tarea, raiz, salida, args.series)
     if args.comando == "comparar":
         from . import modelo  # importa TensorFlow: solo aqui
 

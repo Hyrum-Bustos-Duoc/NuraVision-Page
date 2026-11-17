@@ -1,8 +1,36 @@
 """Tabla markdown de la comparativa (evidencia de Sprint Review). Logica pura."""
 
+from .config import TAREA_CLINICA
+
 
 def _pct(x: float | None) -> str:
     return "-" if x is None else f"{x:.1%}"
+
+
+def _clinico(c: dict) -> list[str]:
+    """Abstencion por clase y veredicto M1-M4 de estado_clinico."""
+    u = c["umbral_sin_senales"]
+    lineas = [
+        "", f"Umbral sin_senales (calibrado en val): {'ninguno: nunca afirma sin_senales' if u is None else f'{u:.3f}'}",
+        "", "Test despues de abstenerse (las cuatro primeras columnas suman n):", "",
+        "| Clase | n | Aceptadas correctas | Abstenidas | Aceptadas como otra clase | Aceptadas como sin_senales "
+        "| Recall estricto | IC 95 % (Wilson) |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for clase, m in c["por_clase"].items():
+        ic = "-" if m["ic95"] is None else f"{_pct(m['ic95'][0])}-{_pct(m['ic95'][1])}"
+        lineas.append(
+            f"| {clase} | {m['n']} | {m['aceptadas_correctas']} | {m['abstenidas']} | {m['aceptadas_otra_clase']} "
+            f"| {m['aceptadas_sin_senales']} | {_pct(m['recall_estricto'])} | {ic} |"
+        )
+    lineas += ["", "| Criterio | Valor | Limite | Veredicto |", "|---|---|---|---|"]
+    for criterio, a in c["aceptacion"].items():
+        valor = a["valor"] if isinstance(a["valor"], int) or a["valor"] is None else _pct(a["valor"])
+        limite = a["limite"] if isinstance(a["limite"], int) else _pct(a["limite"])
+        signo = "<=" if a["tipo"] == "max" else ">="
+        veredicto = "cumple" if a["cumple"] else "no cumple"
+        lineas.append(f"| {criterio} | {'-' if valor is None else valor} | {signo} {limite} | {veredicto} |")
+    return lineas
 
 
 def tabla_markdown(reporte: dict) -> str:
@@ -43,6 +71,10 @@ def tabla_markdown(reporte: dict) -> str:
         for dim, valores in r["subgrupos_test"].items():
             lineas += ["", f"Accuracy por `{dim}`: " + ", ".join(
                 f"{v} {_pct(m['accuracy'])} (n={m['n']})" for v, m in valores.items())]
+        if "clinico" in r:
+            lineas += _clinico(r["clinico"])
 
-    lineas += ["", "_Observacion estetica orientativa. No es un diagnostico medico._", ""]
+    aviso = ("Senal orientativa para consultar con un profesional de la salud" if reporte["tarea"] == TAREA_CLINICA
+             else "Observacion estetica orientativa")
+    lineas += ["", f"_{aviso}. No es un diagnostico medico._", ""]
     return "\n".join(lineas)
