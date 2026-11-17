@@ -92,3 +92,49 @@ revision_profesional = [
 # 224: este minimo solo acota cuanto se amplia (hasta 3,5x). El resto de tareas
 # usa [imagen].lado_minimo.
 lado_minimo = 64
+
+# Busqueda de hiperparametros de estado_clinico (entrenamiento/busqueda_clinica.py).
+# Con ~300 fotos en train+val, la val fija (~55 fotos) no sirve para elegir:
+# se usa CV agrupada por serie y las predicciones OOF. Rejilla por etapas
+# (no producto completo) para que quepa en CPU: ver busqueda.md de cada corrida.
+[busqueda_clinica]
+# 5 pliegues: ~60 fotos evaluadas por pliegue y 80 % para entrenar. Con 10 la
+# clase linea_mees (15 fotos en train+val) quedaria con 1-2 por pliegue.
+pliegues = 5
+# Etapa 1: todas las arquitecturas admitidas por config.ARQUITECTURAS.
+arquitecturas = ["MobileNetV3Small", "MobileNetV3Large", "EfficientNetB0", "EfficientNetB1", "EfficientNetB2"]
+# 0 = solo la vista limpia; 8 = ocho vistas con el aumento de [aumento]
+# precalculadas (con la base congelada, el aumento en linea seria 9x mas lento).
+vistas = [0, 8]
+# Etapa 2. El primer valor de cada lista es el de la etapa 1.
+# LR de Adam para la cabeza: 1e-3 es el valor por defecto; 3e-4, mas lento y estable.
+lr = [1e-3, 3e-4]
+# 0.2 es el de la cabeza original de ambas familias; 0.5 regulariza mas con pocas fotos.
+dropout = [0.2, 0.5]
+# 0.1 es el valor de Szegedy et al. (Inception v3); 0 = sin suavizado.
+suavizado = [0.0, 0.1]
+# Pesos "balanced" (datos.pesos_de_clase) frente a sin pesos: linea_mees tiene
+# 15 fotos en train+val y onicolisis 42.
+pesos_clase = [true, false]
+# La epoca se elige con la curva media de log loss OOF (early stopping a nivel
+# de CV); 60 cubre de sobra la meseta observada con LR 3e-4.
+epocas_max_cabeza = 60
+lote = 64
+# Etapa 3: fine-tuning de la ganadora. 20 = valor de [entrenamiento]; 40 duplica.
+# LR 1e-5 es la de [entrenamiento]; 1e-4 el extremo superior de su rango.
+ft_capas = [20, 40]
+ft_lr = [1e-5, 1e-4]
+ft_epocas_max = 15
+# Caida maxima de F1 macro (sobre train+val, contra Keras) para aceptar una
+# variante cuantizada del .tflite. 0.01 = el "~1 punto" pedido.
+tolerancia_cuantizacion = 0.01
+# El fine-tuning solo reemplaza a la cabeza sobre base congelada si la supera
+# en F1 macro OOF por mas de esto. El error estandar del F1 macro con ~280
+# fotos OOF es de ~0.03; 0.01 ya es generoso con el fine-tuning. En la corrida
+# del 2026-11-17 el mejor fine-tuning gano por 0.0002 (1 epoca a LR 1e-5).
+margen_fine_tuning = 0.01
+# Diferencia maxima de cualquier probabilidad (contra Keras, sobre train+val)
+# para aceptar una variante cuantizada. decidir() compara la confianza con
+# umbrales del orden de 0.7: 0.05 solo cambia la decision de fotos que ya
+# estaban a menos de 0.05 del umbral. float16 dio 0.012; int8 dinamica, 0.685.
+max_dif_probabilidad = 0.05
