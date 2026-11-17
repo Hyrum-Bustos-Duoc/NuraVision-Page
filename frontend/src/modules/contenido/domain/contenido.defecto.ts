@@ -1,9 +1,13 @@
 import { CONTENIDO_SITIO } from '@/shared/content/sitio'
 import type { ContenidoSitio } from './contenido.types'
 
-/** `/carrusel/inicio/inicio-01.jpg` … : los archivos van numerados desde 01. */
-function fotosLocales(carpeta: string, cantidad: number): string[] {
-  return Array.from({ length: cantidad }, (_, i) => `/carrusel/${carpeta}/${carpeta}-${String(i + 1).padStart(2, '0')}.jpg`)
+/**
+ * Fotos del carrusel en el bucket publico `contenido` (`carrusel/inicio/inicio-01.jpg` …,
+ * numeradas desde 01). Se suben con `npm run carrusel:subir`.
+ */
+function fotosCarrusel(carpeta: string, cantidad: number): string[] {
+  const base = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/contenido/carrusel`
+  return Array.from({ length: cantidad }, (_, i) => `${base}/${carpeta}/${carpeta}-${String(i + 1).padStart(2, '0')}.jpg`)
 }
 
 /**
@@ -24,10 +28,10 @@ export const CONTENIDO_POR_DEFECTO: ContenidoSitio = {
     bandaIA: CONTENIDO_SITIO.aiTeaserImage ?? null,
     login: CONTENIDO_SITIO.loginImage ?? null,
   },
-  // Fotos propias del estudio, servidas desde `public/carrusel/`.
+  // Fotos propias del estudio, servidas desde el bucket `contenido`.
   carruseles: {
-    estudio: fotosLocales('inicio', 6),
-    tienda: fotosLocales('productos', 22),
+    estudio: fotosCarrusel('inicio', 6),
+    tienda: fotosCarrusel('productos', 22),
   },
   portada: {
     etiqueta: 'Estudio de belleza · Tienda de cuidado',
