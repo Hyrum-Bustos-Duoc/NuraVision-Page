@@ -92,5 +92,6 @@ export function mensajeNoConcluyente(motivo: ResultadoAnalisis['motivo']): strin
   if (motivo === 'imagen_pequena') {
     return 'La foto es muy pequeña para ver tus uñas. Acércate un poco o usa una foto de mayor tamaño.'
   }
-  return 'No encontramos una mano en la foto. Abre la mano mostrando el dorso, con las uñas hacia la cámara y buena luz natural.'
+  // sin_mano: no hay mano y la foto tampoco parece una sola uña vista de cerca.
+  return 'No encontramos una mano en la foto, ni una uña vista de cerca. Muestra la mano abierta con el dorso y las uñas hacia la cámara, o acerca la cámara a una sola uña para que ocupe casi toda la foto, con buena luz natural.'
 }

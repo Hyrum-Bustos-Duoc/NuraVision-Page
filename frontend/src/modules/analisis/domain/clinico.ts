@@ -45,6 +45,16 @@ const CLINICO_FALLIDO: Clinico = { ...CLINICO_NO_DISPONIBLE, motivo: 'clasificac
  */
 const NUNCA_ALTERNATIVA: readonly string[] = ['sin_senales', 'otra']
 
+/**
+ * Clases que el servicio puede enviar pero que nunca se muestran al usuario (decision
+ * del dueno del producto, 2026-11-17). Como clase predicha, la una se presenta como no
+ * concluyente con el mensaje generico, sin nombrarla; como alternativa, se quita de la
+ * lista. A diferencia de NUNCA_ALTERNATIVA, no son un contrato roto.
+ */
+const CLASES_OCULTAS: readonly string[] = ['linea_mees', 'acropaquia']
+
+const CLINICO_OCULTO: Clinico = { ...CLINICO_NO_DISPONIBLE, motivo: 'senal_no_mostrada' }
+
 function esTexto(v: unknown): v is string {
   return typeof v === 'string' && v.trim() !== ''
 }
@@ -90,6 +100,9 @@ function alternativasValidas(alternativas: unknown, clase: string): boolean {
  * para TS, pero el JSON llega por red (analisis.api.ts solo lo castea) y la union no
  * lo valida; un dato roto que llegue a la UI tumba la pagina entera.
  *
+ * Despues de validar aplica CLASES_OCULTAS: una clase oculta da CLINICO_OCULTO y una
+ * alternativa oculta se quita.
+ *
  * Un `no_concluyente` se devuelve tal cual: la UI solo lee su motivo, y un motivo
  * desconocido ya tiene mensaje generico.
  */
@@ -99,7 +112,10 @@ export function clinicoDe(una: UnaDetectada): Clinico {
   if (c.estado !== 'ok') return c
   const valido =
     typeof c.clase === 'string' && reporteValido(c.reporte) && alternativasValidas(c.alternativas, c.clase)
-  return valido ? c : CLINICO_FALLIDO
+  if (!valido) return CLINICO_FALLIDO
+  if (CLASES_OCULTAS.includes(c.clase)) return CLINICO_OCULTO
+  const alternativas = c.alternativas.filter((a) => !CLASES_OCULTAS.includes(a.clase))
+  return alternativas.length === c.alternativas.length ? c : { ...c, alternativas }
 }
 
 /**
@@ -107,6 +123,8 @@ export function clinicoDe(una: UnaDetectada): Clinico {
  * nuevo que llegue por red, y la pantalla no debe fallar por eso.
  */
 export function mensajeMotivoClinico(motivo: string): string {
+  // senal_no_mostrada cae a proposito en el generico: un mensaje propio delataria
+  // que hubo una senal que no se nombra.
   switch (motivo) {
     case 'modelo_no_entrenado':
       return 'El reporte clínico aún no está disponible.'
@@ -122,7 +140,8 @@ export function mensajeMotivoClinico(motivo: string): string {
 }
 
 export interface ResumenMano {
-  mano: number
+  /** null en primer_plano: la una no pertenece a una mano detectada. */
+  mano: number | null
   total: number
   /** ok con una clase distinta de sin_senales. */
   conSenal: number
@@ -146,7 +165,7 @@ export function resumenClinico(unas: UnaDetectada[]): ResumenClinico {
   const sinModelo = clinicos.every((c) => c.estado !== 'ok' && c.motivo === 'modelo_no_entrenado')
   if (unas.length === 0 || sinModelo) return { disponible: false }
 
-  const porMano = new Map<number, ResumenMano>()
+  const porMano = new Map<number | null, ResumenMano>()
   unas.forEach((una, i) => {
     const c = clinicos[i]
     const r = porMano.get(una.mano) ?? { mano: una.mano, total: 0, conSenal: 0, sinSenales: 0, noConcluyentes: 0 }

@@ -77,3 +77,41 @@ describe('ResultadoUnas: forma', () => {
     expect(resumen).not.toHaveTextContent('No pudimos medir')
   })
 })
+
+describe('ResultadoUnas: primer_plano', () => {
+  // Contrato de services/api: primer_plano lleva 0 manos y una sola una sin dedo, mano ni forma.
+  const primerPlano: ResultadoAnalisis = {
+    ...resultado([{ ...una(null), dedo: null, mano: null }], null),
+    modo: 'primer_plano',
+    manos: 0,
+  }
+
+  it('con dedo null no revienta y no pinta rótulo de dedo ni de mano', () => {
+    render(<ResultadoUnas resultado={primerPlano} fotoUrl="blob:x" />)
+    expect(screen.getByRole('heading', { name: 'Encontramos 1 uña' })).toBeInTheDocument()
+    expect(screen.getByAltText('Tu uña vista de cerca')).toBeInTheDocument()
+    const tarjeta = screen.getByRole('listitem')
+    expect(tarjeta).not.toHaveTextContent(/null|undefined|mano/i)
+    expect(tarjeta.querySelectorAll('p')).toHaveLength(1)
+  })
+
+  it('explica que no se mide la forma sin la mano y no dibuja el recuadro sobre la foto', () => {
+    render(<ResultadoUnas resultado={primerPlano} fotoUrl="blob:x" />)
+    const resumen = screen.getByTestId('forma-resumen')
+    expect(resumen).toHaveTextContent('no medimos la forma')
+    expect(resumen).not.toHaveTextContent('No pudimos medir')
+    expect(document.querySelectorAll('polygon')).toHaveLength(0)
+    expect(screen.getByAltText('Tu fotografía')).toBeInTheDocument()
+    expect(screen.queryByText(/Los recuadros/)).not.toBeInTheDocument()
+    expect(screen.getByText(/una sola uña vista de cerca/)).toBeInTheDocument()
+  })
+
+  it('mano_completa (o un servicio sin modo) sigue dibujando recuadros y el rótulo del dedo', () => {
+    render(<ResultadoUnas resultado={{ ...resultado([una(null)], null), modo: 'mano_completa' }} fotoUrl="blob:x" />)
+    expect(screen.getByAltText('Tu fotografía con las uñas marcadas')).toBeInTheDocument()
+    expect(screen.getByAltText('Uña del dedo índice')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent('Índice')
+    expect(document.querySelectorAll('polygon')).toHaveLength(1)
+    expect(screen.getByText(/Los recuadros/)).toBeInTheDocument()
+  })
+})

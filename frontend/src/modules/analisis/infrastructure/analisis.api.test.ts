@@ -79,5 +79,7 @@ describe('mensajeNoConcluyente', () => {
   it('distingue foto pequena de foto sin mano', () => {
     expect(mensajeNoConcluyente('imagen_pequena')).toMatch(/muy pequeña/)
     expect(mensajeNoConcluyente('sin_mano')).toMatch(/No encontramos una mano/)
+    // sin_mano tambien significa que la foto no parece una uña de cerca: se ofrecen las dos salidas.
+    expect(mensajeNoConcluyente('sin_mano')).toMatch(/uña vista de cerca/)
   })
 })

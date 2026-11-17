@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { Clinico, ClaseClinica, MotivoClinico, UnaDetectada } from './analisis.types'
+import type { AlternativaClinica, Clinico, ClaseClinica, MotivoClinico, UnaDetectada } from './analisis.types'
 import { AVISO_CLINICO_POR_DEFECTO, CLINICO_NO_DISPONIBLE, avisoClinicoDe, clinicoDe, mensajeMotivoClinico, resumenClinico } from './clinico'
 
-function una(mano: number, clinico?: Clinico): UnaDetectada {
+function una(mano: number | null, clinico?: Clinico): UnaDetectada {
   return {
-    dedo: 'indice',
+    dedo: mano === null ? null : 'indice',
     mano,
     esquinas: [],
     recorte: '',
@@ -17,14 +17,14 @@ function una(mano: number, clinico?: Clinico): UnaDetectada {
   }
 }
 
-function ok(clase: ClaseClinica): Clinico {
+function ok(clase: ClaseClinica): Extract<Clinico, { estado: 'ok' }> {
   return {
     estado: 'ok',
     motivo: null,
     clase,
     confianza: 0.9,
     alternativas: [
-      { clase: 'linea_mees', nombre: 'Línea de Mees', confianza: 0.05 },
+      { clase: 'onicolisis', nombre: 'Onicólisis', confianza: 0.05 },
       { clase: 'mancha_blanca', nombre: 'Mancha blanca', confianza: 0.02 },
     ],
     reporte: { nombre: 'n', descripcion: 'd', asociaciones: [], recomendacion: 'r' },
@@ -65,6 +65,27 @@ describe('clinicoDe', () => {
       reporte: null,
       alternativas: [],
     })
+  })
+
+  it.each<ClaseClinica>(['linea_mees', 'acropaquia'])(
+    'un ok de %s se devuelve como no concluyente sin clase, reporte ni alternativas',
+    (clase) => {
+      const c = clinicoDe(una(1, ok(clase)))
+      expect(c).toEqual({ estado: 'no_concluyente', motivo: 'senal_no_mostrada', clase: null, confianza: null, alternativas: [], reporte: null })
+      // Sin mensaje propio: cae en el genérico para no delatar que hubo una señal.
+      expect(c.estado === 'no_concluyente' && mensajeMotivoClinico(c.motivo)).toBe(mensajeMotivoClinico('x'))
+    },
+  )
+
+  it('quita linea_mees y acropaquia de las alternativas sin tocar el resto ni el original', () => {
+    const c = ok('linea_beau')
+    const original: AlternativaClinica[] = [
+      { clase: 'acropaquia', nombre: 'a', confianza: 0.05 },
+      { clase: 'mancha_blanca', nombre: 'Mancha blanca', confianza: 0.02 },
+    ]
+    const r = clinicoDe(una(1, { ...c, alternativas: original }))
+    expect(r).toMatchObject({ estado: 'ok', clase: 'linea_beau', alternativas: [original[1]] })
+    expect(original).toHaveLength(2)
   })
 
   it('un ok roto cuenta como no concluyente en el resumen', () => {
@@ -124,6 +145,20 @@ describe('resumenClinico', () => {
         { mano: 1, total: 1, conSenal: 1, sinSenales: 0, noConcluyentes: 0 },
         { mano: 2, total: 2, conSenal: 0, sinSenales: 1, noConcluyentes: 1 },
       ],
+    })
+  })
+
+  it('primer_plano (mano null) se resume como un grupo con mano null', () => {
+    expect(resumenClinico([una(null, ok('sin_senales'))])).toEqual({
+      disponible: true,
+      manos: [{ mano: null, total: 1, conSenal: 0, sinSenales: 1, noConcluyentes: 0 }],
+    })
+  })
+
+  it('una clase oculta cuenta como no concluyente en el resumen', () => {
+    expect(resumenClinico([una(1, ok('linea_mees')), una(1, ok('acropaquia'))])).toEqual({
+      disponible: true,
+      manos: [{ mano: 1, total: 2, conSenal: 0, sinSenales: 0, noConcluyentes: 2 }],
     })
   })
 

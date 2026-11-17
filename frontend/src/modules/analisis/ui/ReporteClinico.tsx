@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { ETIQUETA_DEDO, type ResultadoAnalisis } from '../domain/analisis.types'
+import { rotuloUna, type ResultadoAnalisis } from '../domain/analisis.types'
 import {
   avisoClinicoDe,
   clinicoDe,
@@ -57,7 +57,7 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
 
               <div className="space-y-1 text-sm text-ink" data-testid="resumen-clinico">
                 {resumen.manos.map((m) => (
-                  <p key={m.mano}>
+                  <p key={m.mano ?? 'sin-mano'}>
                     {variasManos && <span className="font-medium">Mano {m.mano}: </span>}
                     {fraseResumen(m)}
                   </p>
@@ -67,18 +67,17 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
               <ul className="space-y-3">
                 {unas.map((u) => {
                   const c = clinicoDe(u)
+                  const rotulo = rotuloUna(u, variasManos)
                   return (
                     <li
                       key={`${u.mano}-${u.dedo}`}
                       className="rounded-xl border border-line-soft px-4 py-3"
                       data-testid="clinico-una"
                     >
-                      <p className="text-xs uppercase tracking-wide text-muted">
-                        {ETIQUETA_DEDO[u.dedo]}
-                        {variasManos && ` · mano ${u.mano}`}
-                      </p>
+                      {/* Sin dedo (primer_plano) no hay rotulo: mejor nada que una etiqueta vacia. */}
+                      {rotulo && <p className="mb-1 text-xs uppercase tracking-wide text-muted">{rotulo}</p>}
                       {c.estado === 'ok' ? (
-                        <div className="mt-1 space-y-2 text-sm text-ink">
+                        <div className="space-y-2 text-sm text-ink">
                           <p className="font-serif text-[20px] font-light">{c.reporte.nombre}</p>
                           <p>{c.reporte.descripcion}</p>
                           {c.reporte.asociaciones.length > 0 && (
@@ -101,7 +100,7 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
                           )}
                         </div>
                       ) : (
-                        <p className="mt-1 text-sm text-ink">{mensajeMotivoClinico(c.motivo)}</p>
+                        <p className="text-sm text-ink">{mensajeMotivoClinico(c.motivo)}</p>
                       )}
                     </li>
                   )

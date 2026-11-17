@@ -7,17 +7,31 @@ export type Dedo = 'pulgar' | 'indice' | 'medio' | 'anular' | 'menique'
 
 export type Forma = 'almendra' | 'cuadrada' | 'ovalada' | 'redonda' | 'stiletto'
 
+/**
+ * Como se obtuvieron las unas. mano_completa: se encontro la mano y cada una sale de
+ * sus puntos. primer_plano: no hubo mano, pero la foto entera parece una sola una vista
+ * de cerca; se analiza como una una sin dedo, sin mano y sin forma.
+ */
+export type Modo = 'mano_completa' | 'primer_plano'
+
 export interface UnaDetectada {
-  dedo: Dedo
-  /** Numero de mano dentro de la foto, desde 1. */
-  mano: number
-  /** Cuatro esquinas del recorte sobre la foto original, normalizadas 0..1. */
+  /** null en primer_plano: sin la mano no se sabe de que dedo es. */
+  dedo: Dedo | null
+  /** Numero de mano dentro de la foto, desde 1. null en primer_plano. */
+  mano: number | null
+  /**
+   * Cuatro esquinas del recorte sobre la foto original, normalizadas 0..1. En
+   * primer_plano son las de la foto entera.
+   */
   esquinas: [number, number][]
-  /** JPEG de 224x224 como data URL, con el dedo hacia arriba. */
+  /**
+   * JPEG de 224x224 como data URL. En mano_completa, con el dedo hacia arriba; en
+   * primer_plano, la foto entera con bandas negras y sin girar.
+   */
   recorte: string
   /**
    * Forma segun una regla geometrica sobre el contorno de la una, no el juicio de una
-   * profesional. null si no se pudo trazar un contorno creible.
+   * profesional. null si no se pudo trazar un contorno creible, y siempre en primer_plano.
    */
   forma: Forma | null
   /** Largo / ancho de la una. null si forma es null. */
@@ -82,12 +96,20 @@ export type Clinico =
       clase: ClaseClinica
       /** Probabilidad bruta del softmax (9 clases). No se muestra en la UI. */
       confianza: number
-      alternativas: [AlternativaClinica, AlternativaClinica]
+      /**
+       * El servicio envia 2; clinicoDe quita las de CLASES_OCULTAS, asi que pueden
+       * quedar menos. La UI no depende del numero.
+       */
+      alternativas: AlternativaClinica[]
       reporte: ReporteClinico
     }
   | {
       estado: 'no_concluyente'
-      motivo: MotivoClinico
+      /**
+       * senal_no_mostrada no llega del servicio: lo pone clinicoDe cuando la clase
+       * predicha es una que no se muestra (CLASES_OCULTAS en clinico.ts).
+       */
+      motivo: MotivoClinico | 'senal_no_mostrada'
       clase: null
       confianza: null
       alternativas: []
@@ -104,6 +126,12 @@ export type MotivoNoConcluyente = 'sin_mano' | 'imagen_pequena' | 'unas_no_visib
 export interface ResultadoAnalisis {
   estado: 'ok' | 'no_concluyente'
   motivo: MotivoNoConcluyente | null
+  /**
+   * null en no_concluyente. Opcional solo para tolerar un servicio anterior al modo
+   * primer_plano, que no lo envia; su ausencia equivale a mano_completa.
+   */
+  modo?: Modo | null
+  /** 0 en primer_plano. */
   manos: number
   unas: UnaDetectada[]
   /** Forma fiable mas repetida; null si hay empate o ninguna una se pudo medir. */
@@ -140,6 +168,16 @@ export const ETIQUETA_DEDO: Record<Dedo, string> = {
   medio: 'Medio',
   anular: 'Anular',
   menique: 'Meñique',
+}
+
+/**
+ * Rotulo de una una en la tarjeta y en el reporte: el dedo, y la mano solo si hay
+ * varias. null en primer_plano, donde no se sabe el dedo: la UI omite el rotulo en
+ * vez de pintarlo vacio.
+ */
+export function rotuloUna({ dedo, mano }: UnaDetectada, variasManos: boolean): string | null {
+  if (dedo === null) return null
+  return variasManos && mano !== null ? `${ETIQUETA_DEDO[dedo]} · mano ${mano}` : ETIQUETA_DEDO[dedo]
 }
 
 export const ETIQUETA_FORMA: Record<Forma, string> = {
