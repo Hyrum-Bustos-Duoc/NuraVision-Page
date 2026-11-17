@@ -427,3 +427,116 @@ float16 reconvertido desde el SavedModel guardado reprodujo el mismo tamano
 - **Fuga residual**: las series de embeddings no detectan dos fotos distintas
   de la misma persona.
 - `otra` mezcla patologias con esmalte y nail art (seccion 4).
+
+## 12. Ronda 2: robustez a fotos malas y abstencion (2026-11-17)
+
+> Mismo dataset, misma particion (huella `b91057db6870`), mismas reglas de
+> privacidad. Ninguna decision se tomo con test; test se leyo **una vez** al
+> final (segunda lectura oficial, ver «Protocolo»). Las degradaciones se
+> aplicaron **solo a copias de train+val** dentro de la CV.
+
+### Diagnostico (modelo instalado, OOF de train+val)
+
+- **Fotos fuera del modelo**: 190 de 540 (35 %) tienen lado menor < 64 px. Por
+  clase: `linea_mees` 42/60, `acropaquia` 31, `mancha_blanca` 26,
+  `una_terry` 25, `otra` 21, el resto 10-13.
+- **Abstencion con las reglas del servicio** (279 fotos): `ok` 112 (40 %),
+  `clase_otra` 34 (12 %), `confianza_baja` 133 (48 %); 65 de estas ultimas
+  eran aciertos del argmax.
+- **Riesgo-cobertura** (vista limpia): precision >= 0,80 -> cobertura 0,61;
+  0,85 -> 0,51; 0,90 -> 0,40; 0,95 -> 0,17.
+- Dentro de las fotos >= 64 px la cobertura no crece con la resolucion
+  (0,43 / 0,32 / 0,41 / 0,50 en [64,80), [80,120), [120,224), >= 224).
+- **El umbral calibrado solo en fotos limpias no protege las malas**: con el
+  0,687 instalado, la precision de las aceptadas baja en 9 de 11 degradaciones
+  (0,56 muy oscura, 0,65 poca luz de celular, 0,69 JPEG, 0,71 desenfoque
+  fuerte) y aparecen 18 `sin_senales` aceptados sobre fotos con senal (7 de
+  senales graves). Es decir: hoy el modelo inventa con fotos malas.
+
+### Degradaciones (`entrenamiento/degradaciones.py`)
+
+11 niveles fijos sobre el recorte de 224 (desenfoque 1,5 y 3; brillo x0,45 y
+x0,25; x1,6; ruido 12; JPEG 15; resolucion 64 y 40 px; rotacion 15 con borde
+replicado; poca luz de celular combinada). El aumento `degradacion` sortea
+esas mismas familias con rangos continuos.
+
+### Comparacion de aumentos (`busqueda_clinica robustez`)
+
+Cabeza ganadora de la seccion 11, CV 5 pliegues por serie, media de 3 sorteos
+de vistas; temperatura y umbral calibrados sobre la mezcla limpia + 11
+degradadas, sin las de brillo < 40.
+
+| Aumento | F1 OOF limpia | F1 OOF degradadas (media) | Cobertura mezcla | Peor precision por degradacion |
+|---|---|---|---|---|
+| ninguno (instalado) | 0,665 | 0,520 | 0,150 | 0,750 (poca luz) |
+| geometrico | 0,657 (0,648-0,674) | 0,531 | 0,213 | 0,785 (poca luz) |
+| **degradacion** | 0,643 (0,614-0,674) | 0,582 | 0,218 | 0,865 (sobreexpuesta) |
+
+Regla (`elegir_aumento`): solo aumentos con precision >= 0,85 en cada
+degradacion; entre ellos, mayor cobertura sin perder mas de 0,01 de F1 limpia.
+**Esta regla se fijo despues de ver la CV y antes de leer test**: la primera
+version (sin la exigencia por degradacion) elegia `geometrico`, que en poca luz
+acierta 0,785 de lo que afirma. Tambien se paso de un sorteo a tres porque dos
+sorteos del mismo aumento dieron F1 0,680 y 0,635.
+
+Familias excluidas del aumento (exploracion, un sorteo): sin rotacion, F1 en
+rotada 0,52 (con ella 0,61); sin brillo, F1 en muy oscura 0,42 (igual que sin
+aumento). **La mejora no se transfiere entre familias**: una degradacion real
+que no este en la lista no queda cubierta.
+
+Descartado: TTA con volteo (F1 OOF 0,665 -> 0,641, duplica la latencia);
+nitidez como compuerta (el ruido y el JPEG la suben; no separo fotos buenas de
+malas); conjuntos conformales al 90 % (2,6 clases de media, 23 % de una sola).
+
+### Candidato y segunda lectura de test
+
+Candidato: MobileNetV3Small, misma cabeza, 8 vistas de `degradacion` (sorteo
+0), 48 epocas, t = 0,819, umbral 0,823 (= umbral sin_senales), float16
+(1,97 MB, max|dif| 0,027 contra Keras, 2,2 ms por una). En CV ese sorteo da F1
+limpia 0,640 y peor precision 0,844 (sobreexpuesta), por debajo de la media de
+los tres sorteos.
+
+| Test (71 fotos) | Instalado (float16) | Candidato (float16) |
+|---|---|---|
+| Accuracy (IC 95 %) | 0,718 (0,605-0,810) | 0,789 (0,680-0,868) |
+| Precision / Recall / F1 macro | 0,761 / 0,675 / 0,678 | 0,805 / 0,737 / 0,750 |
+| ECE | 0,080 | 0,157 |
+| `ok` con las reglas actuales (M4) | 31 (0,437) | 17 (0,239) |
+| Precision de las `ok` (M3) | 0,968 | 1,000 |
+| M1 / M2 | 0 / 0 | 0 / 0 |
+
+La subida de F1 cabe en el ruido de 71 fotos y contradice la CV (0,640 frente
+a 0,665): no se lee como mejora. Lo que el candidato cambia de verdad es que
+**afirma menos en fotos limpias** (umbral 0,823 frente a 0,687) a cambio de
+mantener ~0,90 de precision en fotos degradadas. Con las reglas propuestas
+(compuerta de brillo, clases no fiables y «alguna senal», abajo), en test:
+16 `ok` (16 correctas), 28 «alguna senal» (27 con senal real; la otra es `otra`),
+27 abstenciones: 62 % de respuestas informativas frente al 44 % actual. Las M1-M4
+del float16 instalado, pendientes desde la seccion 11, son las de esta tabla.
+
+### Clases no fiables (`metricas.clases_no_fiables`)
+
+`linea_mees` (`pocas_fotos`: 15 en train+val) y `acropaquia`
+(`precision_baja`: el Wilson superior de la precision de sus aceptadas en OOF
+queda bajo 0,90). Van en `metadatos.clases_no_fiables`; el servicio todavia no
+las lee.
+
+### Protocolo
+
+- Test leido una vez, en dos procesos seguidos (`final` y un script de
+  evaluacion de las reglas propuestas y del modelo instalado), sin decidir
+  nada entre medio ni despues. Es la segunda lectura oficial.
+- **Exposicion previa no oficial**: un script del modo primer plano
+  (`primer_plano/a.csv` en el scratchpad, 2026-11-17 04:22) ya habia pasado
+  las 71 fotos de test por el modelo instalado. Esta ronda no uso esos datos.
+- Determinismo: dos corridas de `robustez` dieron resultados identicos campo
+  por campo; `ninguno` reproduce la F1 OOF 0,66513 de la seccion 11.
+
+### Reproducir
+
+```bash
+python -m entrenamiento.busqueda_clinica robustez --dataset FUERA/prep --series FUERA/prep/series.csv --salida FUERA/art
+python -m entrenamiento.busqueda_clinica final    --dataset FUERA/prep --series FUERA/prep/series.csv --salida FUERA/art
+```
+
+(con `busqueda.json` de la seccion 11 copiado en `FUERA/art/estado_clinico/`).
