@@ -1,0 +1,8 @@
+# Probado con Python 3.14 el 2026-11-10.
+fastapi==0.162.3
+uvicorn[standard]==0.54.0
+python-multipart==0.0.33
+mediapipe==1.2.2
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+pillow==13.0.0

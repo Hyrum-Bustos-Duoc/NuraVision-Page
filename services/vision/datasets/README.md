@@ -19,6 +19,11 @@ tiene los mismos archivos y reproducir la misma particion.
 | Dataset | Estado | Uso permitido | Ficha |
 |---|---|---|---|
 | `kaggle_nail` (arthitaya/nail-dataset v2) | **Temporal**, desde el 2026-10-29 | Solo particion. Clases clinicas: no entrena tareas del producto | [FICHA.md](kaggle_nail/FICHA.md) |
+| `NailSegmentationDatasetV2` (`archive (1).zip`) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentar la una. Particion limpia en `preparacion/` | [Informe, secciones 2, 3 y 5](../docs/preparacion-modelo.md) |
+| `archive.zip` (52 fotos con mascara) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentacion, muy pocas fotos | [Informe, seccion 2](../docs/preparacion-modelo.md) |
+| `Nails.v1i.tensorflow.zip` (Roboflow, CC BY 4.0) | Revisado el 2026-11-10 | Ninguno: es de anemia | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md) |
+| `archive (2).zip` (6 clases clinicas) | Revisado el 2026-11-10, origen y licencia sin aclarar | Ninguno: clinico, incluye melanoma | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md) |
+| `data.zip` (hemoglobina) | Revisado el 2026-11-10 | Ninguno: dato de salud por persona | [Informe, seccion 2](../docs/preparacion-modelo.md) |
 
 ## Agregar un dataset
 
