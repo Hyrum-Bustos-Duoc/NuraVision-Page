@@ -28,6 +28,75 @@ export interface UnaDetectada {
   forma_fiable: boolean
   /** Contorno de la una en coordenadas 0..1 del recorte. Vacio si no hay forma. */
   contorno: [number, number][]
+  /**
+   * Opcional solo para tolerar un servicio anterior al reporte clinico, que no lo
+   * envia. No se lee directo: se pasa por clinicoDe(), que resuelve la ausencia.
+   */
+  clinico?: Clinico
+}
+
+/**
+ * Ids publicos del clasificador clinico. `otra` existe en el modelo pero nunca sale
+ * del servicio. El frontend no traduce estos ids: los nombres llegan en
+ * reporte.nombre y alternativas[].nombre.
+ */
+export type ClaseClinica =
+  | 'linea_beau'
+  | 'linea_oscura'
+  | 'acropaquia'
+  | 'linea_mees'
+  | 'onicolisis'
+  | 'una_terry'
+  | 'mancha_blanca'
+  | 'sin_senales'
+
+export type MotivoClinico =
+  | 'modelo_no_entrenado'
+  | 'confianza_baja'
+  | 'clase_otra'
+  | 'clasificacion_fallida'
+
+export interface ReporteClinico {
+  nombre: string
+  descripcion: string
+  asociaciones: string[]
+  recomendacion: string
+}
+
+export interface AlternativaClinica {
+  clase: ClaseClinica
+  nombre: string
+  /** Probabilidad bruta del softmax (9 clases). No se muestra en la UI. */
+  confianza: number
+}
+
+/**
+ * Union discriminada que reproduce las invariantes del servicio: sin comprobar
+ * estado === 'ok' el compilador no deja leer reporte ni clase. En no concluyente no
+ * viaja ninguna suposicion, porque exponerla anularia la abstencion.
+ */
+export type Clinico =
+  | {
+      estado: 'ok'
+      motivo: null
+      clase: ClaseClinica
+      /** Probabilidad bruta del softmax (9 clases). No se muestra en la UI. */
+      confianza: number
+      alternativas: [AlternativaClinica, AlternativaClinica]
+      reporte: ReporteClinico
+    }
+  | {
+      estado: 'no_concluyente'
+      motivo: MotivoClinico
+      clase: null
+      confianza: null
+      alternativas: []
+      reporte: null
+    }
+
+export interface Modelo {
+  nombre: string
+  version: string
 }
 
 export type MotivoNoConcluyente = 'sin_mano' | 'imagen_pequena' | 'unas_no_visibles'
@@ -40,7 +109,11 @@ export interface ResultadoAnalisis {
   /** Forma fiable mas repetida; null si hay empate o ninguna una se pudo medir. */
   forma_predominante: Forma | null
   aviso: string
-  modelo: { nombre: string; version: string }
+  modelo: Modelo
+  /** Opcional por la misma razon que UnaDetectada.clinico: servicio anterior. */
+  aviso_clinico?: string
+  /** null cuando el servicio no tiene clasificador clinico cargado. */
+  modelo_clinico?: Modelo | null
 }
 
 /** Codigos de error del API, mas los que se originan en el navegador. */

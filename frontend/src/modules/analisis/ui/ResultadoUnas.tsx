@@ -1,10 +1,11 @@
 import { Kicker } from '@/shared/ui/ui'
 import { ETIQUETA_DEDO, ETIQUETA_FORMA, type ResultadoAnalisis } from '../domain/analisis.types'
+import { ReporteClinico } from './ReporteClinico'
 
 /**
  * Foto de la clienta con cada una enmarcada, y el recorte de cada una al lado.
  * Ademas de localizarlas, dice la forma de cada una (regla geometrica sobre su
- * contorno). No emite ningun juicio sobre su estado.
+ * contorno). La senal clinica orientativa queda tras el boton de ReporteClinico.
  */
 export function ResultadoUnas({
   resultado,
@@ -123,6 +124,9 @@ export function ResultadoUnas({
         confiable. Almendra y stiletto se confunden fácil con uñas vistas de lado. Tu foto se
         analiza al momento y no la conservamos.
       </p>
+
+      {/* key por foto: un resultado nuevo empieza con el reporte colapsado. */}
+      <ReporteClinico key={fotoUrl} resultado={resultado} />
     </section>
   )
 }

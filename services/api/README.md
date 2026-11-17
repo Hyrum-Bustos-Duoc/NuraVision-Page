@@ -45,9 +45,11 @@ cd services/api
 ```
 
 Comprobación rápida: `curl localhost:8000/salud` debe responder
-`{"ok":true,"modelo_cargado":true,"segmentador_cargado":true}`. Si
-`segmentador_cargado` sale `false`, el servicio detecta uñas igual pero todas
+`{"ok":true,"modelo_cargado":true,"segmentador_cargado":true,"clasificador_clinico_cargado":false}`.
+Si `segmentador_cargado` sale `false`, el servicio detecta uñas igual pero todas
 salen con `forma: null` (falta `models/segmentador_unas.xml`, ver más abajo).
+`clasificador_clinico_cargado` es `false` mientras no haya un modelo clínico
+entrenado (ver "Reporte clínico").
 
 El frontend (`cd frontend && npm run dev`) lo busca en
 `http://localhost:8000`. Para otra dirección, define `VITE_VISION_API_URL` en
@@ -64,7 +66,7 @@ El frontend (`cd frontend && npm run dev`) lo busca en
 | Sin mano o foto muy pequeña | 200 | `estado: "no_concluyente"`, `motivo: "sin_mano" \| "imagen_pequena"` |
 | No es una imagen válida | 400 | `{codigo: "imagen_invalida", detalle}` |
 | Más de 10 MB | 413 | `{codigo: "imagen_muy_grande", detalle}` |
-| Falta el modelo | 503 | `{codigo: "modelo_no_disponible", detalle}` |
+| Falta el modelo de manos | 503 | `{codigo: "modelo_no_disponible", detalle}` (sin rutas del servidor; el motivo va al log) |
 
 Un resultado "no concluyente" no es un error: la foto se leyó bien pero no hay
 nada que recortar. El shape exacto está en `app/vision/esquemas.py` y se espeja
@@ -85,6 +87,46 @@ con el dedo hacia arriba), más la forma:
 
 `ResultadoAnalisis.forma_predominante` es la forma fiable más frecuente entre las
 uñas medidas; si hay empate o ninguna es fiable, es `null`.
+
+### Reporte clínico (orientativo)
+
+Contrato completo en `openspec/changes/reporte-clinico-unas/design.md`. Cada
+uña trae además `clinico`, y la respuesta trae siempre `aviso_clinico` y
+`modelo_clinico` (`null` sin clasificador). No hay resultado agregado por foto
+ni por mano.
+
+| `clinico.estado` | `motivo` | `clase`, `confianza` | `alternativas` | `reporte` |
+|---|---|---|---|---|
+| `ok` | `null` | id público, 0..1 con 3 decimales | exactamente 2, de mayor a menor | textos de la clase |
+| `no_concluyente` | ver abajo | `null` | `[]` | `null` |
+
+Motivos, en el orden en que se evalúan: `modelo_no_entrenado` (no hay
+clasificador utilizable), `clasificacion_fallida` (falló esa uña; las demás y
+la forma siguen), `clase_otra`, `confianza_baja` (bajo
+`umbral_no_concluyente`, o `sin_senales` bajo `umbral_sin_senales`, o umbral
+`null`). La clase `otra` nunca sale del servicio. `confianza` es la
+probabilidad bruta del softmax sobre las 9 clases.
+
+**Hoy no hay modelo clínico entrenado:** todas las uñas salen
+`no_concluyente` / `modelo_no_entrenado`. Para instalar uno, se copia la
+carpeta `exportado/` del entrenamiento de `estado_clinico` (`modelo.tflite`,
+`etiquetas.json`, `metadatos.json`) a `models/estado_clinico/` (o se apunta
+`VISION_CLINICO=/ruta/carpeta`) y se reinicia. No se carga, y el motivo queda
+en el log, si `metadatos.tarea` no es `estado_clinico`, si las etiquetas no
+son exactamente los 9 ids, si falta `umbral_no_concluyente` o
+`umbral_sin_senales` (pueden valer `null`), si el `.tflite` no es válido o si
+el archivo de textos está incompleto. Ningún caso clínico produce un 5xx.
+
+Los textos del reporte están en `app/vision/textos_clinicos.toml`, editable sin
+tocar código. **Es un borrador pendiente de revisión profesional** (tarea U.7):
+no debe mostrarse a clientas hasta que una profesional lo revise y cambie
+`estado_revision` a `"revisado"`. Los tests de `tests/test_clinico.py`
+protegen el encuadre (sin lenguaje de diagnóstico, toda recomendación nombra a
+un profesional, `linea_oscura` recomienda evaluación dermatológica sin nombrar
+ni descartar causas).
+
+El resultado clínico no se escribe en logs: ni imagen, ni recorte, ni clase,
+ni confianza, ni textos.
 
 ## Qué hay que saber
 
@@ -111,7 +153,8 @@ uñas medidas; si hay empate o ninguna es fiable, es `null`.
 - CORS solo admite `localhost:5173` y `127.0.0.1:5173`. Para otro origen:
   `VISION_ORIGENES=https://mi-sitio.cl uvicorn ...` (separados por coma).
 - Para apuntar a otro archivo de modelo: `VISION_MODELO=/ruta/al/modelo.task`.
-  El segmentador se cambia con `VISION_SEGMENTADOR=/ruta/segmentador.xml`.
+  El segmentador se cambia con `VISION_SEGMENTADOR=/ruta/segmentador.xml` y
+  el clasificador clínico con `VISION_CLINICO=/ruta/carpeta`.
 - **La forma es una estimación.** `almendra` y `stiletto` se confunden con uñas
   vistas de lado, por eso salen con `forma_fiable: false`. Con fotos de baja
   resolución del dataset el resultado se inclina a `redonda`. No se ha validado

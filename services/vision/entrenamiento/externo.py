@@ -3,8 +3,8 @@
   python -m entrenamiento.externo --ficha datasets/<nombre>/particion.toml --dataset DIR --salida DIR
 
 Vive aparte del CLI del producto a proposito. Un dataset externo puede traer
-clases clinicas (p. ej. datasets/kaggle_nail/), que config.py rechaza para las
-tareas del producto. Aqui no hay tarea ni modelo: no existe camino desde una
+clases clinicas (p. ej. datasets/kaggle_nail/), que config.py rechaza en
+forma y estado. Aqui no hay tarea ni modelo: no existe camino desde una
 ficha externa hasta `comparar`, y config.py rechaza una ficha si se le pasa
 como config de entrenamiento.
 """

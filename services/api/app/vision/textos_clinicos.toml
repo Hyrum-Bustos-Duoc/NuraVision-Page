@@ -1,0 +1,94 @@
+# ===========================================================================
+#  BORRADOR PENDIENTE DE REVISION PROFESIONAL - NO USAR CON CLIENTAS REALES
+# ===========================================================================
+#
+# Textos del reporte clinico orientativo por una (openspec/changes/
+# reporte-clinico-unas, decision 8 de design.md). Los redacto nv-vision como
+# borrador el 2026-11-12. Una profesional de la salud debe revisarlos y, al
+# terminar, cambiar estado_revision a "revisado" y completar revisado_por y
+# fecha_revision (tarea U.7). Hasta entonces el servicio avisa en su log que
+# los textos estan pendientes.
+#
+# Se puede editar sin tocar codigo. Reglas que comprueban los tests
+# (tests/test_clinico.py) y que conviene respetar al editar:
+#   - Describir lo que SE VE en la foto, nunca lo que la persona TIENE.
+#   - No usar: tienes, padeces, sufres, melanoma, cancer, benigno/a,
+#     "no es grave", sana/sano ni saludable.
+#   - Toda recomendacion nombra a un profesional, dermatologo o medico.
+#   - linea_oscura recomienda evaluacion dermatologica y NO nombra ni descarta
+#     causas.
+#   - sin_senales no dice que la una este sana.
+#   - Una tabla por cada id (8). "otra" no tiene texto: nunca se muestra.
+#   - asociaciones solo puede quedar vacia en sin_senales.
+
+estado_revision = "pendiente"   # "pendiente" | "revisado"
+revisado_por = ""               # nombre y profesion de quien reviso
+fecha_revision = ""             # AAAA-MM-DD
+
+[clases.linea_beau]
+nombre = "Surco transversal"
+descripcion = "Se ve un surco o hendidura que cruza la uña de lado a lado."
+asociaciones = [
+  "Puede aparecer después de un golpe en la base de la uña o de una pausa en su crecimiento.",
+  "Se ha descrito después de fiebre alta, enfermedades generales o algunos tratamientos.",
+]
+recomendacion = "Si aparece en varias uñas a la vez o no se conoce su origen, conviene consultar con un profesional de la salud."
+
+[clases.linea_oscura]
+nombre = "Banda oscura longitudinal"
+descripcion = "Se ve una franja oscura que recorre la uña a lo largo, desde la base hacia el borde."
+asociaciones = [
+  "Su origen solo puede determinarse con una evaluación presencial.",
+  "Si la franja cambia de ancho o de color, o el color se extiende a la piel de alrededor, es un motivo más para no postergar la consulta.",
+]
+recomendacion = "Se recomienda una evaluación dermatológica presencial: una franja oscura en la uña siempre merece que la vea un dermatólogo."
+
+[clases.acropaquia]
+nombre = "Uña curvada y punta del dedo ensanchada"
+descripcion = "La uña se ve más curvada de lo habitual y la punta del dedo, más ancha y redondeada. Esta señal se aprecia mejor de perfil, así que una foto de frente puede no mostrarla bien."
+asociaciones = [
+  "Puede ser un rasgo familiar.",
+  "Se ha descrito en relación con afecciones pulmonares, cardíacas o digestivas.",
+]
+recomendacion = "Conviene consultar con un profesional médico, sobre todo si es un cambio reciente."
+
+[clases.linea_mees]
+nombre = "Línea blanca transversal"
+descripcion = "Se ve una línea blanca que cruza la uña de lado a lado y avanza con el crecimiento."
+asociaciones = [
+  "Se ha descrito después de enfermedades generales, algunos tratamientos o la exposición a ciertas sustancias.",
+]
+recomendacion = "Conviene consultar con un profesional médico para valorar su origen."
+
+[clases.onicolisis]
+nombre = "Uña separada de su lecho"
+descripcion = "Una parte de la uña se ve despegada de la piel que tiene debajo, normalmente desde el borde libre."
+asociaciones = [
+  "Puede relacionarse con golpes, humedad frecuente, productos de manicura o uñas artificiales.",
+  "También se ha descrito con hongos y con algunas afecciones de la piel o generales.",
+]
+recomendacion = "Evitar forzar la zona despegada y consultar con un profesional de la salud si persiste o se extiende."
+
+[clases.una_terry]
+nombre = "Uña blanquecina con franja oscura en el extremo"
+descripcion = "La mayor parte de la uña se ve blanquecina, con una franja más oscura cerca del borde libre."
+asociaciones = [
+  "Puede aparecer con la edad.",
+  "Se ha descrito en relación con afecciones del hígado, del riñón o del corazón.",
+]
+recomendacion = "Conviene consultar con un profesional médico para valorarla."
+
+[clases.mancha_blanca]
+nombre = "Manchas blancas pequeñas"
+descripcion = "Se ven una o varias manchas blancas pequeñas sobre la uña."
+asociaciones = [
+  "Suelen relacionarse con pequeños golpes en la base de la uña.",
+  "Si son muchas o no desaparecen, se han descrito otros orígenes, como los hongos.",
+]
+recomendacion = "Si se multiplican o no desaparecen a medida que la uña crece, conviene consultar con un profesional de la salud."
+
+[clases.sin_senales]
+nombre = "Sin señales reconocidas"
+descripcion = "En esta uña no se reconoce ninguna de las señales que el sistema sabe identificar. Eso no garantiza que no haya ningún cambio: el sistema conoce pocas señales y puede equivocarse."
+asociaciones = []
+recomendacion = "Ante cualquier cambio en las uñas, conviene consultar con un profesional de la salud aunque este resultado no muestre señales."

@@ -1,9 +1,10 @@
 # TEMPORAL (decision del 2026-10-29). Ficha de particion del dataset publico
 # arthitaya/nail-dataset. Ver FICHA.md.
 #
-# SOLO PARTICION: este dataset tiene clases clinicas y NO es una tarea del
-# producto. Se usa con `python -m entrenamiento.externo`; config.py la rechaza
-# como config de entrenamiento.
+# SOLO PARTICION: esta ficha y su particion.json no entrenan nada. Se usan con
+# `python -m entrenamiento.externo`; config.py la rechaza como config de
+# entrenamiento. Desde el 2026-11-12 el dataset entrena estado_clinico por otra
+# via (carpetas renombradas y particion por series): FICHA.md, seccion 10.
 uso = "solo_particion"
 dataset = "kaggle:arthitaya/nail-dataset@v2"
 

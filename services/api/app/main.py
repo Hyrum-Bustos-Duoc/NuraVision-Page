@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -8,16 +9,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .vision import clinico
 from .vision.router import router as vision_router
 from .vision.unas import AnalizadorUnas, ModeloNoDisponible
 
 RAIZ = Path(__file__).resolve().parent.parent
 RUTA_MODELO = Path(os.environ.get("VISION_MODELO", RAIZ / "models" / "hand_landmarker.task"))
 RUTA_SEGMENTADOR = Path(os.environ.get("VISION_SEGMENTADOR", RAIZ / "models" / "segmentador_unas.xml"))
+# Carpeta `exportado/` del entrenamiento de estado_clinico, copiada a mano (tarea U.5).
+RUTA_CLINICO = Path(os.environ.get("VISION_CLINICO", RAIZ / "models" / "estado_clinico"))
+# Se versiona con el codigo: son textos, no datos de nadie.
+RUTA_TEXTOS_CLINICOS = Path(__file__).resolve().parent / "vision" / "textos_clinicos.toml"
 # Origenes del frontend en desarrollo. En produccion se fija con VISION_ORIGENES.
 ORIGENES = os.environ.get(
     "VISION_ORIGENES", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+# Lo que ve el cliente en el 503. El motivo real (con la ruta del servidor) va solo al log.
+MOTIVO_SIN_MODELO = "El modelo de deteccion de manos no esta instalado en el servidor."
+
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -26,10 +36,13 @@ async def ciclo_de_vida(app: FastAPI):
     app.state.analizador = None
     app.state.motivo_sin_modelo = ""
     try:
-        app.state.analizador = AnalizadorUnas(RUTA_MODELO, RUTA_SEGMENTADOR)
+        app.state.analizador = AnalizadorUnas(
+            RUTA_MODELO, RUTA_SEGMENTADOR, clinico.cargar_opcional(RUTA_CLINICO, RUTA_TEXTOS_CLINICOS)
+        )
     except ModeloNoDisponible as exc:
         # La API arranca igual: /salud lo informa y /vision/analizar responde 503.
-        app.state.motivo_sin_modelo = str(exc)
+        log.error("Sin detector de manos: %s", exc)
+        app.state.motivo_sin_modelo = MOTIVO_SIN_MODELO
     yield
 
 
@@ -66,4 +79,5 @@ def salud(request: Request) -> dict:
         "ok": True,
         "modelo_cargado": analizador is not None,
         "segmentador_cargado": analizador is not None and analizador.mide_forma,
+        "clasificador_clinico_cargado": analizador is not None and analizador.clasifica,
     }

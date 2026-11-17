@@ -6,3 +6,7 @@ mediapipe==1.2.2
 opencv-python-headless==5.0.0.93
 numpy==2.5.4
 pillow==13.0.0
+# Ejecuta el clasificador clinico (.tflite). Elegido en el spike 3.1 de
+# openspec/changes/reporte-clinico-unas (services/vision/spike_motor/README.md):
+# cv2.dnn no carga EfficientNetB0. Instalado y probado el 2026-11-12.
+ai-edge-litert==2.3.0

@@ -181,3 +181,127 @@ def test_subgrupos(dataset):
     assert datos.cargar_subgrupos(dataset) == {"almendra/00.jpg": {"tono_piel": "monk_7", "luz": "natural"}}
     # el csv no es una carpeta de clase: no debe romper el inventario
     assert len(datos.inventariar(dataset, CLASES, 224)[0]) == 30
+
+
+# --- particion por series ----------------------------------------------------
+
+def _series(ruta, filas):
+    ruta.write_text("archivo,serie\n" + "".join(f"{a},{s}\n" for a, s in filas))
+    return datos.cargar_series(ruta)
+
+
+def _particion_con_series(raiz, filas, tmp_path, semilla=7):
+    validas, rechazadas = datos.inventariar(raiz, CLASES, 224)
+    validas, rechazadas = datos.asignar_series(validas, rechazadas, _series(tmp_path / "series.csv", filas))
+    return datos.dividir(validas, CLASES, 0.15, 0.15, semilla), rechazadas
+
+
+def test_sin_series_la_huella_es_la_de_antes_del_cambio(dataset):
+    # Calculada con el datos.dividir anterior a las series (2026-11-12), sobre
+    # esta misma fixture: forma y estado no cambian de particion.
+    assert _particion(dataset)["huella"] == "df7ed6c6a576007ef0f866dbccd1f121ff32289d53795b9d48f844cf5b62857e"
+
+
+def test_serie_unida_cae_en_una_sola_particion(dataset, tmp_path):
+    filas = [(f"almendra/0{i}.jpg", "s7") for i in (1, 4, 8)]
+    for semilla in range(20):  # con cualquier barajado, nunca se separa
+        m, _ = _particion_con_series(dataset, filas, tmp_path, semilla)
+        datos.verificar(m)
+        assert len({a["particion"] for a in m["archivos"] if a["serie"] == "s7"}) == 1
+        assert all(m["conteos"][p]["almendra"] >= 1 for p in datos.PARTICIONES)
+
+
+def test_series_grandes_dejan_al_menos_una_serie_por_particion(dataset, tmp_path):
+    filas = [(f"almendra/0{i}.jpg", "grande") for i in range(8)]
+    m, _ = _particion_con_series(dataset, filas, tmp_path)
+    assert all(m["conteos"][p]["almendra"] >= 1 for p in datos.PARTICIONES)
+    assert sum(m["conteos"][p]["almendra"] for p in datos.PARTICIONES) == 10
+
+
+def test_menos_de_tres_series_por_clase_falla(dataset, tmp_path):
+    filas = [(f"almendra/0{i}.jpg", "a" if i < 5 else "b") for i in range(10)]
+    with pytest.raises(ValueError, match="almendra: 10 fotos validas en 2 series"):
+        _particion_con_series(dataset, filas, tmp_path)
+
+
+def test_verificar_nombra_la_serie_movida(dataset, tmp_path):
+    m, _ = _particion_con_series(dataset, [(f"cuadrada/0{i}.jpg", "s7") for i in range(3)], tmp_path)
+    foto_s7 = next(a for a in m["archivos"] if a["serie"] == "s7")
+    foto_s7["particion"] = "train" if foto_s7["particion"] != "train" else "test"
+    m["huella"] = datos._huella(m["archivos"])
+    with pytest.raises(ValueError, match="serie s7 aparece en dos particiones"):
+        datos.verificar(m)
+
+
+def test_serie_con_dos_clases_se_rechaza_entera(dataset, tmp_path):
+    m, rechazadas = _particion_con_series(dataset, [("almendra/00.jpg", "x"), ("ovalada/00.jpg", "x")], tmp_path)
+    assert {r["archivo"]: r["motivo"] for r in rechazadas} == {
+        "almendra/00.jpg": "etiqueta_conflictiva", "ovalada/00.jpg": "etiqueta_conflictiva",
+    }
+    assert len(m["archivos"]) == 28
+
+
+def test_serie_que_nombra_foto_inexistente_falla_solo_con_el_conteo(dataset, tmp_path):
+    filas = [("almendra/00.jpg", "a"), ("almendra/maria_perez.jpg", "a"), ("ovalada/00.jpg", ""),
+             ("cuadrada/00.jpg", "b"), ("cuadrada/00.jpg", "c")]
+    with pytest.raises(ValueError, match="3 filas invalidas") as error:
+        _particion_con_series(dataset, filas, tmp_path)
+    assert "maria" not in str(error.value) and ".jpg" not in str(error.value)
+
+
+def test_serie_puede_nombrar_una_foto_rechazada(dataset, tmp_path):
+    foto(dataset / "almendra" / "chica.jpg", (1, 1, 1), tamano=(100, 100))
+    m, rechazadas = _particion_con_series(dataset, [("almendra/chica.jpg", "a"), ("almendra/00.jpg", "a")], tmp_path)
+    assert {"archivo": "almendra/chica.jpg", "motivo": "resolucion_insuficiente"} in rechazadas
+    assert len(m["archivos"]) == 30
+
+
+def test_archivo_de_series_sin_columnas(tmp_path):
+    (tmp_path / "s.csv").write_text("foto,grupo\na.jpg,1\n")
+    with pytest.raises(ValueError, match="archivo,serie"):
+        datos.cargar_series(tmp_path / "s.csv")
+
+
+# --- CLI: estado_clinico -------------------------------------------------------
+
+@pytest.fixture
+def clinico(tmp_path):
+    """4 fotos de 70 px de lado menor por cada clase de estado_clinico."""
+    from entrenamiento.config import CLASES_CLINICAS
+    raiz = tmp_path / "estado_clinico"
+    for ci, clase in enumerate(CLASES_CLINICAS):
+        for i in range(4):
+            foto(raiz / clase / f"{i}.jpg", (ci * 25, i * 60, 90), tamano=(70, 90))
+    return raiz
+
+
+def test_estado_clinico_exige_series(clinico, tmp_path):
+    from entrenamiento.__main__ import _particionar
+    from entrenamiento.config import cargar_config
+    with pytest.raises(ValueError, match="exige --series"):
+        _particionar(cargar_config(), "estado_clinico", clinico, tmp_path / "salida", None)
+
+
+def test_estado_clinico_acepta_70_px_y_forma_no(clinico, tmp_path):
+    from entrenamiento.__main__ import _particionar
+    from entrenamiento.config import cargar_config, lado_minimo
+    series = tmp_path / "series.csv"
+    series.write_text("archivo,serie\nacropaquia/0.jpg,s1\nacropaquia/1.jpg,s1\n")
+    cfg = cargar_config()
+    m, motivos = _particionar(cfg, "estado_clinico", clinico, tmp_path / "salida", series)
+    assert len(m["archivos"]) == 36 and motivos == {}
+    # comparar vuelve a particionar con los mismos argumentos: misma particion.
+    assert _particionar(cfg, "estado_clinico", clinico, tmp_path / "otra", series)[0]["huella"] == m["huella"]
+    _, rechazadas = datos.inventariar(clinico, sorted(p.name for p in clinico.iterdir()), lado_minimo(cfg, "forma"))
+    assert {r["motivo"] for r in rechazadas} == {"resolucion_insuficiente"} and len(rechazadas) == 36
+
+
+def test_estado_clinico_con_carpetas_de_kaggle_sin_renombrar_falla(tmp_path):
+    from entrenamiento.__main__ import _particionar
+    from entrenamiento.config import cargar_config
+    for clase in ("black line", "beau_s line"):
+        foto(tmp_path / "estado_clinico" / clase / "0.jpg", (1, 2, 3))
+    series = tmp_path / "series.csv"
+    series.write_text("archivo,serie\n")
+    with pytest.raises(ValueError, match="no coinciden"):
+        _particionar(cargar_config(), "estado_clinico", tmp_path / "estado_clinico", tmp_path / "s", series)
