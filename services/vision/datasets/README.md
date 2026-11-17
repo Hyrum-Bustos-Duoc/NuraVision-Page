@@ -18,11 +18,11 @@ tiene los mismos archivos y reproducir la misma particion.
 
 | Dataset | Estado | Uso permitido | Ficha |
 |---|---|---|---|
-| `kaggle_nail` (arthitaya/nail-dataset v2, = `datasets/Nail.zip`) | **Temporal**, desde el 2026-10-29. Licencia «Unknown» | No entrena `forma` ni `estado`. Desde el 2026-11-12 entrena `estado_clinico`, solo con carpetas renombradas y particion por series; su `particion.json` no se usa para entrenar | [FICHA.md](kaggle_nail/FICHA.md), seccion 10 |
+| `kaggle_nail` (arthitaya/nail-dataset v2, = `datasets/Nail.zip`) | **Temporal**, desde el 2026-10-29. Licencia «Unknown» | No entrena `forma` ni `estado`. Desde el 2026-11-12 entrena `estado_clinico`, solo con carpetas renombradas y particion por series; su `particion.json` no se usa para entrenar. Modelo entrenado el 2026-11-17 (F1 macro test 0,678) | [FICHA.md](kaggle_nail/FICHA.md), secciones 10 y 11 |
 | `NailSegmentationDatasetV2` (`archive (1).zip`) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentar la una. Particion limpia en `preparacion/` | [Informe, secciones 2, 3 y 5](../docs/preparacion-modelo.md) |
 | `archive.zip` (52 fotos con mascara) | Revisado el 2026-11-10, origen y licencia sin aclarar | Segmentacion, muy pocas fotos | [Informe, seccion 2](../docs/preparacion-modelo.md) |
 | `Nails.v1i.tensorflow.zip` (Roboflow, CC BY 4.0) | Revisado el 2026-11-10 | Ninguno: es de anemia | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md) |
-| `archive (2).zip` (6 clases clinicas) | Revisado el 2026-11-10, origen y licencia sin aclarar | Ninguno: clinico, incluye melanoma | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md) |
+| `archive (2).zip` (6 clases clinicas; llega tambien como `datasets/FingerHealth.zip`, sha256 `46456cc4…`, mismas 3.835 fotos) | Revisado el 2026-11-10, origen y licencia sin aclarar | Ninguno. Ademas de incluir melanoma, el 2026-11-17 se midio que sumar sus clases compatibles (`clubbing`, `Healthy_Nail`, y `Onychogryphosis`/`pitting`/`blue_finger` como `otra`) **empeora** `estado_clinico`: F1 macro fuera de pliegue sobre Kaggle 0,541 -> 0,451 (0,476 con tope de 60 fotos por clase); `otra` cae de 0,56 a 0,05 y `acropaquia` de 0,59 a 0,18. Sus fotos traen aumentos de Roboflow (giros con borde negro, ruido) y el modelo aprende la fuente, no la una | [Informe, secciones 2 y 3](../docs/preparacion-modelo.md); [FICHA de kaggle_nail, seccion 11](kaggle_nail/FICHA.md) |
 | `data.zip` (hemoglobina) | Revisado el 2026-11-10 | Ninguno: dato de salud por persona | [Informe, seccion 2](../docs/preparacion-modelo.md) |
 
 ## Candidatos para `estado_clinico` (sin descargar)

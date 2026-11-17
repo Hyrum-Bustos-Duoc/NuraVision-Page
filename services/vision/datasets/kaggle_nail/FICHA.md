@@ -257,3 +257,173 @@ Antes de entrenar, el equipo renombra las carpetas a los ids de la tarea
   casi-duplicados.
 - Con esos numeros, las metricas sirven para impedir habilitar un modelo malo,
   no para demostrar que uno es bueno (M1-M4 en `design.md`).
+
+## 11. Entrenamiento de `estado_clinico` (2026-11-17)
+
+> Senal orientativa para consultar con un profesional. **No es un diagnostico
+> medico** ni un dispositivo medico validado. Las metricas de abajo se midieron
+> sobre recortes web de una sola una; no dicen como se comporta con fotos de
+> celular (eso lo mide el arnes, tarea U.6). La licencia sigue «Unknown» (U.1):
+> el modelo no se habilita para clientas (U.9).
+
+### Datos
+
+| Zip | Decision | Motivo |
+|---|---|---|
+| `Nail.zip` (este dataset) | **Usado**, solo fotos con lado menor >= 64 (`config.toml`, Q2 a): 350 de 540 | Unico con clases que mapean a la lista cerrada (seccion 10) |
+| `FingerHealth.zip` (= `archive (2).zip`) | Descartado | Incluye melanoma (no se usa ni como `otra`). Sumar sus clases compatibles **empeoro** el F1 macro OOF sobre Kaggle de 0,541 a 0,451 (regresion logistica sobre embeddings EfficientNetB0, CV 5 pliegues por serie): el modelo aprende la fuente (aumentos de Roboflow), no la una |
+| `NailSegmentationDatasetV2.zip`, `archive.zip` | Descartados | Mascaras de segmentacion, sin etiqueta de senal |
+| `Nails.v1i.tensorflow.zip` | Descartado | Anemia, cajas de deteccion |
+| `data.zip` | Descartado | Hemoglobina por paciente: dato de salud, sin etiqueta de senal |
+
+Tambien se midio sumar las 190 fotos de < 64 px solo a train: F1 OOF 0,551 ->
+0,518. No se usan.
+
+### Limpieza, series y particion
+
+1. `entrenamiento/preparar_clinico.py` renombra las carpetas (tabla de la
+   seccion 10) y escribe el archivo de series. Ningun sha256 repetido.
+2. **Series por similitud de embeddings** (EfficientNetB0 ImageNet, coseno >=
+   0,80 dentro de la clase, transitivo), solo entre las fotos validas. dHash
+   (seccion 4) no sirve aqui: con <= 4 dio 595 pares, 447 entre clases
+   distintas. Resultado: 350 fotos en 223 series; la mayor, 15 fotos de
+   `sin_senales` (varias subseries de fotos de stock encadenadas: agrupa de
+   mas, que es el lado seguro).
+3. `python -m entrenamiento dividir` (sin cambios) con semilla 20261027:
+   huella `b91057db6870`. Por la serie de 15, test de `sin_senales` queda con
+   19 fotos y train con 22.
+
+| Clase | train | val | test |
+|---|---|---|---|
+| linea_beau | 33 | 7 | 9 |
+| linea_oscura | 33 | 7 | 7 |
+| acropaquia | 21 | 4 | 4 |
+| linea_mees | 12 | 3 | 3 |
+| onicolisis | 33 | 9 | 8 |
+| una_terry | 22 | 6 | 7 |
+| mancha_blanca | 22 | 5 | 7 |
+| sin_senales | 22 | 8 | 19 |
+| otra | 26 | 6 | 7 |
+
+### Busqueda de hiperparametros
+
+`python -m entrenamiento.busqueda_clinica buscar`: CV de 5 pliegues
+estratificada y agrupada por serie sobre train+val (279 fotos); metricas sobre
+las predicciones fuera de pliegue (OOF). La epoca se elige con la curva media de
+log loss OOF. Base congelada con embeddings cacheados; 44 corridas, tabla
+completa en `busqueda.md` de la salida. Resumen:
+
+| Etapa | Que se vario | Mejor F1 macro OOF | Rango |
+|---|---|---|---|
+| 1 | 5 arquitecturas x {0, 8} vistas aumentadas | MobileNetV3Small, 0 vistas: 0,632 | 0,577 (MobileNetV3Large, 0) - 0,632 |
+| 2 | LR {1e-3, 3e-4} x dropout {0,2, 0,5} x suavizado {0, 0,1} x pesos de clase, sobre MobileNetV3Small con 0 y 8 vistas | dropout 0,5, suavizado 0,1, pesos, LR 1e-3, 0 vistas, 38 epocas: **0,665** | 0,607 - 0,665 |
+| 3 | Fine-tuning: ultimas {20, 40} capas x LR {1e-5, 1e-4}, hasta 15 epocas | 0,665 (20 capas, 1e-5, 1 epoca) | 0,641 - 0,665 |
+
+Ganadora: **MobileNetV3Small, cabeza Dropout 0,5 + Dense, base congelada, sin
+aumento, Adam 1e-3, suavizado 0,1, pesos de clase, 38 epocas**. El fine-tuning
+no se usa: gano por 0,0002, dentro del ruido (`margen_fine_tuning`). Las
+diferencias entre arquitecturas (<= 0,055) tambien son del orden del error
+estandar del F1 con 279 fotos (~0,03): la eleccion es razonable, no un hecho.
+
+### Calibracion y umbrales (en OOF, nunca en test)
+
+- Temperatura t = 0,745 (el modelo estaba **subconfiado**, efecto del
+  suavizado y el dropout). ECE OOF 0,121 -> 0,046; en test 0,163 -> 0,130.
+  La temperatura va dentro de los pesos de la Dense (W/t, b/t): el `.tflite`
+  sigue siendo base + Dense softmax.
+- `umbral_no_concluyente` = 0,687 (precision OOF de las aceptadas 0,905,
+  cobertura OOF 0,45). `umbral_sin_senales` = 0,687: en OOF ningun falso
+  `sin_senales` supero el umbral general.
+
+### Resultados en test (71 fotos, una sola lectura)
+
+Modelo entregado: `.tflite` **float16**, mismas predicciones que Keras en test
+(F1 identico; max|dif| de probabilidad 0,022).
+
+| Metrica | Valor |
+|---|---|
+| Accuracy | 0,718 (IC 95 % Wilson 0,605-0,810) |
+| Precision macro | 0,761 |
+| Recall macro | 0,675 |
+| F1 macro | 0,678 |
+| F1 macro OOF (referencia) | 0,665 |
+
+| Clase | n | Precision | Recall | F1 |
+|---|---|---|---|---|
+| linea_beau | 9 | 0,60 | 0,67 | 0,63 |
+| linea_oscura | 7 | 0,70 | 1,00 | 0,82 |
+| acropaquia | 4 | 0,67 | 0,50 | 0,57 |
+| linea_mees | 3 | 1,00 | 0,33 | 0,50 |
+| onicolisis | 8 | 1,00 | 0,50 | 0,67 |
+| una_terry | 7 | 0,75 | 0,86 | 0,80 |
+| mancha_blanca | 7 | 0,50 | 0,86 | 0,63 |
+| sin_senales | 19 | 0,83 | 0,79 | 0,81 |
+| otra | 7 | 0,80 | 0,57 | 0,67 |
+
+Matriz de confusion (filas = real, columnas = predicha, en el orden de la
+tabla): `[[6,1,0,0,0,1,0,1,0], [0,7,0,0,0,0,0,0,0], [1,0,2,0,0,0,0,1,0],
+[1,0,0,1,0,1,0,0,0], [1,1,0,0,4,0,0,1,1], [0,1,0,0,0,6,0,0,0],
+[1,0,0,0,0,0,6,0,0], [0,0,1,0,0,0,3,15,0], [0,0,0,0,0,0,3,0,4]]`. Sin
+abstencion, 3 fotos con senal (una de ellas `acropaquia`) salen como
+`sin_senales`.
+
+**Incidente de cuantizacion (declarado).** La seleccion automatica eligio
+primero `int8` dinamica: paso el criterio de entonces sobre train+val (F1 -0,004,
+argmax igual en 99,6 %) pero movia probabilidades hasta 0,685, y en test su F1
+cayo a 0,599. Se corrigio el criterio (`max_dif_probabilidad = 0.05`, con test
+en `tests/test_busqueda_clinica.py`) y se entrega float16, que es el mismo
+modelo validado. Sus metricas de clasificacion salen de la misma y unica
+lectura de test, pero **las de abstencion (M1-M4, cobertura) se calcularon
+sobre las probabilidades int8** y estan pendientes para float16: con int8
+dieron M1 = 0, M2 = 0, M3 = 1,00 (29 aceptadas), M4 = 0,35. Medirlas para
+float16 exige leer test otra vez con el mismo modelo; decide el usuario.
+Ademas, dos pruebas de humo del pipeline (un modelo de 3 epocas, F1 0,27)
+evaluaron en test antes de la corrida real; ninguna decision salio de ellas.
+
+### Tamano y latencia (CPU Apple M1)
+
+| Variante | MB | Latencia mediana (1 una) | max\|dif\| vs Keras (train+val) |
+|---|---|---|---|
+| int8 dinamica | 1,15 | 1,71 ms | 0,685 (rechazada) |
+| **float16** | **1,97** | 2,07 ms | 0,012 |
+| float32 | 3,79 | 2,07 ms | 9e-6 |
+
+944.313 parametros. Con `clinico.cargar` del servicio: carga, 9 probabilidades
+que suman 1 y p50 2,06 ms / p95 2,22 ms por una
+(`tests/test_modelo_clinico.py`, venv del API).
+
+### Reproducir
+
+```bash
+# Python 3.14: venv en services/vision/.venv (ignorado), ver requirements.txt
+python -I services/vision/entrenamiento/preparar_clinico.py --kaggle FUERA/Nail/Nail --salida FUERA/prep
+cd services/vision
+.venv/bin/python -m entrenamiento.busqueda_clinica buscar --dataset FUERA/prep --series FUERA/prep/series.csv --salida FUERA/art
+.venv/bin/python -m entrenamiento.busqueda_clinica final  --dataset FUERA/prep --series FUERA/prep/series.csv --salida FUERA/art
+cp FUERA/art/estado_clinico/exportado/{modelo.tflite,etiquetas.json,metadatos.json} ../api/models/estado_clinico/
+```
+
+`series.csv` sha256 `5e450084…`. Determinismo comprobado: las dos
+ejecuciones de `final` de la prueba de humo dieron metricas identicas, el F1
+OOF recalculado en `final` (0,66513) es identico al de la busqueda, y el
+float16 reconvertido desde el SavedModel guardado reprodujo el mismo tamano
+(1.974.932 bytes) y la misma fidelidad (max|dif| 0,0119). El `.tflite`
+(1,97 MB) **no se versiona**: `services/api/.gitignore` excluye
+`models/estado_clinico/` y el dataset no tiene licencia aclarada.
+
+### Limites conocidos
+
+- **Pocos datos.** 3 a 19 fotos por clase en test: el recall de
+  `linea_mees` (n = 3) o `acropaquia` (n = 4) es una anecdota. **`linea_mees`
+  (15 fotos en train+val) y `acropaquia` (25) no son fiables**; se proponen
+  como candidatas a quitarse de la lista o a marcarse como no fiables hasta
+  tener mas fotos (decision del dueno).
+- **Distribucion distinta del producto**: recortes web de una sola una, casi
+  sin esmalte, frente a recortes de celular de 224 px.
+- **Atajos posibles**: la resolucion y el estilo de la foto dependen de la
+  clase (seccion 3). El modelo puede usar "foto chica y borrosa" como senal.
+- **Sesgo de tono de piel** (seccion 5): no se pudo medir por subgrupo porque
+  no hay anotacion Monk.
+- **Fuga residual**: las series de embeddings no detectan dos fotos distintas
+  de la misma persona.
+- `otra` mezcla patologias con esmalte y nail art (seccion 4).

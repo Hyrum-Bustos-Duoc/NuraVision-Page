@@ -16,6 +16,9 @@ TensorFlow todavia **no se ha ejecutado nunca** porque no hay dataset propio.
 Los hiperparametros de `config.toml` marcados "a validar" no estan probados.
 
 Datasets documentados y sus particiones: `datasets/` (una ficha por dataset).
+`estado_clinico` tiene modelo entrenado desde el 2026-11-17 (F1 macro test
+0,678, 71 fotos); metodologia, resultados y limites en la seccion 11 de la
+FICHA de `kaggle_nail`.
 `datasets/kaggle_nail/` (`Nail.zip`) es externo, de clases clinicas: no entrena
 `forma` ni `estado`, y desde el 2026-11-12 entrena `estado_clinico`, solo con la
 particion por series (seccion 1) y con sus carpetas renombradas a los ids de la
@@ -75,7 +78,10 @@ acropaquia/clubbing (12).jpg,s7
   (dHash de 64 bits a distancia <= 4). **No asigna series**: el hash junta
   fotos distintas y se le escapan recortes grandes, asi que cada par se revisa
   a mano. La consola solo da el numero de pares; la lista va a un CSV que debe
-  quedar fuera del repositorio:
+  quedar fuera del repositorio. Para `Nail.zip`, `entrenamiento/preparar_clinico.py`
+  renombra las carpetas y escribe el archivo de series con similitud de
+  embeddings (FICHA de `kaggle_nail`, seccion 11), que alli funciona mejor que
+  dHash:
 
 ```bash
 python -I services/vision/entrenamiento/casi_duplicados.py --dataset DIR/estado_clinico --salida ~/fuera/pares.csv
@@ -212,6 +218,7 @@ repositorio. La consola solo muestra conteos y metricas.
 | Aumentos geometricos y de contraste | Cambiar tono o saturacion, voltear en vertical | El color del esmalte y de la piel es senal, o una fuente de sesgo. Las fotos reales se toman con los dedos hacia arriba |
 | Fine-tuning de las ultimas 20 capas, con BatchNorm congelada y LR 1e-5 | Descongelar toda la base | Con pocos datos, descongelar todo destruye los pesos de ImageNet. 20 es el valor del ejemplo oficial de Keras y se usa el mismo en ambas arquitecturas para que la comparacion sea justa |
 | Umbral calibrado en validacion | Umbral fijo (0.5 o 0.7) y temperature scaling | El softmax no es una probabilidad calibrada, asi que un umbral fijo no significa nada. Temperature scaling agrega una etapa, pero el umbral ya da la salida de escape. Se reconsiderara si la cobertura resulta mala |
+| `estado_clinico` (2026-11-17): hiperparametros, temperatura y umbrales con CV de 5 pliegues por serie sobre train+val (predicciones OOF), en `entrenamiento/busqueda_clinica.py`. La temperatura va dentro de los pesos de la Dense | Elegir con la val fija; umbral sin temperature scaling | Con 350 fotos la val fija tiene 3-9 fotos por clase: elegir con ella es elegir ruido. Aqui la confianza se muestra a la persona, asi que se calibra (ECE OOF 0,121 -> 0,046) sin agregar capa. `forma` y `estado` siguen con `comparar`. Detalle en la FICHA de `kaggle_nail`, seccion 11 |
 | Elegir el ganador por validacion | Elegirlo por test | Si se elige por test y se reporta test, el rendimiento queda sobreestimado |
 | Pillow para validar y normalizar | OpenCV | Pillow ya cubre la decodificacion, el EXIF y el pad. Agregar OpenCV seria una dependencia sin efecto |
 | Determinismo: una semilla para todo, `enable_op_determinism` y versiones fijadas | Dejar cuDNN sin determinismo | Sin determinismo, dos ejecuciones dan modelos distintos y QA no puede reproducir nada. El costo es que el entrenamiento en GPU es mas lento |

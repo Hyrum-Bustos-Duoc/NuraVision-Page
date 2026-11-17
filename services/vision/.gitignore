@@ -5,3 +5,5 @@ dataset/
 artifacts/
 __pycache__/
 .pytest_cache/
+# Entorno local de entrenamiento (TensorFlow); se recrea con requirements.txt.
+.venv/
