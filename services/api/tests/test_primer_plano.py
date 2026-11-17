@@ -12,17 +12,21 @@ import dataclasses
 import hashlib
 import json
 import logging
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.main import RUTA_CLINICO, RUTA_MODELO, RUTA_TEXTOS_CLINICOS
+from app import main
+from app.main import RUTA_CLINICO, RUTA_MODELO, RUTA_TEXTOS_CLINICOS, app
 from app.vision import clinico, unas
 from app.vision.esquemas import Modelo, ResultadoAnalisis, Una
 from app.vision.unas import AnalizadorUnas, recorte_primer_plano
-from tests.test_clinico import DetectorFalso, _cargar_imagen_del_entrenamiento, falso, probs
+from tests.test_clinico import ETIQUETAS, DetectorFalso, _cargar_imagen_del_entrenamiento, _carpeta, falso, probs
+from tests.test_clinico_entradas_invalidas import _InterpreteFalso
 
 modelo_presente = RUTA_MODELO.is_file()
 REFERENCIA = clinico.ReferenciaUna(media=np.array([1.0, 0.0, 0.0]), umbral=0.7)
@@ -240,3 +244,75 @@ def test_con_el_modelo_real_lo_que_no_es_una_sale_sin_mano(nombre):
 def test_el_embedding_real_es_determinista():
     x = clinico.entrada(recorte_primer_plano(_no_unas()["cara"]))
     np.testing.assert_array_equal(clasificador_real.embeber(x), clasificador_real.embeber(x))
+
+
+# --- arranque: /salud y aviso de degradacion ---------------------------------
+# QA 2026-11-17: sin la referencia (git-ignorada, falta en todo clon) primer_plano
+# se apagaba sin aviso visible. Se recorre la carga real (cargar_opcional ->
+# _interprete -> _referencia) con un interprete falso que si expone embedding.
+
+
+class _InterpreteConEmbedding(_InterpreteFalso):
+    def __init__(self):
+        super().__init__(np.float32, np.float32)
+
+    def get_tensor_details(self):
+        return [{"name": "modelo/avg_pool/Mean", "shape": np.array([1, 3]), "index": 2}]
+
+    def set_tensor(self, _indice, _valor):
+        pass
+
+    def invoke(self):
+        pass
+
+    def get_tensor(self, indice):
+        return np.array([[1.0, 0.0, 0.0]]) if indice == 2 else np.full((1, len(ETIQUETAS)), 1 / len(ETIQUETAS))
+
+
+def _referencia_valida(carpeta) -> str:
+    sha = hashlib.sha256((carpeta / "modelo.tflite").read_bytes()).hexdigest()
+    return json.dumps({"modelo_sha256": sha, "media": [2.0, 0.0, 0.0], "umbral_coseno": 0.7})
+
+
+def _salud(monkeypatch, tmp_path, caplog, referencia) -> dict:
+    """referencia: contenido del archivo, None para no crearlo o una funcion de la carpeta."""
+    carpeta = _carpeta(tmp_path)
+    if callable(referencia):
+        referencia = referencia(carpeta)
+    if referencia is not None:
+        (carpeta / clinico.ARCHIVO_REFERENCIA).write_text(referencia)
+    monkeypatch.setattr(clinico, "Interpreter", _InterpreteConEmbedding())
+    monkeypatch.setattr(main, "RUTA_CLINICO", carpeta)
+    # Sin detector de manos real: /salud solo necesita saber que el analizador existe.
+    monkeypatch.setattr(main, "AnalizadorUnas", lambda _m, _s, c: SimpleNamespace(clasifica=c is not None, mide_forma=False))
+    with caplog.at_level(logging.WARNING, logger="app.main"), TestClient(app) as c:
+        cuerpo = c.get("/salud").json()
+    assert cuerpo["clasificador_clinico_cargado"] is True  # degradado, no apagado entero
+    return cuerpo
+
+
+def _avisos_de_primer_plano(caplog) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.name == "app.main" and "primer plano desactivado" in r.getMessage()]
+
+
+def test_con_referencia_valida_salud_dice_primer_plano_activo_y_no_avisa(monkeypatch, tmp_path, caplog):
+    cuerpo = _salud(monkeypatch, tmp_path, caplog, _referencia_valida)
+    assert cuerpo["primer_plano_activo"] is True
+    assert _avisos_de_primer_plano(caplog) == []
+
+
+def test_sin_referencia_salud_dice_primer_plano_inactivo_y_avisa_en_warning(monkeypatch, tmp_path, caplog):
+    cuerpo = _salud(monkeypatch, tmp_path, caplog, None)
+    assert cuerpo["primer_plano_activo"] is False
+    assert [r.levelno for r in _avisos_de_primer_plano(caplog)] == [logging.WARNING]
+
+
+@pytest.mark.parametrize(
+    "contenido",
+    ["{no es json", "[]", json.dumps({"modelo_sha256": "0" * 64, "media": [1.0, 0.0, 0.0], "umbral_coseno": 0.7})],
+    ids=["json_roto", "lista", "otro_modelo"],
+)
+def test_con_referencia_corrupta_salud_dice_primer_plano_inactivo_y_avisa_en_warning(monkeypatch, tmp_path, caplog, contenido):
+    cuerpo = _salud(monkeypatch, tmp_path, caplog, contenido)
+    assert cuerpo["primer_plano_activo"] is False
+    assert [r.levelno for r in _avisos_de_primer_plano(caplog)] == [logging.WARNING]

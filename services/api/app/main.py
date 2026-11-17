@@ -35,14 +35,25 @@ async def ciclo_de_vida(app: FastAPI):
     # El modelo se carga una sola vez, al arrancar, no en cada peticion.
     app.state.analizador = None
     app.state.motivo_sin_modelo = ""
+    clasificador = clinico.cargar_opcional(RUTA_CLINICO, RUTA_TEXTOS_CLINICOS)
     try:
-        app.state.analizador = AnalizadorUnas(
-            RUTA_MODELO, RUTA_SEGMENTADOR, clinico.cargar_opcional(RUTA_CLINICO, RUTA_TEXTOS_CLINICOS)
-        )
+        app.state.analizador = AnalizadorUnas(RUTA_MODELO, RUTA_SEGMENTADOR, clasificador)
     except ModeloNoDisponible as exc:
         # La API arranca igual: /salud lo informa y /vision/analizar responde 503.
         log.error("Sin detector de manos: %s", exc)
         app.state.motivo_sin_modelo = MOTIVO_SIN_MODELO
+    # Misma condicion que clinico.parece_una(): sin embedding o sin referencia la
+    # puerta dice siempre que no y toda foto sin mano sale sin_mano. Es silencioso
+    # (QA 2026-11-17: la referencia esta git-ignorada, falta en todo clon nuevo),
+    # por eso va a /salud y a WARNING, que el nivel por defecto de uvicorn si muestra.
+    con_puerta = clasificador is not None and clasificador.embeber is not None and clasificador.referencia is not None
+    if clasificador is not None and not con_puerta:
+        log.warning(
+            "Analisis de primer plano desactivado: el modelo no expone embedding o falta o no es valida %s."
+            " Las fotos sin mano saldran sin_mano",
+            RUTA_CLINICO / clinico.ARCHIVO_REFERENCIA,
+        )
+    app.state.primer_plano_activo = app.state.analizador is not None and con_puerta
     yield
 
 
@@ -80,4 +91,5 @@ def salud(request: Request) -> dict:
         "modelo_cargado": analizador is not None,
         "segmentador_cargado": analizador is not None and analizador.mide_forma,
         "clasificador_clinico_cargado": analizador is not None and analizador.clasifica,
+        "primer_plano_activo": request.app.state.primer_plano_activo,
     }
