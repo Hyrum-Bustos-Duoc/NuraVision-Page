@@ -54,6 +54,7 @@ function una(clinico: Clinico | undefined, dedo: Dedo | null = 'indice', mano: n
     punta: null,
     forma_fiable: false,
     contorno: [],
+    calidad: { brillo: 128, lado_origen: 400 },
     ...(clinico ? { clinico } : {}),
   }
 }
@@ -168,7 +169,7 @@ describe('ReporteClinico: contenido', () => {
     expect(texto).not.toMatch(/0[.,]0[46]/)
   })
 
-  it.each<MotivoClinico>(['confianza_baja', 'clase_otra', 'clasificacion_fallida'])(
+  it.each<MotivoClinico>(['foto_insuficiente', 'confianza_baja', 'clase_otra', 'clase_no_fiable', 'clasificacion_fallida'])(
     'no concluyente por %s: su mensaje, sin clase ni alternativas',
     async (motivo) => {
       const panel = await abrir(resultado([una(nc(motivo)), una(ok('linea_beau'), 'medio')]))
@@ -178,6 +179,35 @@ describe('ReporteClinico: contenido', () => {
       Object.values(NOMBRES).forEach((n) => expect(primera).not.toHaveTextContent(n))
     },
   )
+
+  it('senal_inespecifica: reporte genérico sin asociaciones, alternativas, número ni campos vacíos', async () => {
+    const inespecifica: Clinico = {
+      estado: 'senal_inespecifica',
+      motivo: null,
+      clase: null,
+      confianza: null,
+      alternativas: [],
+      reporte: {
+        nombre: 'Señal sin identificar',
+        descripcion: 'Se ve alguna señal, pero no se puede decir cuál.',
+        asociaciones: [],
+        recomendacion: 'Muestra la uña a un profesional.',
+      },
+      p_alguna_senal: 0.734,
+    }
+    const panel = await abrir(resultado([una(inespecifica), una(nc('confianza_baja'), 'medio')]))
+    const [tarjeta] = within(panel).getAllByTestId('clinico-una')
+    expect(tarjeta).toHaveTextContent('Señal sin identificar')
+    expect(tarjeta).toHaveTextContent('Se ve alguna señal, pero no se puede decir cuál.')
+    expect(tarjeta).toHaveTextContent('Muestra la uña a un profesional.')
+    expect(tarjeta).not.toHaveTextContent('Se ha asociado a')
+    expect(tarjeta).not.toHaveTextContent('Otras señales parecidas')
+    expect(tarjeta).not.toHaveTextContent(/73|%|null|undefined/)
+    Object.values(NOMBRES).forEach((n) => expect(tarjeta).not.toHaveTextContent(n))
+    expect(within(panel).getByTestId('resumen-clinico')).toHaveTextContent(
+      'De 2 uñas, 1 muestra una señal para consultar, 0 no muestran señales reconocidas y 1 no fue concluyente.',
+    )
+  })
 
   it('un motivo desconocido muestra el mensaje genérico y no falla', async () => {
     const raro: Clinico = JSON.parse(

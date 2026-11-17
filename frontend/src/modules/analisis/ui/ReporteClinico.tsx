@@ -76,7 +76,10 @@ export function ReporteClinico({ resultado }: { resultado: ResultadoAnalisis }) 
                     >
                       {/* Sin dedo (primer_plano) no hay rotulo: mejor nada que una etiqueta vacia. */}
                       {rotulo && <p className="mb-1 text-xs uppercase tracking-wide text-muted">{rotulo}</p>}
-                      {c.estado === 'ok' ? (
+                      {/* senal_inespecifica comparte el bloque: clinicoDe la deja sin
+                          asociaciones ni alternativas, asi que solo pinta el reporte
+                          generico. Un estado desconocido nunca entra aqui. */}
+                      {c.estado === 'ok' || c.estado === 'senal_inespecifica' ? (
                         <div className="space-y-2 text-sm text-ink">
                           <p className="font-serif text-[20px] font-light">{c.reporte.nombre}</p>
                           <p>{c.reporte.descripcion}</p>

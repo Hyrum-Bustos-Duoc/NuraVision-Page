@@ -59,7 +59,7 @@ function esTexto(v: unknown): v is string {
   return typeof v === 'string' && v.trim() !== ''
 }
 
-function esObjeto(v: unknown): v is Record<string, unknown> {
+export function esObjeto(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
@@ -92,8 +92,8 @@ function alternativasValidas(alternativas: unknown, clase: string): boolean {
 
 /**
  * Unico punto que resuelve la ausencia o rotura de `clinico`. La UI no usa `?.` sobre
- * el y ramifica solo por estado === 'ok', asi que aqui se comprueba la forma completa
- * de un `ok`: clase de texto, reporte con nombre, descripcion y recomendacion de texto
+ * el y ramifica solo por estado ('ok' y 'senal_inespecifica' pintan reporte), asi que
+ * aqui se comprueba la forma completa de un `ok`: clase de texto, reporte con nombre, descripcion y recomendacion de texto
  * no vacio y asociaciones como lista de textos, y alternativas como lista de objetos
  * con clase, nombre de texto y confianza numerica, sin sin_senales, otra ni la clase
  * predicha. Cualquier fallo da CLINICO_FALLIDO. Las comprobaciones parecen redundantes
@@ -103,12 +103,21 @@ function alternativasValidas(alternativas: unknown, clase: string): boolean {
  * Despues de validar aplica CLASES_OCULTAS: una clase oculta da CLINICO_OCULTO y una
  * alternativa oculta se quita.
  *
+ * Una `senal_inespecifica` se reconstruye con solo su reporte y p_alguna_senal: si el
+ * servicio colara una clase o alternativas, no llegan a la UI. Un reporte roto o con
+ * asociaciones (delatarian la senal) da CLINICO_FALLIDO.
+ *
  * Un `no_concluyente` se devuelve tal cual: la UI solo lee su motivo, y un motivo
  * desconocido ya tiene mensaje generico.
  */
 export function clinicoDe(una: UnaDetectada): Clinico {
   const c = una.clinico
   if (!c) return CLINICO_NO_DISPONIBLE
+  if (c.estado === 'senal_inespecifica') {
+    if (!reporteValido(c.reporte) || c.reporte.asociaciones.length > 0) return CLINICO_FALLIDO
+    const { reporte, p_alguna_senal } = c
+    return { estado: 'senal_inespecifica', motivo: null, clase: null, confianza: null, alternativas: [], reporte, p_alguna_senal }
+  }
   if (c.estado !== 'ok') return c
   const valido =
     typeof c.clase === 'string' && reporteValido(c.reporte) && alternativasValidas(c.alternativas, c.clase)
@@ -128,10 +137,15 @@ export function mensajeMotivoClinico(motivo: string): string {
   switch (motivo) {
     case 'modelo_no_entrenado':
       return 'El reporte clínico aún no está disponible.'
+    case 'foto_insuficiente':
+      return 'La foto de esta uña está muy oscura o se ve muy pequeña para revisarla. Toma otra foto con buena luz, acercando la cámara a la uña.'
     case 'confianza_baja':
       return 'No pudimos sacar una conclusión con suficiente seguridad para esta uña. Prueba con una foto más nítida y con buena luz.'
     case 'clase_otra':
       return 'Lo que vemos en esta uña no coincide con las señales que sabemos reconocer. Si notas algo que te preocupa, consulta con un profesional.'
+    // No dice que hubo una senal ni cual: solo que el sistema no puede afirmar nada.
+    case 'clase_no_fiable':
+      return 'Con esta foto no podemos afirmar nada sobre esta uña. Si notas algo que te preocupa, consulta con un profesional.'
     case 'clasificacion_fallida':
       return 'No pudimos revisar esta uña. Intenta analizar la foto de nuevo.'
     default:
@@ -143,11 +157,14 @@ export interface ResumenMano {
   /** null en primer_plano: la una no pertenece a una mano detectada. */
   mano: number | null
   total: number
-  /** ok con una clase distinta de sin_senales. */
+  /**
+   * ok con una clase distinta de sin_senales, o senal_inespecifica: en los dos casos
+   * hay algo que conviene consultar, aunque en el segundo no se sepa que.
+   */
   conSenal: number
   /** ok con sin_senales. */
   sinSenales: number
-  /** Todo lo que no es estado === 'ok', incluido un estado desconocido. */
+  /** Todo lo que no es ok ni senal_inespecifica, incluido un estado desconocido. */
   noConcluyentes: number
 }
 
@@ -170,7 +187,8 @@ export function resumenClinico(unas: UnaDetectada[]): ResumenClinico {
     const c = clinicos[i]
     const r = porMano.get(una.mano) ?? { mano: una.mano, total: 0, conSenal: 0, sinSenales: 0, noConcluyentes: 0 }
     r.total++
-    if (c.estado !== 'ok') r.noConcluyentes++
+    if (c.estado === 'senal_inespecifica') r.conSenal++
+    else if (c.estado !== 'ok') r.noConcluyentes++
     else if (c.clase === 'sin_senales') r.sinSenales++
     else r.conSenal++
     porMano.set(una.mano, r)

@@ -13,6 +13,7 @@ function una(mano: number | null, clinico?: Clinico): UnaDetectada {
     punta: null,
     forma_fiable: false,
     contorno: [],
+    calidad: { brillo: 128, lado_origen: 400 },
     ...(clinico ? { clinico } : {}),
   }
 }
@@ -33,6 +34,12 @@ function ok(clase: ClaseClinica): Extract<Clinico, { estado: 'ok' }> {
 
 function nc(motivo: MotivoClinico): Clinico {
   return { estado: 'no_concluyente', motivo, clase: null, confianza: null, alternativas: [], reporte: null }
+}
+
+const REPORTE_GENERICO = { nombre: 'Señal sin identificar', descripcion: 'd', asociaciones: [], recomendacion: 'r' }
+
+function inespecifica(): Clinico {
+  return { estado: 'senal_inespecifica', motivo: null, clase: null, confianza: null, alternativas: [], reporte: REPORTE_GENERICO, p_alguna_senal: 0.71 }
 }
 
 describe('clinicoDe', () => {
@@ -88,6 +95,26 @@ describe('clinicoDe', () => {
     expect(original).toHaveLength(2)
   })
 
+  it('senal_inespecifica se devuelve con su reporte y sin clase, motivo ni alternativas', () => {
+    expect(clinicoDe(una(1, inespecifica()))).toEqual(inespecifica())
+  })
+
+  it('senal_inespecifica que cuela clase o alternativas (servicio roto) las pierde', () => {
+    const colada: Clinico = JSON.parse(
+      JSON.stringify({ ...inespecifica(), motivo: 'clase_no_fiable', clase: 'linea_beau', confianza: 0.4, alternativas: [{ clase: 'onicolisis', nombre: 'Onicólisis', confianza: 0.1 }] }),
+    )
+    expect(clinicoDe(una(1, colada))).toEqual(inespecifica())
+  })
+
+  it.each([
+    ['sin reporte', { reporte: null }],
+    ['con asociaciones (delatarian la señal)', { reporte: { ...REPORTE_GENERICO, asociaciones: ['Psoriasis'] } }],
+    ['con nombre vacio', { reporte: { ...REPORTE_GENERICO, nombre: ' ' } }],
+  ])('senal_inespecifica %s cae a clasificacion_fallida', (_, rotura) => {
+    const roto: Clinico = JSON.parse(JSON.stringify({ ...inespecifica(), ...rotura }))
+    expect(clinicoDe(una(1, roto))).toMatchObject({ estado: 'no_concluyente', motivo: 'clasificacion_fallida', reporte: null })
+  })
+
   it('un ok roto cuenta como no concluyente en el resumen', () => {
     const roto: Clinico = JSON.parse(JSON.stringify({ ...ok('linea_beau'), reporte: null }))
     expect(resumenClinico([una(1, roto), una(1, ok('linea_oscura'))])).toEqual({
@@ -110,12 +137,28 @@ describe('avisoClinicoDe', () => {
 describe('mensajeMotivoClinico', () => {
   const generico = mensajeMotivoClinico('motivo_que_no_existe')
 
-  it.each<MotivoClinico>(['modelo_no_entrenado', 'confianza_baja', 'clase_otra', 'clasificacion_fallida'])(
-    '%s tiene un mensaje propio, distinto del genérico',
-    (motivo) => {
-      expect(mensajeMotivoClinico(motivo)).not.toBe(generico)
-    },
-  )
+  it.each<MotivoClinico>([
+    'modelo_no_entrenado',
+    'foto_insuficiente',
+    'confianza_baja',
+    'clase_otra',
+    'clase_no_fiable',
+    'clasificacion_fallida',
+  ])('%s tiene un mensaje propio, distinto del genérico', (motivo) => {
+    expect(mensajeMotivoClinico(motivo)).not.toBe(generico)
+  })
+
+  it('foto_insuficiente pide otra foto con más luz o más cerca', () => {
+    expect(mensajeMotivoClinico('foto_insuficiente')).toMatch(/oscura/)
+    expect(mensajeMotivoClinico('foto_insuficiente')).toMatch(/pequeña/)
+    expect(mensajeMotivoClinico('foto_insuficiente')).toMatch(/otra foto/)
+  })
+
+  it('clase_no_fiable no nombra ninguna señal ni insinúa que la hubo', () => {
+    const m = mensajeMotivoClinico('clase_no_fiable')
+    expect(m).toMatch(/no podemos afirmar nada/i)
+    expect(m).not.toMatch(/mees|acropaquia|señal/i)
+  })
 
   it('un motivo desconocido cae al mensaje genérico', () => {
     expect(generico).toMatch(/no pudimos obtener un resultado concluyente/i)
@@ -159,6 +202,13 @@ describe('resumenClinico', () => {
     expect(resumenClinico([una(1, ok('linea_mees')), una(1, ok('acropaquia'))])).toEqual({
       disponible: true,
       manos: [{ mano: 1, total: 2, conSenal: 0, sinSenales: 0, noConcluyentes: 2 }],
+    })
+  })
+
+  it('senal_inespecifica cuenta como señal para consultar', () => {
+    expect(resumenClinico([una(1, inespecifica()), una(1, nc('foto_insuficiente'))])).toEqual({
+      disponible: true,
+      manos: [{ mano: 1, total: 2, conSenal: 1, sinSenales: 0, noConcluyentes: 1 }],
     })
   })
 

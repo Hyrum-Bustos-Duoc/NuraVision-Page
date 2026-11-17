@@ -3,6 +3,7 @@ import {
   type CodigoErrorAnalisis,
   type ResultadoAnalisis,
 } from '../domain/analisis.types'
+import { esObjeto } from '../domain/clinico'
 
 /**
  * Direccion del servicio de vision (services/api). En local es uvicorn en el
@@ -75,13 +76,39 @@ export async function analizarFoto(foto: File, senal?: AbortSignal): Promise<Res
   }
 
   if (!respuesta.ok) throw errorDe(await codigoDeRespuesta(respuesta))
+  let datos: unknown
   try {
-    return (await respuesta.json()) as ResultadoAnalisis
+    datos = await respuesta.json()
   } catch (error) {
     // El cuerpo tambien se aborta: cambiar de foto mientras llega el JSON.
     if (error instanceof DOMException && error.name === 'AbortError') throw errorDe('cancelado')
     throw errorDe('servicio_no_disponible')
   }
+  // Mismo trato que un cuerpo ilegible: el servicio no cumple su contrato.
+  if (!unasConCalidad(datos)) throw errorDe('servicio_no_disponible')
+  return datos as ResultadoAnalisis
+}
+
+/**
+ * `calidad` es obligatoria en cada una desde que el servicio la mide siempre
+ * (esquemas.py, CalidadUna). Una una sin ella, o con valores fuera de rango, es un
+ * servicio que no habla este contrato. El resto del cuerpo no se valida aqui: el
+ * bloque clinico lo valida clinicoDe.
+ */
+function unasConCalidad(datos: unknown): boolean {
+  return esObjeto(datos) && Array.isArray(datos.unas) && datos.unas.every((u) => esObjeto(u) && calidadValida(u.calidad))
+}
+
+function calidadValida(c: unknown): boolean {
+  return (
+    esObjeto(c) &&
+    typeof c.brillo === 'number' &&
+    c.brillo >= 0 &&
+    c.brillo <= 255 &&
+    typeof c.lado_origen === 'number' &&
+    Number.isInteger(c.lado_origen) &&
+    c.lado_origen >= 0
+  )
 }
 
 /** Texto para el estado "no concluyente": que paso y que hacer. */

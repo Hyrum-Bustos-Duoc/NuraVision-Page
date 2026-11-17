@@ -21,6 +21,7 @@ function una(forma: Forma | null, fiable = forma !== null): UnaDetectada {
     aspecto: forma ? 1.1 : null,
     punta: forma ? 0.5 : null,
     forma_fiable: forma ? fiable : false,
+    calidad: { brillo: 128, lado_origen: 400 },
     contorno: forma
       ? [
           [0.3, 0.3],

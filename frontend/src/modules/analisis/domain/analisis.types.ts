@@ -43,10 +43,26 @@ export interface UnaDetectada {
   /** Contorno de la una en coordenadas 0..1 del recorte. Vacio si no hay forma. */
   contorno: [number, number][]
   /**
+   * Siempre presente, tambien sin clasificador clinico. analisis.api.ts rechaza la
+   * respuesta si falta o esta fuera de rango, asi que aqui ya llega valida.
+   */
+  calidad: CalidadUna
+  /**
    * Opcional solo para tolerar un servicio anterior al reporte clinico, que no lo
    * envia. No se lee directo: se pasa por clinicoDe(), que resuelve la ausencia.
    */
   clinico?: Clinico
+}
+
+/**
+ * Medicion (no interpretacion) del recorte que ve el clasificador clinico: lo que el
+ * servicio usa para decidir foto_insuficiente. No se muestra en la UI.
+ */
+export interface CalidadUna {
+  /** Media del gris del recorte, 0..255. */
+  brillo: number
+  /** Lado en pixeles de la zona de la foto de la que sale el recorte. Entero >= 0. */
+  lado_origen: number
 }
 
 /**
@@ -66,8 +82,12 @@ export type ClaseClinica =
 
 export type MotivoClinico =
   | 'modelo_no_entrenado'
+  /** Recorte demasiado oscuro o pequeno: el servicio no llega a preguntar al modelo. */
+  | 'foto_insuficiente'
   | 'confianza_baja'
   | 'clase_otra'
+  /** La clase predicha es una que el modelo no nombra. El motivo no dice cual. */
+  | 'clase_no_fiable'
   | 'clasificacion_fallida'
 
 export interface ReporteClinico {
@@ -86,8 +106,9 @@ export interface AlternativaClinica {
 
 /**
  * Union discriminada que reproduce las invariantes del servicio: sin comprobar
- * estado === 'ok' el compilador no deja leer reporte ni clase. En no concluyente no
- * viaja ninguna suposicion, porque exponerla anularia la abstencion.
+ * estado === 'ok' (o 'senal_inespecifica') el compilador no deja leer reporte ni
+ * clase. En no concluyente y en senal_inespecifica no viaja ninguna suposicion de
+ * clase, porque exponerla anularia la abstencion.
  */
 export type Clinico =
   | {
@@ -114,6 +135,22 @@ export type Clinico =
       confianza: null
       alternativas: []
       reporte: null
+    }
+  | {
+      /**
+       * El modelo no puede nombrar una senal, pero la suma de las 7 supera su umbral:
+       * se dice que se ve alguna, sin decir cual. Sin motivo (delataria si la clase era
+       * una no fiable) y con un reporte generico sin asociaciones (una causa delataria
+       * la senal).
+       */
+      estado: 'senal_inespecifica'
+      motivo: null
+      clase: null
+      confianza: null
+      alternativas: []
+      reporte: ReporteClinico
+      /** Suma de las probabilidades de las 7 senales, 0..1. No se muestra en la UI. */
+      p_alguna_senal: number
     }
 
 export interface Modelo {

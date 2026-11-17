@@ -37,6 +37,51 @@ describe('analizarFoto', () => {
     expect((await analizarFoto(FOTO)).motivo).toBe('sin_mano')
   })
 
+  describe('calidad de cada uña', () => {
+    const unaCon = (calidad?: unknown) => ({
+      dedo: 'indice',
+      mano: 1,
+      esquinas: [],
+      recorte: '',
+      forma: null,
+      aspecto: null,
+      punta: null,
+      forma_fiable: false,
+      contorno: [],
+      ...(calidad === undefined ? {} : { calidad }),
+    })
+    const conUnas = (unas: unknown[]) => ({ estado: 'ok', motivo: null, modo: 'mano_completa', manos: 1, unas, forma_predominante: null, aviso: 'x', modelo: { nombre: 'm', version: '1' } })
+
+    it('con calidad valida devuelve el resultado', async () => {
+      const cuerpo = conUnas([unaCon({ brillo: 0, lado_origen: 0 }), unaCon({ brillo: 255, lado_origen: 900 })])
+      responder(200, cuerpo)
+      expect(await analizarFoto(FOTO)).toEqual(cuerpo)
+    })
+
+    it('una uña sin calidad (servicio anterior) se trata como servicio caido', async () => {
+      responder(200, conUnas([unaCon({ brillo: 120, lado_origen: 300 }), unaCon()]))
+      expect(await codigoDelError(analizarFoto(FOTO))).toBe('servicio_no_disponible')
+    })
+
+    it.each([
+      ['null', null],
+      ['sin lado_origen', { brillo: 120 }],
+      ['brillo > 255', { brillo: 256, lado_origen: 300 }],
+      ['brillo negativo', { brillo: -1, lado_origen: 300 }],
+      ['brillo como texto', { brillo: '120', lado_origen: 300 }],
+      ['lado_origen decimal', { brillo: 120, lado_origen: 63.9 }],
+      ['lado_origen negativo', { brillo: 120, lado_origen: -1 }],
+    ])('calidad %s se trata como servicio caido', async (_, calidad) => {
+      responder(200, conUnas([unaCon(calidad)]))
+      expect(await codigoDelError(analizarFoto(FOTO))).toBe('servicio_no_disponible')
+    })
+
+    it('un cuerpo sin lista de unas se trata como servicio caido', async () => {
+      responder(200, { estado: 'ok', motivo: null })
+      expect(await codigoDelError(analizarFoto(FOTO))).toBe('servicio_no_disponible')
+    })
+  })
+
   it('traduce los codigos del servicio', async () => {
     responder(400, { codigo: 'imagen_invalida', detalle: 'no es JPEG' })
     expect(await codigoDelError(analizarFoto(FOTO))).toBe('imagen_invalida')
