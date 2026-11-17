@@ -42,20 +42,24 @@ MotivoClinico = Literal[
 ]
 
 
+# Texto que se muestra: sin espacios sobrantes y no vacio. Un textos_clinicos.toml
+# con nombre = "   " o asociaciones = [""] debe fallar al cargar, no salir como
+# un hueco en pantalla; el front trata esos textos como contrato roto (QA 2026-11-17).
+Texto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
 class ReporteClinico(BaseModel):
-    nombre: str = Field(min_length=1)
+    nombre: Texto
     # Lo que se ve, no lo que la persona padece.
-    descripcion: str = Field(min_length=1)
+    descripcion: Texto
     # Vacia solo en sin_senales; lo exige quien carga los textos (clinico.py).
-    # Cada item sin espacios sobrantes y no vacio: un textos_clinicos.toml con
-    # asociaciones = [""] debe fallar al cargar, no salir como vineta vacia.
-    asociaciones: list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]]
-    recomendacion: str = Field(min_length=1)
+    asociaciones: list[Texto]
+    recomendacion: Texto
 
 
 class AlternativaClinica(BaseModel):
     clase: ClaseClinica
-    nombre: str = Field(min_length=1)
+    nombre: Texto
     confianza: float = Field(ge=0, le=1)
 
 

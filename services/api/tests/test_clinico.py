@@ -493,6 +493,15 @@ def test_sin_clases_no_fiables_en_metadatos_nunca_se_nombran_linea_mees_ni_acrop
         assert r.reporte not in [TEXTOS[k] for k in clinico.CLASES_NUNCA_NOMBRADAS]
 
 
+def test_las_nunca_nombradas_son_las_mismas_que_mide_el_entrenamiento(monkeypatch):
+    # entrenamiento.metricas.evaluacion_clinica (M1-M4) se abstiene con su copia:
+    # si divergen, las metricas miden un sistema distinto del que se sirve.
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "vision"))
+    from entrenamiento.config import CLASES_NUNCA_NOMBRADAS
+
+    assert CLASES_NUNCA_NOMBRADAS == clinico.CLASES_NUNCA_NOMBRADAS
+
+
 def test_metadatos_con_las_reglas_nuevas_las_cargan(tmp_path, monkeypatch):
     c = _cargar_sin_tflite(
         tmp_path, monkeypatch,
@@ -601,9 +610,47 @@ def test_las_asociaciones_se_cargan_sin_espacios_sobrantes():
     assert reporte.asociaciones == ["causa"]
 
 
-def test_una_alternativa_sin_nombre_no_se_construye():
+@pytest.mark.parametrize("nombre", ["", "   ", "\n\t"], ids=["vacio", "espacios", "saltos"])
+def test_una_alternativa_sin_nombre_no_se_construye(nombre):
     with pytest.raises(ValidationError):
-        AlternativaClinica(clase="onicolisis", nombre="", confianza=0.1)
+        AlternativaClinica(clase="onicolisis", nombre=nombre, confianza=0.1)
+
+
+@pytest.mark.parametrize("campo", ["nombre", "descripcion", "recomendacion"])
+@pytest.mark.parametrize("valor", ["", "   ", "\n\t"], ids=["vacio", "espacios", "saltos"])
+def test_un_reporte_con_texto_en_blanco_no_se_construye(campo, valor):
+    # El front rechaza estos textos como contrato roto: el servicio no debe emitirlos.
+    datos = {"nombre": "n", "descripcion": "d", "asociaciones": ["a"], "recomendacion": "r", campo: valor}
+    with pytest.raises(ValidationError):
+        ReporteClinico(**datos)
+
+
+def test_los_textos_del_reporte_y_la_alternativa_se_cargan_sin_espacios_sobrantes():
+    reporte = ReporteClinico(nombre=" n ", descripcion="\td\n", asociaciones=[], recomendacion="  r")
+    assert (reporte.nombre, reporte.descripcion, reporte.recomendacion) == ("n", "d", "r")
+    assert AlternativaClinica(clase="onicolisis", nombre=" Despegamiento ", confianza=0.1).nombre == "Despegamiento"
+
+
+@pytest.mark.parametrize("campo", ["nombre", "descripcion", "recomendacion"])
+def test_un_texto_en_blanco_en_el_toml_impide_cargar(tmp_path, campo):
+    # Mismo camino que una asociacion vacia: falla al arrancar, no en pantalla.
+    texto = RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8")
+    inicio = texto.index("[clases.linea_beau]")
+    linea = next(l for l in texto[inicio:].splitlines() if l.startswith(f"{campo} = "))
+    ruta = tmp_path / "textos.toml"
+    ruta.write_text(texto[:inicio] + texto[inicio:].replace(linea, f'{campo} = "   "', 1), encoding="utf-8")
+    with pytest.raises(clinico.ClasificadorNoDisponible, match="texto de linea_beau invalido"):
+        clinico.cargar_textos(ruta)
+
+
+def test_los_textos_reales_ya_venian_sin_espacios_sobrantes():
+    # strip_whitespace no debe cambiar lo que se muestra con el archivo versionado.
+    import tomllib
+
+    crudo = tomllib.loads(RUTA_TEXTOS_CLINICOS.read_text(encoding="utf-8"))
+    secciones = {**crudo["clases"], clinico.SENAL_INESPECIFICA: crudo[clinico.SENAL_INESPECIFICA]}
+    for clave, t in secciones.items():
+        assert TEXTOS[clave].model_dump() == {k: t[k] for k in ("nombre", "descripcion", "asociaciones", "recomendacion")}
 
 
 def test_el_archivo_nace_pendiente_de_revision_profesional():
