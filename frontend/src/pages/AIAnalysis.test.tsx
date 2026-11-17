@@ -90,7 +90,7 @@ describe('AIAnalysis: arrastrar y quitar foto', () => {
     await irASubir()
     soltar([new File(['x'], 'a.pdf', { type: 'application/pdf' })])
     expect(vistaPrevia()).toBeNull()
-    expect(screen.getByText(/no es una imagen/)).toBeTruthy()
+    expect(screen.getByText(/no es una foto válida/)).toBeTruthy()
     expect(botonAnalizar()).toBeDisabled()
   })
 
@@ -236,7 +236,7 @@ describe('AIAnalysis: cambiar de foto durante un analisis', () => {
     await user.click(botonAnalizar())
     soltar([new File(['x'], 'a.pdf', { type: 'application/pdf' })])
     expect(p.senal()?.aborted).toBe(true)
-    expect(screen.getByText(/no es una imagen/)).toBeTruthy()
+    expect(screen.getByText(/no es una foto válida/)).toBeTruthy()
     expect(screen.queryByText('Analizando tu fotografía…')).toBeNull()
   })
 
@@ -283,5 +283,48 @@ describe('AIAnalysis: defectos que encontró QA (ya corregidos)', () => {
     Object.defineProperty(evento, 'relatedTarget', { value: screen.getByText(/máx. 10 MB/) })
     fireEvent(zona(), evento)
     expect(zona().className).toContain('bg-olive-50/50')
+  })
+})
+
+describe('AIAnalysis: tipos permitidos y soltar fuera de la zona', () => {
+  it.each(['image/svg+xml', 'image/heic', 'image/gif'])('rechaza %s', async (type) => {
+    pagina()
+    await irASubir()
+    soltar([new File(['x'], 'a.x', { type })])
+    expect(vistaPrevia()).toBeNull()
+    expect(screen.getByText(/no es una foto válida/)).toBeTruthy()
+  })
+
+  it.each(['image/jpeg', 'image/png', 'image/webp'])('acepta %s', async (type) => {
+    pagina()
+    await irASubir()
+    soltar([new File(['x'], 'a.x', { type })])
+    expect(vistaPrevia()).not.toBeNull()
+  })
+
+  it('sin type acepta por extensión y rechaza una extensión rara', async () => {
+    pagina()
+    await irASubir()
+    soltar([new File(['x'], 'mano.JPG', { type: '' })])
+    expect(vistaPrevia()).not.toBeNull()
+    soltar([new File(['x'], 'mano.svg', { type: '' })])
+    expect(vistaPrevia()).toBeNull()
+  })
+
+  it('un drop fuera de la zona se cancela (el navegador no abre el archivo)', async () => {
+    pagina()
+    await irASubir()
+    const evento = new Event('drop', { bubbles: true, cancelable: true })
+    document.body.dispatchEvent(evento)
+    expect(evento.defaultPrevented).toBe(true)
+  })
+
+  it('al salir de la pantalla de subida ya no se cancela', async () => {
+    pagina()
+    const user = await irASubir()
+    await user.click(screen.getByRole('button', { name: /Cambiar enfoque/ }))
+    const evento = new Event('drop', { bubbles: true, cancelable: true })
+    document.body.dispatchEvent(evento)
+    expect(evento.defaultPrevented).toBe(false)
   })
 })

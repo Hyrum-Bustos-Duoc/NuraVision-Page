@@ -12,6 +12,14 @@ import { ErrorAnalisis, type ResultadoAnalisis } from '@/modules/analisis/domain
 import { analizarFoto, mensajeNoConcluyente } from '@/modules/analisis/infrastructure/analisis.api'
 import { ResultadoUnas } from '@/modules/analisis/ui/ResultadoUnas'
 
+const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp']
+const EXTENSION_FOTO = /\.(jpe?g|png|webp)$/i
+
+/** Lo mismo que acepta el servicio (JPEG, PNG, WebP). Sin `type` se mira la extensión. */
+function esFotoValida(a: File): boolean {
+  return a.type ? TIPOS_FOTO.includes(a.type) : EXTENSION_FOTO.test(a.name)
+}
+
 type Step = 'prepare' | 'upload' | 'result'
 type SimulatedError = 'imagen_invalida' | 'servicio_caido' | null
 
@@ -57,6 +65,18 @@ export default function AIAnalysis() {
 
   useScrollToTopOnChange(step)
 
+  // Una foto soltada fuera de la zona haría que el navegador la abra y se pierda la página.
+  useEffect(() => {
+    if (step !== 'upload') return
+    const frenar = (e: DragEvent) => e.preventDefault()
+    window.addEventListener('dragover', frenar)
+    window.addEventListener('drop', frenar)
+    return () => {
+      window.removeEventListener('dragover', frenar)
+      window.removeEventListener('drop', frenar)
+    }
+  }, [step])
+
   // La vista previa es una URL de objeto: se libera al cambiar de foto y al salir.
   useEffect(
     () => () => {
@@ -88,9 +108,9 @@ export default function AIAnalysis() {
     if (!archivo) return
     // Venga del arrastre o del selector, el input no debe conservar un archivo que ya no es la foto elegida.
     if (inputFoto.current) inputFoto.current.value = ''
-    if (!archivo.type.startsWith('image/')) {
+    if (!esFotoValida(archivo)) {
       elegirFoto(undefined)
-      setErrorAnalisis('Ese archivo no es una imagen. Suelta una foto en formato JPG o PNG.')
+      setErrorAnalisis('Ese archivo no es una foto válida. Usa una imagen JPG, PNG o WebP.')
       return
     }
     elegirFoto(archivo)
@@ -265,18 +285,18 @@ export default function AIAnalysis() {
             <span className="text-sm text-ink">
               {foto?.archivo.name ?? 'Arrastra tu foto aquí o haz clic para subirla'}
             </span>
-            <span className="text-xs text-muted-light">JPG o PNG · máx. 10 MB</span>
+            <span className="text-xs text-muted-light">JPG, PNG o WebP · máx. 10 MB</span>
             <input
               ref={inputFoto}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={(e) => {
                 const archivo = e.target.files?.[0]
                 if (!archivo) return elegirFoto(undefined)
                 // El selector muestra "Todos los archivos": se valida igual que al soltar,
                 // pero sin vaciar el input (el archivo elegido sigue siendo el actual).
-                if (archivo.type.startsWith('image/')) elegirFoto(archivo)
+                if (esFotoValida(archivo)) elegirFoto(archivo)
                 else soltarFoto(archivo)
               }}
             />
