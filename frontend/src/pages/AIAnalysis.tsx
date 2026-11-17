@@ -86,6 +86,8 @@ export default function AIAnalysis() {
 
   function soltarFoto(archivo: File | undefined) {
     if (!archivo) return
+    // Venga del arrastre o del selector, el input no debe conservar un archivo que ya no es la foto elegida.
+    if (inputFoto.current) inputFoto.current.value = ''
     if (!archivo.type.startsWith('image/')) {
       elegirFoto(undefined)
       setErrorAnalisis('Ese archivo no es una imagen. Suelta una foto en formato JPG o PNG.')
@@ -246,7 +248,10 @@ export default function AIAnalysis() {
               e.preventDefault()
               setArrastrando(true)
             }}
-            onDragLeave={() => setArrastrando(false)}
+            onDragLeave={(e) => {
+              // Pasar a un hijo de la zona también dispara dragleave: no apagar el resaltado.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setArrastrando(false)
+            }}
             onDrop={(e) => {
               e.preventDefault()
               setArrastrando(false)
@@ -266,7 +271,14 @@ export default function AIAnalysis() {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => elegirFoto(e.target.files?.[0])}
+              onChange={(e) => {
+                const archivo = e.target.files?.[0]
+                if (!archivo) return elegirFoto(undefined)
+                // El selector muestra "Todos los archivos": se valida igual que al soltar,
+                // pero sin vaciar el input (el archivo elegido sigue siendo el actual).
+                if (archivo.type.startsWith('image/')) elegirFoto(archivo)
+                else soltarFoto(archivo)
+              }}
             />
           </label>
 
